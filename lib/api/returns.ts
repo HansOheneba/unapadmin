@@ -7,7 +7,11 @@ const MOCK_RETURNS: Return[] = [
     id: "ret-1",
     orderId: "order-1",
     orderNumber: "UNP-00001",
-    customer: { id: "cust-1", name: "Kwame Mensah", email: "kwame@example.com" },
+    customer: {
+      id: "cust-1",
+      name: "Kwame Mensah",
+      email: "kwame@example.com",
+    },
     items: [
       {
         id: "item-1",

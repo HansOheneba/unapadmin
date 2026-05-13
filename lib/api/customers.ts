@@ -55,14 +55,15 @@ export const getCustomers = (params: {
     const q = params.q.toLowerCase();
     data = data.filter(
       (c) =>
-        c.name?.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q),
+        c.name?.toLowerCase().includes(q) || c.email.toLowerCase().includes(q),
     );
   }
   return Promise.resolve({ data, total: data.length, page: 1, totalPages: 1 });
 };
 
-export const getCustomer = (id: string): Promise<Customer & { orders: Order[] }> => {
+export const getCustomer = (
+  id: string,
+): Promise<Customer & { orders: Order[] }> => {
   // TODO: remove mock
   const customer = MOCK_CUSTOMERS.find((c) => c.id === id);
   if (!customer) return Promise.reject(new Error("Not found"));
@@ -70,4 +71,7 @@ export const getCustomer = (id: string): Promise<Customer & { orders: Order[] }>
 };
 
 export const updateCustomer = (id: string, body: Partial<Customer>) =>
-  apiFetch<Customer>(`/customers/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  apiFetch<Customer>(`/customers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });

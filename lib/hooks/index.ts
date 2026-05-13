@@ -3,21 +3,63 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCustomers, getCustomer, updateCustomer } from "@/lib/api/customers";
 import { getDashboardStats } from "@/lib/api/analytics";
-import { getDiscounts, getDiscount, createDiscount, updateDiscount, deleteDiscount } from "@/lib/api/discounts";
-import { getBanners, getBanner, createBanner, updateBanner, deleteBanner, reorderBanners } from "@/lib/api/banners";
-import { getAffiliates, getAffiliate, createAffiliate, createPayout } from "@/lib/api/affiliates";
+import {
+  getDiscounts,
+  getDiscount,
+  createDiscount,
+  updateDiscount,
+  deleteDiscount,
+} from "@/lib/api/discounts";
+import {
+  getBanners,
+  getBanner,
+  createBanner,
+  updateBanner,
+  deleteBanner,
+  reorderBanners,
+} from "@/lib/api/banners";
+import {
+  getAffiliates,
+  getAffiliate,
+  createAffiliate,
+  createPayout,
+} from "@/lib/api/affiliates";
 import { getReturns, getReturn, updateReturnStatus } from "@/lib/api/returns";
-import { getDeliveries, getDelivery, updateDelivery } from "@/lib/api/deliveries";
+import {
+  getDeliveries,
+  getDelivery,
+  updateDelivery,
+} from "@/lib/api/deliveries";
 import { getInventory, updateInventory } from "@/lib/api/inventory";
-import { getSettings, updateSettings, getAdminUsers, createAdminUser, updateAdminUser, deleteAdminUser } from "@/lib/api/auth";
-import type { Customer, ReturnStatus, DeliveryStatus, Delivery, AdminRole } from "@/types";
+import {
+  getSettings,
+  updateSettings,
+  getAdminUsers,
+  createAdminUser,
+  updateAdminUser,
+  deleteAdminUser,
+} from "@/lib/api/auth";
+import type {
+  Customer,
+  ReturnStatus,
+  DeliveryStatus,
+  Delivery,
+  AdminRole,
+} from "@/types";
 
 // Customers
 export const useCustomers = (params: { q?: string; page?: number } = {}) =>
-  useQuery({ queryKey: ["customers", params], queryFn: () => getCustomers(params) });
+  useQuery({
+    queryKey: ["customers", params],
+    queryFn: () => getCustomers(params),
+  });
 
 export const useCustomer = (id: string) =>
-  useQuery({ queryKey: ["customers", id], queryFn: () => getCustomer(id), enabled: !!id });
+  useQuery({
+    queryKey: ["customers", id],
+    queryFn: () => getCustomer(id),
+    enabled: !!id,
+  });
 
 export const useUpdateCustomer = () => {
   const qc = useQueryClient();
@@ -50,8 +92,12 @@ export const useCreateDiscount = () => {
 export const useUpdateDiscount = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: Parameters<typeof updateDiscount>[0] extends string ? { id: string; body: Parameters<typeof updateDiscount>[1] } : never) =>
-      updateDiscount(id, body),
+    mutationFn: ({
+      id,
+      body,
+    }: Parameters<typeof updateDiscount>[0] extends string
+      ? { id: string; body: Parameters<typeof updateDiscount>[1] }
+      : never) => updateDiscount(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["discounts"] }),
   });
 };
@@ -69,7 +115,11 @@ export const useBanners = () =>
   useQuery({ queryKey: ["banners"], queryFn: getBanners });
 
 export const useBanner = (id: string) =>
-  useQuery({ queryKey: ["banners", id], queryFn: () => getBanner(id), enabled: !!id });
+  useQuery({
+    queryKey: ["banners", id],
+    queryFn: () => getBanner(id),
+    enabled: !!id,
+  });
 
 export const useCreateBanner = () => {
   const qc = useQueryClient();
@@ -82,8 +132,12 @@ export const useCreateBanner = () => {
 export const useUpdateBanner = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: Parameters<typeof updateBanner>[0] extends string ? { id: string; body: Parameters<typeof updateBanner>[1] } : never) =>
-      updateBanner(id, body),
+    mutationFn: ({
+      id,
+      body,
+    }: Parameters<typeof updateBanner>[0] extends string
+      ? { id: string; body: Parameters<typeof updateBanner>[1] }
+      : never) => updateBanner(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["banners"] }),
   });
 };
@@ -109,7 +163,11 @@ export const useAffiliates = () =>
   useQuery({ queryKey: ["affiliates"], queryFn: getAffiliates });
 
 export const useAffiliate = (id: string) =>
-  useQuery({ queryKey: ["affiliates", id], queryFn: () => getAffiliate(id), enabled: !!id });
+  useQuery({
+    queryKey: ["affiliates", id],
+    queryFn: () => getAffiliate(id),
+    enabled: !!id,
+  });
 
 export const useCreateAffiliate = () => {
   const qc = useQueryClient();
@@ -122,18 +180,37 @@ export const useCreateAffiliate = () => {
 export const useCreatePayout = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ affiliateId, body }: { affiliateId: string; body: { amount: number; method: string; reference?: string | null } }) =>
-      createPayout(affiliateId, { ...body, reference: body.reference ?? undefined }),
-    onSuccess: (_, { affiliateId }) => qc.invalidateQueries({ queryKey: ["affiliates", affiliateId] }),
+    mutationFn: ({
+      affiliateId,
+      body,
+    }: {
+      affiliateId: string;
+      body: { amount: number; method: string; reference?: string | null };
+    }) =>
+      createPayout(affiliateId, {
+        ...body,
+        reference: body.reference ?? undefined,
+      }),
+    onSuccess: (_, { affiliateId }) =>
+      qc.invalidateQueries({ queryKey: ["affiliates", affiliateId] }),
   });
 };
 
 // Returns
-export const useReturns = (params: { status?: ReturnStatus; page?: number } = {}) =>
-  useQuery({ queryKey: ["returns", params], queryFn: () => getReturns(params) });
+export const useReturns = (
+  params: { status?: ReturnStatus; page?: number } = {},
+) =>
+  useQuery({
+    queryKey: ["returns", params],
+    queryFn: () => getReturns(params),
+  });
 
 export const useReturn = (id: string) =>
-  useQuery({ queryKey: ["returns", id], queryFn: () => getReturn(id), enabled: !!id });
+  useQuery({
+    queryKey: ["returns", id],
+    queryFn: () => getReturn(id),
+    enabled: !!id,
+  });
 
 export const useUpdateReturnStatus = () => {
   const qc = useQueryClient();
@@ -152,17 +229,40 @@ export const useUpdateReturnStatus = () => {
 };
 
 // Deliveries
-export const useDeliveries = (params: { status?: DeliveryStatus; q?: string; page?: number } = {}) =>
-  useQuery({ queryKey: ["deliveries", params], queryFn: () => getDeliveries(params) });
+export const useDeliveries = (
+  params: { status?: DeliveryStatus; q?: string; page?: number } = {},
+) =>
+  useQuery({
+    queryKey: ["deliveries", params],
+    queryFn: () => getDeliveries(params),
+  });
 
 export const useDelivery = (id: string) =>
-  useQuery({ queryKey: ["deliveries", id], queryFn: () => getDelivery(id), enabled: !!id });
+  useQuery({
+    queryKey: ["deliveries", id],
+    queryFn: () => getDelivery(id),
+    enabled: !!id,
+  });
 
 export const useUpdateDelivery = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Pick<Delivery, "carrier" | "trackingNumber" | "trackingUrl" | "status" | "estimatedDelivery">> }) =>
-      updateDelivery(id, body),
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string;
+      body: Partial<
+        Pick<
+          Delivery,
+          | "carrier"
+          | "trackingNumber"
+          | "trackingUrl"
+          | "status"
+          | "estimatedDelivery"
+        >
+      >;
+    }) => updateDelivery(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["deliveries"] }),
   });
 };
@@ -174,8 +274,15 @@ export const useInventory = () =>
 export const useUpdateInventory = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ productId, stock, lowStockThreshold }: { productId: string; stock: number; lowStockThreshold: number }) =>
-      updateInventory(productId, { stock, lowStockThreshold }),
+    mutationFn: ({
+      productId,
+      stock,
+      lowStockThreshold,
+    }: {
+      productId: string;
+      stock: number;
+      lowStockThreshold: number;
+    }) => updateInventory(productId, { stock, lowStockThreshold }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["inventory"] }),
   });
 };

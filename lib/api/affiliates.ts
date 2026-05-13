@@ -66,11 +66,26 @@ export const getAffiliate = (
 };
 
 export const createAffiliate = (
-  body: Omit<Affiliate, "id" | "totalReferrals" | "totalRevenue" | "totalOwed" | "totalPaid" | "createdAt">,
-) => apiFetch<Affiliate>("/affiliates", { method: "POST", body: JSON.stringify(body) });
+  body: Omit<
+    Affiliate,
+    | "id"
+    | "totalReferrals"
+    | "totalRevenue"
+    | "totalOwed"
+    | "totalPaid"
+    | "createdAt"
+  >,
+) =>
+  apiFetch<Affiliate>("/affiliates", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
 export const updateAffiliate = (id: string, body: Partial<Affiliate>) =>
-  apiFetch<Affiliate>(`/affiliates/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  apiFetch<Affiliate>(`/affiliates/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 
 export const createPayout = (
   id: string,

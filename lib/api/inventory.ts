@@ -4,7 +4,9 @@ import { MOCK_PRODUCTS_WITH_STOCK } from "./products-inventory";
 
 export const getInventory = (): Promise<Product[]> => {
   // TODO: remove mock
-  const sorted = [...MOCK_PRODUCTS_WITH_STOCK].sort((a, b) => a.stock - b.stock);
+  const sorted = [...MOCK_PRODUCTS_WITH_STOCK].sort(
+    (a, b) => a.stock - b.stock,
+  );
   return Promise.resolve(sorted);
 };
 

@@ -22,7 +22,11 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useCollections, useDeleteCollection, useReorderCollections } from "@/lib/hooks/useCollections";
+import {
+  useCollections,
+  useDeleteCollection,
+  useReorderCollections,
+} from "@/lib/hooks/useCollections";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import type { Collection } from "@/types";
@@ -34,7 +38,14 @@ function CollectionCard({
   collection: Collection;
   onDelete: (id: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: collection.id,
   });
   const style = {
@@ -67,11 +78,20 @@ function CollectionCard({
         </button>
       </div>
       <div className="p-4">
-        <p className="text-xs text-zinc-500 uppercase tracking-wide">{collection.subtitle}</p>
-        <h3 className="font-semibold text-zinc-900 mt-0.5">{collection.title}</h3>
-        <p className="text-xs text-zinc-400 mt-1">{collection.productCount} products</p>
+        <p className="text-xs text-zinc-500 uppercase tracking-wide">
+          {collection.subtitle}
+        </p>
+        <h3 className="font-semibold text-zinc-900 mt-0.5">
+          {collection.title}
+        </h3>
+        <p className="text-xs text-zinc-400 mt-1">
+          {collection.productCount} products
+        </p>
         <div className="mt-3 flex items-center gap-2">
-          <Link href={`/dashboard/collections/${collection.id}`} className="flex-1">
+          <Link
+            href={`/dashboard/collections/${collection.id}`}
+            className="flex-1"
+          >
             <Button variant="outline" size="sm" className="w-full">
               Edit
             </Button>
@@ -99,11 +119,15 @@ export default function CollectionsPage() {
 
   const sorted = [...collections].sort((a, b) => a.sortOrder - b.sortOrder);
   const ids = items.length > 0 ? items : sorted.map((c) => c.id);
-  const orderedCollections = ids.map((id) => sorted.find((c) => c.id === id)!).filter(Boolean);
+  const orderedCollections = ids
+    .map((id) => sorted.find((c) => c.id === id)!)
+    .filter(Boolean);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -144,17 +168,25 @@ export default function CollectionsPage() {
       </div>
 
       <p className="text-sm text-zinc-500">
-        Drag to reorder. Order controls hero alternation on the storefront. Even position = hero text left. Odd = right.
+        Drag to reorder. Order controls hero alternation on the storefront. Even
+        position = hero text left. Odd = right.
       </p>
 
       {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-64 bg-white border border-zinc-100 rounded-lg animate-pulse" />
+            <div
+              key={i}
+              className="h-64 bg-white border border-zinc-100 rounded-lg animate-pulse"
+            />
           ))}
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={ids} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
               {orderedCollections.map((collection) => (

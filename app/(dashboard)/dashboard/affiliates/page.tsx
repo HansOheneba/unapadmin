@@ -8,7 +8,14 @@ import { useAffiliates } from "@/lib/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
 
 export default function AffiliatesPage() {
@@ -19,7 +26,10 @@ export default function AffiliatesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-zinc-900">Affiliates</h1>
         <Link href="/dashboard/affiliates/new">
-          <Button><PlusCircle className="h-4 w-4 mr-2" />Add Affiliate</Button>
+          <Button>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Affiliate
+          </Button>
         </Link>
       </div>
 
@@ -43,7 +53,9 @@ export default function AffiliatesPage() {
               ? Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 9 }).map((_, j) => (
-                      <TableCell key={j}><div className="h-4 bg-zinc-100 rounded animate-pulse" /></TableCell>
+                      <TableCell key={j}>
+                        <div className="h-4 bg-zinc-100 rounded animate-pulse" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -55,18 +67,34 @@ export default function AffiliatesPage() {
                         <p className="text-xs text-zinc-400">{a.email}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-zinc-700">{a.code}</TableCell>
-                    <TableCell className="text-zinc-700">{(a.commissionRate * 100).toFixed(0)}%</TableCell>
-                    <TableCell className="text-zinc-700">{a.totalReferrals}</TableCell>
-                    <TableCell className="text-zinc-900 font-medium">{formatCurrency(a.totalRevenue)}</TableCell>
-                    <TableCell className="text-orange-600 font-medium">{formatCurrency(a.totalOwed)}</TableCell>
-                    <TableCell className="text-zinc-600">{formatCurrency(a.totalPaid)}</TableCell>
+                    <TableCell className="font-mono text-zinc-700">
+                      {a.code}
+                    </TableCell>
+                    <TableCell className="text-zinc-700">
+                      {(a.commissionRate * 100).toFixed(0)}%
+                    </TableCell>
+                    <TableCell className="text-zinc-700">
+                      {a.totalReferrals}
+                    </TableCell>
+                    <TableCell className="text-zinc-900 font-medium">
+                      {formatCurrency(a.totalRevenue)}
+                    </TableCell>
+                    <TableCell className="text-orange-600 font-medium">
+                      {formatCurrency(a.totalOwed)}
+                    </TableCell>
+                    <TableCell className="text-zinc-600">
+                      {formatCurrency(a.totalPaid)}
+                    </TableCell>
                     <TableCell>
-                      <Badge variant={a.active ? "green" : "zinc"}>{a.active ? "Active" : "Inactive"}</Badge>
+                      <Badge variant={a.active ? "green" : "zinc"}>
+                        {a.active ? "Active" : "Inactive"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Link href={`/dashboard/affiliates/${a.id}`}>
-                        <Button variant="ghost" size="sm">View</Button>
+                        <Button variant="ghost" size="sm">
+                          View
+                        </Button>
                       </Link>
                     </TableCell>
                   </TableRow>

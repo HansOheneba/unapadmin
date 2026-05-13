@@ -5,9 +5,7 @@ import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function formatSegment(seg: string) {
-  return seg
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function Topbar() {

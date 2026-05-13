@@ -49,10 +49,16 @@ export const createBanner = (body: Omit<Banner, "id" | "createdAt">) =>
   apiFetch<Banner>("/banners", { method: "POST", body: JSON.stringify(body) });
 
 export const updateBanner = (id: string, body: Partial<Banner>) =>
-  apiFetch<Banner>(`/banners/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  apiFetch<Banner>(`/banners/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 
 export const deleteBanner = (id: string) =>
   apiFetch<void>(`/banners/${id}`, { method: "DELETE" });
 
 export const reorderBanners = (ids: string[]) =>
-  apiFetch<void>("/banners/reorder", { method: "PATCH", body: JSON.stringify({ ids }) });
+  apiFetch<void>("/banners/reorder", {
+    method: "PATCH",
+    body: JSON.stringify({ ids }),
+  });

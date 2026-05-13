@@ -49,7 +49,9 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-zinc-900 text-center">Admin Login</h1>
+          <h1 className="text-xl font-semibold text-zinc-900 text-center">
+            Admin Login
+          </h1>
           <p className="text-sm text-zinc-500 text-center mt-1">
             Sign in to access the dashboard
           </p>

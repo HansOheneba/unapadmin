@@ -53,7 +53,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         (session.user as { role?: string }).role = token.role as string;
       }
-      (session as { accessToken?: string }).accessToken = token.accessToken as string;
+      (session as { accessToken?: string }).accessToken =
+        token.accessToken as string;
       return session;
     },
   },

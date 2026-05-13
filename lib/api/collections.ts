@@ -73,13 +73,23 @@ export const getCollections = (): Promise<Collection[]> => {
 
 export const createCollection = (
   body: Omit<Collection, "id" | "productCount" | "createdAt" | "updatedAt">,
-) => apiFetch<Collection>("/collections", { method: "POST", body: JSON.stringify(body) });
+) =>
+  apiFetch<Collection>("/collections", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
 export const updateCollection = (id: string, body: Partial<Collection>) =>
-  apiFetch<Collection>(`/collections/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  apiFetch<Collection>(`/collections/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 
 export const deleteCollection = (id: string) =>
   apiFetch<void>(`/collections/${id}`, { method: "DELETE" });
 
 export const reorderCollections = (ids: string[]) =>
-  apiFetch<void>("/collections/reorder", { method: "PATCH", body: JSON.stringify({ ids }) });
+  apiFetch<void>("/collections/reorder", {
+    method: "PATCH",
+    body: JSON.stringify({ ids }),
+  });

@@ -6,7 +6,11 @@ const MOCK_ORDERS: Order[] = [
   {
     id: "order-1",
     orderNumber: "UNP-00001",
-    customer: { id: "cust-1", name: "Kwame Mensah", email: "kwame@example.com" },
+    customer: {
+      id: "cust-1",
+      name: "Kwame Mensah",
+      email: "kwame@example.com",
+    },
     guestName: null,
     guestEmail: null,
     guestPhone: null,
@@ -56,7 +60,11 @@ const MOCK_ORDERS: Order[] = [
   {
     id: "order-2",
     orderNumber: "UNP-00002",
-    customer: { id: "cust-2", name: "Abena Asante", email: "abena@example.com" },
+    customer: {
+      id: "cust-2",
+      name: "Abena Asante",
+      email: "abena@example.com",
+    },
     guestName: null,
     guestEmail: null,
     guestPhone: null,
@@ -83,7 +91,9 @@ const MOCK_ORDERS: Order[] = [
         size: null,
       },
     ],
-    statusHistory: [{ status: "PENDING", at: "2024-03-10T08:00:00Z", by: "system" }],
+    statusHistory: [
+      { status: "PENDING", at: "2024-03-10T08:00:00Z", by: "system" },
+    ],
     createdAt: "2024-03-10T08:00:00Z",
     updatedAt: "2024-03-10T08:00:00Z",
   },
@@ -243,7 +253,13 @@ export const getOrder = (id: string): Promise<Order> => {
 };
 
 export const updateOrderStatus = (id: string, status: OrderStatus) =>
-  apiFetch<Order>(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+  apiFetch<Order>(`/orders/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
 
 export const updateOrderNotes = (id: string, notes: string) =>
-  apiFetch<Order>(`/orders/${id}/notes`, { method: "PATCH", body: JSON.stringify({ notes }) });
+  apiFetch<Order>(`/orders/${id}/notes`, {
+    method: "PATCH",
+    body: JSON.stringify({ notes }),
+  });

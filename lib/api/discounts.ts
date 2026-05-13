@@ -53,11 +53,19 @@ export const getDiscount = (id: string): Promise<Discount> => {
   return Promise.resolve(found);
 };
 
-export const createDiscount = (body: Omit<Discount, "id" | "usedCount" | "createdAt">) =>
-  apiFetch<Discount>("/discounts", { method: "POST", body: JSON.stringify(body) });
+export const createDiscount = (
+  body: Omit<Discount, "id" | "usedCount" | "createdAt">,
+) =>
+  apiFetch<Discount>("/discounts", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
 export const updateDiscount = (id: string, body: Partial<Discount>) =>
-  apiFetch<Discount>(`/discounts/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  apiFetch<Discount>(`/discounts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 
 export const deleteDiscount = (id: string) =>
   apiFetch<void>(`/discounts/${id}`, { method: "DELETE" });

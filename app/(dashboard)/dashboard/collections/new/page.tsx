@@ -43,7 +43,10 @@ export default function NewCollectionPage() {
   return (
     <div className="max-w-xl space-y-6">
       <h1 className="text-2xl font-semibold text-zinc-900">New Collection</h1>
-      <form onSubmit={handleSubmit} className="bg-white border border-zinc-100 rounded-lg p-6 space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white border border-zinc-100 rounded-lg p-6 space-y-4"
+      >
         <div className="space-y-1.5">
           <Label htmlFor="subtitle">Subtitle</Label>
           <Input
@@ -81,13 +84,23 @@ export default function NewCollectionPage() {
               value={form.featured}
               onChange={(e) => setForm({ ...form, featured: e.target.value })}
             />
-            <Button type="button" variant="outline" size="icon" onClick={() => setPickerOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setPickerOpen(true)}
+            >
               <ImageIcon className="h-4 w-4" />
             </Button>
           </div>
           {form.featured && (
             <div className="relative aspect-video rounded overflow-hidden mt-2 border border-zinc-100">
-              <Image src={form.featured} alt="Cover" fill className="object-cover" />
+              <Image
+                src={form.featured}
+                alt="Cover"
+                fill
+                className="object-cover"
+              />
             </div>
           )}
         </div>

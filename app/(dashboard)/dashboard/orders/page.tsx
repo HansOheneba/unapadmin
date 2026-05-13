@@ -9,7 +9,14 @@ import { CsvExportButton } from "@/components/shared/csv-export-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { OrderStatus } from "@/types";
 
@@ -44,7 +51,10 @@ export default function OrdersPage() {
         />
       </div>
 
-      <Tabs value={status} onValueChange={(v) => setStatus(v as OrderStatus | "")}>
+      <Tabs
+        value={status}
+        onValueChange={(v) => setStatus(v as OrderStatus | "")}
+      >
         <TabsList className="flex-wrap h-auto gap-1">
           {STATUS_TABS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
@@ -83,7 +93,9 @@ export default function OrdersPage() {
               ? Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j}><div className="h-4 bg-zinc-100 rounded animate-pulse" /></TableCell>
+                      <TableCell key={j}>
+                        <div className="h-4 bg-zinc-100 rounded animate-pulse" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -100,7 +112,9 @@ export default function OrdersPage() {
                       <TableCell>
                         <div>
                           <p className="text-zinc-800">{customerName}</p>
-                          <p className="text-xs text-zinc-400">{customerEmail}</p>
+                          <p className="text-xs text-zinc-400">
+                            {customerEmail}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell className="text-zinc-600">
@@ -120,7 +134,9 @@ export default function OrdersPage() {
                       </TableCell>
                       <TableCell>
                         <Link href={`/dashboard/orders/${order.id}`}>
-                          <Button variant="ghost" size="sm">View</Button>
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
                         </Link>
                       </TableCell>
                     </TableRow>

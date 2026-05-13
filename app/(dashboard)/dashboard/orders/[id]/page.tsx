@@ -4,21 +4,41 @@ import { use, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
-import { useOrder, useUpdateOrderStatus, useUpdateOrderNotes } from "@/lib/hooks/useOrders";
+import {
+  useOrder,
+  useUpdateOrderStatus,
+  useUpdateOrderNotes,
+} from "@/lib/hooks/useOrders";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { CheckCircle2 } from "lucide-react";
 import type { OrderStatus } from "@/types";
 
 const ORDER_STATUSES: OrderStatus[] = [
-  "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED",
+  "PENDING",
+  "CONFIRMED",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+  "REFUNDED",
 ];
 
-export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function OrderDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const { data: order, isLoading } = useOrder(id);
   const updateStatus = useUpdateOrderStatus();
@@ -28,7 +48,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [notes, setNotes] = useState("");
   const [notesSaved, setNotesSaved] = useState(false);
 
-  if (isLoading) return <div className="h-48 bg-white border border-zinc-100 rounded-lg animate-pulse" />;
+  if (isLoading)
+    return (
+      <div className="h-48 bg-white border border-zinc-100 rounded-lg animate-pulse" />
+    );
   if (!order) return <div className="text-zinc-500">Order not found.</div>;
 
   const handleStatusUpdate = () => {
@@ -36,7 +59,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     updateStatus.mutate(
       { id, status: newStatus },
       {
-        onSuccess: () => { toast.success("Status updated"); setConfirmOpen(false); },
+        onSuccess: () => {
+          toast.success("Status updated");
+          setConfirmOpen(false);
+        },
         onError: () => toast.error("Failed to update status"),
       },
     );
@@ -46,7 +72,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     updateNotes.mutate(
       { id, notes },
       {
-        onSuccess: () => { setNotesSaved(true); setTimeout(() => setNotesSaved(false), 2000); },
+        onSuccess: () => {
+          setNotesSaved(true);
+          setTimeout(() => setNotesSaved(false), 2000);
+        },
         onError: () => toast.error("Failed to save notes"),
       },
     );
@@ -60,10 +89,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold text-zinc-900">{order.orderNumber}</h1>
+          <h1 className="text-2xl font-semibold text-zinc-900">
+            {order.orderNumber}
+          </h1>
           <StatusBadge status={order.status} />
         </div>
-        <Link href="/dashboard/orders"><Button variant="outline">Back</Button></Link>
+        <Link href="/dashboard/orders">
+          <Button variant="outline">Back</Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -75,7 +108,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <div className="text-sm space-y-1">
               <p className="text-zinc-800 font-medium">{customerName}</p>
               <p className="text-zinc-500">{customerEmail}</p>
-              {customerPhone && <p className="text-zinc-500">{customerPhone}</p>}
+              {customerPhone && (
+                <p className="text-zinc-500">{customerPhone}</p>
+              )}
               {order.address && (
                 <p className="text-zinc-500">
                   {order.address}, {order.city}, {order.country}
@@ -90,11 +125,21 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-100">
-                  <th className="text-left py-2 text-xs text-zinc-500 font-medium">Product</th>
-                  <th className="text-left py-2 text-xs text-zinc-500 font-medium">Color/Size</th>
-                  <th className="text-right py-2 text-xs text-zinc-500 font-medium">Qty</th>
-                  <th className="text-right py-2 text-xs text-zinc-500 font-medium">Price</th>
-                  <th className="text-right py-2 text-xs text-zinc-500 font-medium">Total</th>
+                  <th className="text-left py-2 text-xs text-zinc-500 font-medium">
+                    Product
+                  </th>
+                  <th className="text-left py-2 text-xs text-zinc-500 font-medium">
+                    Color/Size
+                  </th>
+                  <th className="text-right py-2 text-xs text-zinc-500 font-medium">
+                    Qty
+                  </th>
+                  <th className="text-right py-2 text-xs text-zinc-500 font-medium">
+                    Price
+                  </th>
+                  <th className="text-right py-2 text-xs text-zinc-500 font-medium">
+                    Total
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -102,17 +147,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <tr key={item.id} className="border-b border-zinc-50">
                     <td className="py-3 flex items-center gap-2">
                       <div className="relative h-9 w-9 rounded overflow-hidden shrink-0">
-                        <Image src={item.productImage} alt={item.productName} fill className="object-cover" />
+                        <Image
+                          src={item.productImage}
+                          alt={item.productName}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
                       <span className="text-zinc-800">{item.productName}</span>
                     </td>
                     <td className="py-3 text-zinc-500">
-                      {[item.color, item.size].filter(Boolean).join(" / ") || "N/A"}
+                      {[item.color, item.size].filter(Boolean).join(" / ") ||
+                        "N/A"}
                     </td>
-                    <td className="py-3 text-right text-zinc-700">{item.quantity}</td>
-                    <td className="py-3 text-right text-zinc-700">{formatCurrency(item.price, order.currency)}</td>
+                    <td className="py-3 text-right text-zinc-700">
+                      {item.quantity}
+                    </td>
+                    <td className="py-3 text-right text-zinc-700">
+                      {formatCurrency(item.price, order.currency)}
+                    </td>
                     <td className="py-3 text-right font-medium text-zinc-900">
-                      {formatCurrency(item.price * item.quantity, order.currency)}
+                      {formatCurrency(
+                        item.price * item.quantity,
+                        order.currency,
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -132,7 +190,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <span>{formatCurrency(order.total, order.currency)}</span>
               </div>
               <div className="flex justify-between text-zinc-500 text-xs pt-1">
-                <span>Payment: {order.paymentMethod?.toUpperCase() ?? "N/A"}</span>
+                <span>
+                  Payment: {order.paymentMethod?.toUpperCase() ?? "N/A"}
+                </span>
                 {order.paymentRef && <span>Ref: {order.paymentRef}</span>}
               </div>
             </div>
@@ -161,11 +221,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           {/* Status update */}
           <div className="bg-white border border-zinc-100 rounded-lg p-5 space-y-3">
             <h2 className="font-semibold text-zinc-900">Update Status</h2>
-            <Select value={newStatus || undefined} onValueChange={(v) => setNewStatus(v as OrderStatus)}>
-              <SelectTrigger><SelectValue placeholder="Select new status" /></SelectTrigger>
+            <Select
+              value={newStatus || undefined}
+              onValueChange={(v) => setNewStatus(v as OrderStatus)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select new status" />
+              </SelectTrigger>
               <SelectContent>
                 {ORDER_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</SelectItem>
+                  <SelectItem key={s} value={s}>
+                    {s.charAt(0) + s.slice(1).toLowerCase()}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -192,7 +259,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
                   <div className="pb-4">
                     <StatusBadge status={entry.status} />
-                    <p className="text-xs text-zinc-400 mt-1">{formatDateTime(entry.at)}</p>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      {formatDateTime(entry.at)}
+                    </p>
                     <p className="text-xs text-zinc-500">by {entry.by}</p>
                   </div>
                 </li>

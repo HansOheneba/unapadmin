@@ -1,10 +1,18 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getProducts, getProduct, updateProduct, deleteProduct, updateProductStock } from "@/lib/api/products";
+import {
+  getProducts,
+  getProduct,
+  updateProduct,
+  deleteProduct,
+  updateProductStock,
+} from "@/lib/api/products";
 import type { Product } from "@/types";
 
-export const useProducts = (params: { collectionId?: string; q?: string; page?: number } = {}) =>
+export const useProducts = (
+  params: { collectionId?: string; q?: string; page?: number } = {},
+) =>
   useQuery({
     queryKey: ["products", params],
     queryFn: () => getProducts(params),

@@ -13,11 +13,28 @@ const MOCK_PRODUCTS: Product[] = [
     collectionId: "boxers",
     stock: 120,
     lowStockThreshold: 20,
-    images: [{ id: "1", url: "/collections/boxers/boxersWhite.jpeg", isPrimary: true }],
+    images: [
+      { id: "1", url: "/collections/boxers/boxersWhite.jpeg", isPrimary: true },
+    ],
     colors: [
-      { id: "c1", name: "White", hex: "#FFFFFF", image: "/collections/boxers/boxersWhite.jpeg" },
-      { id: "c2", name: "Blue", hex: "#3B82F6", image: "/collections/boxers/boxersBlue.jpg" },
-      { id: "c3", name: "Brown", hex: "#92400E", image: "/collections/boxers/boxersBrown.jpeg" },
+      {
+        id: "c1",
+        name: "White",
+        hex: "#FFFFFF",
+        image: "/collections/boxers/boxersWhite.jpeg",
+      },
+      {
+        id: "c2",
+        name: "Blue",
+        hex: "#3B82F6",
+        image: "/collections/boxers/boxersBlue.jpg",
+      },
+      {
+        id: "c3",
+        name: "Brown",
+        hex: "#92400E",
+        image: "/collections/boxers/boxersBrown.jpeg",
+      },
     ],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -32,9 +49,20 @@ const MOCK_PRODUCTS: Product[] = [
     collectionId: "hoodies",
     stock: 8,
     lowStockThreshold: 10,
-    images: [{ id: "2", url: "/collections/hoodies/hoodieBlackMan.jpg", isPrimary: true }],
+    images: [
+      {
+        id: "2",
+        url: "/collections/hoodies/hoodieBlackMan.jpg",
+        isPrimary: true,
+      },
+    ],
     colors: [
-      { id: "c4", name: "Black", hex: "#000000", image: "/collections/hoodies/hoodieBlackMan.jpg" },
+      {
+        id: "c4",
+        name: "Black",
+        hex: "#000000",
+        image: "/collections/hoodies/hoodieBlackMan.jpg",
+      },
     ],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -49,10 +77,26 @@ const MOCK_PRODUCTS: Product[] = [
     collectionId: "headwear",
     stock: 5,
     lowStockThreshold: 10,
-    images: [{ id: "3", url: "/collections/headwear/boldSocietyCapBlack.jpg", isPrimary: true }],
+    images: [
+      {
+        id: "3",
+        url: "/collections/headwear/boldSocietyCapBlack.jpg",
+        isPrimary: true,
+      },
+    ],
     colors: [
-      { id: "c5", name: "Black", hex: "#000000", image: "/collections/headwear/boldSocietyCapBlack.jpg" },
-      { id: "c6", name: "Cream", hex: "#F5F5DC", image: "/collections/headwear/boldSocietyCapCream.jpg" },
+      {
+        id: "c5",
+        name: "Black",
+        hex: "#000000",
+        image: "/collections/headwear/boldSocietyCapBlack.jpg",
+      },
+      {
+        id: "c6",
+        name: "Cream",
+        hex: "#F5F5DC",
+        image: "/collections/headwear/boldSocietyCapCream.jpg",
+      },
     ],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -67,7 +111,13 @@ const MOCK_PRODUCTS: Product[] = [
     collectionId: "sunglasses",
     stock: 22,
     lowStockThreshold: 15,
-    images: [{ id: "4", url: "/collections/glases/outlawGlasses1.jpg", isPrimary: true }],
+    images: [
+      {
+        id: "4",
+        url: "/collections/glases/outlawGlasses1.jpg",
+        isPrimary: true,
+      },
+    ],
     colors: [],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -82,7 +132,9 @@ const MOCK_PRODUCTS: Product[] = [
     collectionId: "tracks",
     stock: 3,
     lowStockThreshold: 10,
-    images: [{ id: "5", url: "/collections/tracks/track.jpg", isPrimary: true }],
+    images: [
+      { id: "5", url: "/collections/tracks/track.jpg", isPrimary: true },
+    ],
     colors: [],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -96,7 +148,8 @@ export const getProducts = (params: {
 }): Promise<Paginated<Product>> => {
   // TODO: remove mock
   let data = MOCK_PRODUCTS;
-  if (params.collectionId) data = data.filter((p) => p.collectionId === params.collectionId);
+  if (params.collectionId)
+    data = data.filter((p) => p.collectionId === params.collectionId);
   if (params.q) {
     const q = params.q.toLowerCase();
     data = data.filter((p) => p.name.toLowerCase().includes(q));
@@ -112,14 +165,25 @@ export const getProduct = (id: string): Promise<Product> => {
   return Promise.resolve(product);
 };
 
-export const createProduct = (body: Omit<Product, "id" | "createdAt" | "updatedAt">) =>
-  apiFetch<Product>("/products", { method: "POST", body: JSON.stringify(body) });
+export const createProduct = (
+  body: Omit<Product, "id" | "createdAt" | "updatedAt">,
+) =>
+  apiFetch<Product>("/products", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
 export const updateProduct = (id: string, body: Partial<Product>) =>
-  apiFetch<Product>(`/products/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  apiFetch<Product>(`/products/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 
 export const deleteProduct = (id: string) =>
   apiFetch<void>(`/products/${id}`, { method: "DELETE" });
 
 export const updateProductStock = (id: string, stock: number) =>
-  apiFetch<void>(`/products/${id}/stock`, { method: "PATCH", body: JSON.stringify({ stock }) });
+  apiFetch<void>(`/products/${id}/stock`, {
+    method: "PATCH",
+    body: JSON.stringify({ stock }),
+  });

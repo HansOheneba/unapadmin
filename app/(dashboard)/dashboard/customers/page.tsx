@@ -6,7 +6,14 @@ import { Search } from "lucide-react";
 import { useCustomers } from "@/lib/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function CustomersPage() {
@@ -45,21 +52,37 @@ export default function CustomersPage() {
               ? Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 7 }).map((_, j) => (
-                      <TableCell key={j}><div className="h-4 bg-zinc-100 rounded animate-pulse" /></TableCell>
+                      <TableCell key={j}>
+                        <div className="h-4 bg-zinc-100 rounded animate-pulse" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               : data?.data.map((customer) => (
                   <TableRow key={customer.id}>
-                    <TableCell className="font-medium text-zinc-900">{customer.name ?? "N/A"}</TableCell>
-                    <TableCell className="text-zinc-600">{customer.email}</TableCell>
-                    <TableCell className="text-zinc-600">{customer.country ?? "N/A"}</TableCell>
-                    <TableCell className="text-zinc-700">{customer.totalOrders}</TableCell>
-                    <TableCell className="text-zinc-900 font-medium">{formatCurrency(customer.totalSpent)}</TableCell>
-                    <TableCell className="text-zinc-500">{formatDate(customer.createdAt)}</TableCell>
+                    <TableCell className="font-medium text-zinc-900">
+                      {customer.name ?? "N/A"}
+                    </TableCell>
+                    <TableCell className="text-zinc-600">
+                      {customer.email}
+                    </TableCell>
+                    <TableCell className="text-zinc-600">
+                      {customer.country ?? "N/A"}
+                    </TableCell>
+                    <TableCell className="text-zinc-700">
+                      {customer.totalOrders}
+                    </TableCell>
+                    <TableCell className="text-zinc-900 font-medium">
+                      {formatCurrency(customer.totalSpent)}
+                    </TableCell>
+                    <TableCell className="text-zinc-500">
+                      {formatDate(customer.createdAt)}
+                    </TableCell>
                     <TableCell>
                       <Link href={`/dashboard/customers/${customer.id}`}>
-                        <Button variant="ghost" size="sm">View</Button>
+                        <Button variant="ghost" size="sm">
+                          View
+                        </Button>
                       </Link>
                     </TableCell>
                   </TableRow>

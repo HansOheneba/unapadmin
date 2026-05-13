@@ -42,7 +42,12 @@ export function CsvExportButton({
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleExport} disabled={loading}>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleExport}
+      disabled={loading}
+    >
       <Download className="h-4 w-4 mr-1" />
       {loading ? "Exporting..." : "Export CSV"}
     </Button>

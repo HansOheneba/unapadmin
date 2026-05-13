@@ -12,7 +12,9 @@ export const MOCK_PRODUCTS_WITH_STOCK: Product[] = [
     collectionId: "boxers",
     stock: 120,
     lowStockThreshold: 20,
-    images: [{ id: "1", url: "/collections/boxers/boxersWhite.jpeg", isPrimary: true }],
+    images: [
+      { id: "1", url: "/collections/boxers/boxersWhite.jpeg", isPrimary: true },
+    ],
     colors: [],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -27,7 +29,13 @@ export const MOCK_PRODUCTS_WITH_STOCK: Product[] = [
     collectionId: "hoodies",
     stock: 8,
     lowStockThreshold: 10,
-    images: [{ id: "2", url: "/collections/hoodies/hoodieBlackMan.jpg", isPrimary: true }],
+    images: [
+      {
+        id: "2",
+        url: "/collections/hoodies/hoodieBlackMan.jpg",
+        isPrimary: true,
+      },
+    ],
     colors: [],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -42,7 +50,13 @@ export const MOCK_PRODUCTS_WITH_STOCK: Product[] = [
     collectionId: "headwear",
     stock: 5,
     lowStockThreshold: 10,
-    images: [{ id: "3", url: "/collections/headwear/boldSocietyCapBlack.jpg", isPrimary: true }],
+    images: [
+      {
+        id: "3",
+        url: "/collections/headwear/boldSocietyCapBlack.jpg",
+        isPrimary: true,
+      },
+    ],
     colors: [],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -57,7 +71,13 @@ export const MOCK_PRODUCTS_WITH_STOCK: Product[] = [
     collectionId: "sunglasses",
     stock: 22,
     lowStockThreshold: 15,
-    images: [{ id: "4", url: "/collections/glases/outlawGlasses1.jpg", isPrimary: true }],
+    images: [
+      {
+        id: "4",
+        url: "/collections/glases/outlawGlasses1.jpg",
+        isPrimary: true,
+      },
+    ],
     colors: [],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
@@ -72,7 +92,9 @@ export const MOCK_PRODUCTS_WITH_STOCK: Product[] = [
     collectionId: "tracks",
     stock: 3,
     lowStockThreshold: 10,
-    images: [{ id: "5", url: "/collections/tracks/track.jpg", isPrimary: true }],
+    images: [
+      { id: "5", url: "/collections/tracks/track.jpg", isPrimary: true },
+    ],
     colors: [],
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",

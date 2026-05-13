@@ -4,14 +4,33 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Trash2, PlusCircle } from "lucide-react";
-import { useSettings, useUpdateSettings, useAdminUsers, useCreateAdminUser, useDeleteAdminUser } from "@/lib/hooks";
+import {
+  useSettings,
+  useUpdateSettings,
+  useAdminUsers,
+  useCreateAdminUser,
+  useDeleteAdminUser,
+} from "@/lib/hooks";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { can } from "@/lib/permissions";
 import type { AdminRole } from "@/types";
@@ -27,8 +46,17 @@ export default function SettingsPage() {
   const createAdmin = useCreateAdminUser();
   const deleteAdmin = useDeleteAdminUser();
 
-  const [settingsForm, setSettingsForm] = useState({ storeName: "", contactEmail: "", currency: "", defaultCountry: "" });
-  const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "EDITOR" as AdminRole });
+  const [settingsForm, setSettingsForm] = useState({
+    storeName: "",
+    contactEmail: "",
+    currency: "",
+    defaultCountry: "",
+  });
+  const [inviteForm, setInviteForm] = useState({
+    name: "",
+    email: "",
+    role: "EDITOR" as AdminRole,
+  });
   const [showInvite, setShowInvite] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -59,7 +87,10 @@ export default function SettingsPage() {
   const handleDelete = () => {
     if (!deleteTarget) return;
     deleteAdmin.mutate(deleteTarget, {
-      onSuccess: () => { toast.success("Admin user removed"); setDeleteTarget(null); },
+      onSuccess: () => {
+        toast.success("Admin user removed");
+        setDeleteTarget(null);
+      },
       onError: () => toast.error("Failed to remove user"),
     });
   };
@@ -75,21 +106,61 @@ export default function SettingsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="storeName">Store Name</Label>
-              <Input id="storeName" value={settingsForm.storeName} onChange={(e) => setSettingsForm({ ...settingsForm, storeName: e.target.value })} disabled={!isSuperAdmin} />
+              <Input
+                id="storeName"
+                value={settingsForm.storeName}
+                onChange={(e) =>
+                  setSettingsForm({
+                    ...settingsForm,
+                    storeName: e.target.value,
+                  })
+                }
+                disabled={!isSuperAdmin}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="contactEmail">Contact Email</Label>
-              <Input id="contactEmail" type="email" value={settingsForm.contactEmail} onChange={(e) => setSettingsForm({ ...settingsForm, contactEmail: e.target.value })} disabled={!isSuperAdmin} />
+              <Input
+                id="contactEmail"
+                type="email"
+                value={settingsForm.contactEmail}
+                onChange={(e) =>
+                  setSettingsForm({
+                    ...settingsForm,
+                    contactEmail: e.target.value,
+                  })
+                }
+                disabled={!isSuperAdmin}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="currency">Currency</Label>
-              <Input id="currency" value={settingsForm.currency} onChange={(e) => setSettingsForm({ ...settingsForm, currency: e.target.value })} placeholder="USD" disabled={!isSuperAdmin} />
+              <Input
+                id="currency"
+                value={settingsForm.currency}
+                onChange={(e) =>
+                  setSettingsForm({ ...settingsForm, currency: e.target.value })
+                }
+                placeholder="USD"
+                disabled={!isSuperAdmin}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="country">Default Country</Label>
-              <Input id="country" value={settingsForm.defaultCountry} onChange={(e) => setSettingsForm({ ...settingsForm, defaultCountry: e.target.value })} placeholder="GH" disabled={!isSuperAdmin} />
+              <Input
+                id="country"
+                value={settingsForm.defaultCountry}
+                onChange={(e) =>
+                  setSettingsForm({
+                    ...settingsForm,
+                    defaultCountry: e.target.value,
+                  })
+                }
+                placeholder="GH"
+                disabled={!isSuperAdmin}
+              />
             </div>
           </div>
           {isSuperAdmin && (
@@ -112,19 +183,44 @@ export default function SettingsPage() {
           </div>
 
           {showInvite && (
-            <form onSubmit={handleInvite} className="p-5 border-b border-zinc-100 bg-zinc-50 grid grid-cols-3 gap-4">
+            <form
+              onSubmit={handleInvite}
+              className="p-5 border-b border-zinc-100 bg-zinc-50 grid grid-cols-3 gap-4"
+            >
               <div className="space-y-1.5">
                 <Label htmlFor="inviteName">Name</Label>
-                <Input id="inviteName" value={inviteForm.name} onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })} required />
+                <Input
+                  id="inviteName"
+                  value={inviteForm.name}
+                  onChange={(e) =>
+                    setInviteForm({ ...inviteForm, name: e.target.value })
+                  }
+                  required
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="inviteEmail">Email</Label>
-                <Input id="inviteEmail" type="email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} required />
+                <Input
+                  id="inviteEmail"
+                  type="email"
+                  value={inviteForm.email}
+                  onChange={(e) =>
+                    setInviteForm({ ...inviteForm, email: e.target.value })
+                  }
+                  required
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Role</Label>
-                <Select value={inviteForm.role} onValueChange={(v) => setInviteForm({ ...inviteForm, role: v as AdminRole })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={inviteForm.role}
+                  onValueChange={(v) =>
+                    setInviteForm({ ...inviteForm, role: v as AdminRole })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
                     <SelectItem value="MANAGER">Manager</SelectItem>
@@ -134,8 +230,16 @@ export default function SettingsPage() {
                 </Select>
               </div>
               <div className="col-span-3 flex gap-3">
-                <Button type="submit" disabled={createAdmin.isPending}>{createAdmin.isPending ? "Creating..." : "Create User"}</Button>
-                <Button type="button" variant="outline" onClick={() => setShowInvite(false)}>Cancel</Button>
+                <Button type="submit" disabled={createAdmin.isPending}>
+                  {createAdmin.isPending ? "Creating..." : "Create User"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowInvite(false)}
+                >
+                  Cancel
+                </Button>
               </div>
             </form>
           )}
@@ -155,16 +259,26 @@ export default function SettingsPage() {
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
                       {Array.from({ length: 5 }).map((_, j) => (
-                        <TableCell key={j}><div className="h-4 bg-zinc-100 rounded animate-pulse" /></TableCell>
+                        <TableCell key={j}>
+                          <div className="h-4 bg-zinc-100 rounded animate-pulse" />
+                        </TableCell>
                       ))}
                     </TableRow>
                   ))
                 : admins.map((admin) => (
                     <TableRow key={admin.id}>
-                      <TableCell className="font-medium text-zinc-900">{admin.name}</TableCell>
-                      <TableCell className="text-zinc-600">{admin.email}</TableCell>
-                      <TableCell><Badge variant="default">{admin.role}</Badge></TableCell>
-                      <TableCell className="text-zinc-500">{formatDate(admin.createdAt)}</TableCell>
+                      <TableCell className="font-medium text-zinc-900">
+                        {admin.name}
+                      </TableCell>
+                      <TableCell className="text-zinc-600">
+                        {admin.email}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="default">{admin.role}</Badge>
+                      </TableCell>
+                      <TableCell className="text-zinc-500">
+                        {formatDate(admin.createdAt)}
+                      </TableCell>
                       <TableCell>
                         <button
                           onClick={() => setDeleteTarget(admin.id)}

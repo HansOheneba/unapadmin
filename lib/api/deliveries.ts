@@ -36,7 +36,11 @@ const MOCK_DELIVERIES: Delivery[] = [
     id: "del-2",
     orderId: "order-1",
     orderNumber: "UNP-00001",
-    customer: { id: "cust-1", name: "Kwame Mensah", email: "kwame@example.com" },
+    customer: {
+      id: "cust-1",
+      name: "Kwame Mensah",
+      email: "kwame@example.com",
+    },
     carrier: "GhanaPost",
     trackingNumber: "GP987654321",
     trackingUrl: null,

@@ -1,10 +1,17 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getOrders, getOrder, updateOrderStatus, updateOrderNotes } from "@/lib/api/orders";
+import {
+  getOrders,
+  getOrder,
+  updateOrderStatus,
+  updateOrderNotes,
+} from "@/lib/api/orders";
 import type { OrderStatus } from "@/types";
 
-export const useOrders = (params: { status?: OrderStatus; q?: string; page?: number } = {}) =>
+export const useOrders = (
+  params: { status?: OrderStatus; q?: string; page?: number } = {},
+) =>
   useQuery({
     queryKey: ["orders", params],
     queryFn: () => getOrders(params),

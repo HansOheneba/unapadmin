@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -43,7 +48,11 @@ interface ImagePickerProps {
   onSelect: (url: string) => void;
 }
 
-export function ImagePicker({ open, onOpenChange, onSelect }: ImagePickerProps) {
+export function ImagePicker({
+  open,
+  onOpenChange,
+  onSelect,
+}: ImagePickerProps) {
   const [pasteUrl, setPasteUrl] = useState("");
 
   const handleSelect = (url: string) => {
@@ -91,7 +100,12 @@ export function ImagePicker({ open, onOpenChange, onSelect }: ImagePickerProps) 
               />
               {pasteUrl && (
                 <div className="relative h-40 rounded overflow-hidden border border-zinc-100">
-                  <Image src={pasteUrl} alt="Preview" fill className="object-contain" />
+                  <Image
+                    src={pasteUrl}
+                    alt="Preview"
+                    fill
+                    className="object-contain"
+                  />
                 </div>
               )}
               <Button

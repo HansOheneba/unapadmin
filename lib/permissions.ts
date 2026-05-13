@@ -21,14 +21,7 @@ const permissions: Record<AdminRole, Action[]> = {
     "manage_settings",
     "export",
   ],
-  MANAGER: [
-    "view",
-    "create",
-    "edit",
-    "delete",
-    "manage_affiliates",
-    "export",
-  ],
+  MANAGER: ["view", "create", "edit", "delete", "manage_affiliates", "export"],
   EDITOR: ["view", "create", "edit", "export"],
   VIEWER: ["view"],
 };

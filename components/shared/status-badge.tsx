@@ -7,7 +7,19 @@ type Status = OrderStatus | ReturnStatus | DeliveryStatus;
 
 const statusConfig: Record<
   Status,
-  { label: string; variant: "yellow" | "blue" | "indigo" | "purple" | "green" | "red" | "zinc" | "orange" | "default" }
+  {
+    label: string;
+    variant:
+      | "yellow"
+      | "blue"
+      | "indigo"
+      | "purple"
+      | "green"
+      | "red"
+      | "zinc"
+      | "orange"
+      | "default";
+  }
 > = {
   // Order statuses
   PENDING: { label: "Pending", variant: "yellow" },
@@ -31,6 +43,9 @@ const statusConfig: Record<
 };
 
 export function StatusBadge({ status }: { status: Status }) {
-  const config = statusConfig[status] ?? { label: status, variant: "default" as const };
+  const config = statusConfig[status] ?? {
+    label: status,
+    variant: "default" as const,
+  };
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }
