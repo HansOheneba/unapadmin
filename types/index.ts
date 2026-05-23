@@ -130,23 +130,14 @@ export type ColorVariant = {
   sizes: SizeStock[];
 };
 
-export type ProductCategory =
-  | "boxers"
-  | "tops"
-  | "tracks"
-  | "headwear"
-  | "sunglasses"
-  | "hoodies"
-  | "lingerie";
-
 export type Product = {
   id: string;
   slug: string;
   name: string;
   description: string;
   price: number;
-  compareAtPrice: number | null;
-  category: ProductCategory;
+  discountType: "fixed" | "percentage" | null;
+  discountValue: number | null;
   collectionId: string;
   variants: ColorVariant[];
   details: string[];

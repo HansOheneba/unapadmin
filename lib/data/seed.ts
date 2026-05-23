@@ -108,11 +108,11 @@ export const seedCollections: Collection[] = [
 ];
 
 // ───────────────────────────── Products ─────────────────────────────
-const makeSizes = (counts: Record<string, number>) =>
-  Object.entries(counts).map(([size, stock]) => ({
+const makeSizes = (counts: Record<string, number>, skus: string[]) =>
+  Object.entries(counts).map(([size, stock], i) => ({
     size,
     stock,
-    sku: `SKU-${size}-${Math.floor(Math.random() * 9000 + 1000)}`,
+    sku: skus[i] ?? "",
   }));
 
 export const seedProducts: Product[] = [
@@ -123,8 +123,8 @@ export const seedProducts: Product[] = [
     description:
       "Soft brushed cotton boxers cut for all-day wear. Reinforced waistband, no-roll fit.",
     price: 120,
-    compareAtPrice: 150,
-    category: "boxers",
+    discountType: "fixed" as const,
+    discountValue: 30,
     collectionId: "boxers",
     variants: [
       {
@@ -135,7 +135,13 @@ export const seedProducts: Product[] = [
           "/collections/boxers/boxersBlackWhite.jpeg",
           "/collections/boxers/boxersBlackWhite2.jpeg",
         ],
-        sizes: makeSizes({ S: 12, M: 24, L: 18, XL: 2, XXL: 0 }),
+        sizes: makeSizes({ S: 12, M: 24, L: 18, XL: 2, XXL: 0 }, [
+          "SKU-BOXR-1",
+          "SKU-BOXR-2",
+          "SKU-BOXR-3",
+          "SKU-BOXR-4",
+          "SKU-BOXR-5",
+        ]),
       },
       {
         id: "boxers-1-blue",
@@ -145,7 +151,12 @@ export const seedProducts: Product[] = [
           "/collections/boxers/boxersBlue.jpg",
           "/collections/boxers/boxersBlue2.jpg",
         ],
-        sizes: makeSizes({ S: 6, M: 14, L: 9, XL: 5 }),
+        sizes: makeSizes({ S: 6, M: 14, L: 9, XL: 5 }, [
+          "SKU-BOXR-6",
+          "SKU-BOXR-7",
+          "SKU-BOXR-8",
+          "SKU-BOXR-9",
+        ]),
       },
       {
         id: "boxers-1-cream",
@@ -155,7 +166,12 @@ export const seedProducts: Product[] = [
           "/collections/boxers/boxersCream.jpeg",
           "/collections/boxers/boxersCream2.jpeg",
         ],
-        sizes: makeSizes({ S: 1, M: 3, L: 2, XL: 0 }),
+        sizes: makeSizes({ S: 1, M: 3, L: 2, XL: 0 }, [
+          "SKU-BOXR-10",
+          "SKU-BOXR-11",
+          "SKU-BOXR-12",
+          "SKU-BOXR-13",
+        ]),
       },
     ],
     details: [
@@ -180,8 +196,8 @@ export const seedProducts: Product[] = [
     description:
       "Six-panel structured cap. Curved brim. Embroidered crest at the front.",
     price: 220,
-    compareAtPrice: null,
-    category: "headwear",
+    discountType: null,
+    discountValue: null,
     collectionId: "headwear",
     variants: [
       {
@@ -192,21 +208,21 @@ export const seedProducts: Product[] = [
           "/collections/headwear/boldSocietyCapBlack.jpg",
           "/collections/headwear/boldSocietyCapBlack2.jpg",
         ],
-        sizes: makeSizes({ "One Size": 22 }),
+        sizes: makeSizes({ "One Size": 22 }, ["SKU-CAP-1"]),
       },
       {
         id: "headwear-1-cream",
         colorName: "Bone Cream",
         colorHex: "#ede5d2",
         images: ["/collections/headwear/boldSocietyCapCream.jpg"],
-        sizes: makeSizes({ "One Size": 8 }),
+        sizes: makeSizes({ "One Size": 8 }, ["SKU-CAP-2"]),
       },
       {
         id: "headwear-1-red",
         colorName: "Signal Red",
         colorHex: "#b91c1c",
         images: ["/collections/headwear/boldSocietyCapRed.jpg"],
-        sizes: makeSizes({ "One Size": 3 }),
+        sizes: makeSizes({ "One Size": 3 }, ["SKU-CAP-3"]),
       },
     ],
     details: ["Wool-blend body", "Adjustable strap-back", "Embroidered crest"],
@@ -227,8 +243,8 @@ export const seedProducts: Product[] = [
     description:
       "Wide-frame UV400 sunglasses with smoke-tint lenses. Built for cover.",
     price: 380,
-    compareAtPrice: null,
-    category: "sunglasses",
+    discountType: null,
+    discountValue: null,
     collectionId: "sunglasses",
     variants: [
       {
@@ -240,7 +256,7 @@ export const seedProducts: Product[] = [
           "/collections/glases/outlawGlasses3.jpg",
           "/collections/glases/outlawGlasses5.jpg",
         ],
-        sizes: makeSizes({ "One Size": 9 }),
+        sizes: makeSizes({ "One Size": 9 }, ["SKU-SGLS-1"]),
       },
     ],
     details: ["UV400 lenses", "Acetate frame", "Carrying pouch included"],
@@ -260,8 +276,8 @@ export const seedProducts: Product[] = [
     name: "Shadow Hoodie",
     description: "Heavyweight 400gsm cotton hoodie with kangaroo pocket.",
     price: 650,
-    compareAtPrice: 750,
-    category: "hoodies",
+    discountType: "percentage" as const,
+    discountValue: 15,
     collectionId: "hoodies",
     variants: [
       {
@@ -269,7 +285,13 @@ export const seedProducts: Product[] = [
         colorName: "Onyx Black",
         colorHex: "#0a0a0a",
         images: ["/collections/hoodies/hoodieBlackMan.jpg"],
-        sizes: makeSizes({ S: 8, M: 12, L: 9, XL: 4, XXL: 2 }),
+        sizes: makeSizes({ S: 8, M: 12, L: 9, XL: 4, XXL: 2 }, [
+          "SKU-HOOD-1",
+          "SKU-HOOD-2",
+          "SKU-HOOD-3",
+          "SKU-HOOD-4",
+          "SKU-HOOD-5",
+        ]),
       },
     ],
     details: [
@@ -293,8 +315,8 @@ export const seedProducts: Product[] = [
     name: "Movement Track Pant",
     description: "Tapered fit track pant with side stripe.",
     price: 480,
-    compareAtPrice: null,
-    category: "tracks",
+    discountType: null,
+    discountValue: null,
     collectionId: "tracks",
     variants: [
       {
@@ -305,7 +327,12 @@ export const seedProducts: Product[] = [
           "/collections/tracks/track.jpg",
           "/collections/tracks/track2.jpg",
         ],
-        sizes: makeSizes({ S: 5, M: 9, L: 7, XL: 3 }),
+        sizes: makeSizes({ S: 5, M: 9, L: 7, XL: 3 }, [
+          "SKU-TRCK-1",
+          "SKU-TRCK-2",
+          "SKU-TRCK-3",
+          "SKU-TRCK-4",
+        ]),
       },
     ],
     details: ["Polyester blend", "Elastic waist", "Zip pockets"],
@@ -325,8 +352,8 @@ export const seedProducts: Product[] = [
     name: "Statement Tee",
     description: "240gsm boxy tee with chest print.",
     price: 180,
-    compareAtPrice: null,
-    category: "tops",
+    discountType: null,
+    discountValue: null,
     collectionId: "tops",
     variants: [
       {
@@ -334,7 +361,12 @@ export const seedProducts: Product[] = [
         colorName: "Multi",
         colorHex: "#888888",
         images: ["/collections/men_shirt/shirtCollection.jpeg"],
-        sizes: makeSizes({ S: 14, M: 22, L: 16, XL: 8 }),
+        sizes: makeSizes({ S: 14, M: 22, L: 16, XL: 8 }, [
+          "SKU-TEE-1",
+          "SKU-TEE-2",
+          "SKU-TEE-3",
+          "SKU-TEE-4",
+        ]),
       },
     ],
     details: ["240gsm cotton", "Boxy fit", "Screen printed"],
@@ -354,8 +386,8 @@ export const seedProducts: Product[] = [
     name: "Intimate Set",
     description: "Lace bralette and matching brief set.",
     price: 350,
-    compareAtPrice: null,
-    category: "lingerie",
+    discountType: null,
+    discountValue: null,
     collectionId: "lingerie",
     variants: [
       {
@@ -363,7 +395,11 @@ export const seedProducts: Product[] = [
         colorName: "Blush",
         colorHex: "#e7b4a0",
         images: ["/collections/female_undergarments/lingerie.jpeg"],
-        sizes: makeSizes({ S: 4, M: 6, L: 3 }),
+        sizes: makeSizes({ S: 4, M: 6, L: 3 }, [
+          "SKU-LING-1",
+          "SKU-LING-2",
+          "SKU-LING-3",
+        ]),
       },
     ],
     details: ["Stretch lace", "Adjustable straps"],

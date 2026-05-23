@@ -28,24 +28,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ImagePicker } from "@/components/shared/image-picker";
-import type {
-  ColorVariant,
-  Product,
-  ProductCategory,
-  SizeStock,
-} from "@/types";
-
-const CATEGORIES: ProductCategory[] = [
-  "boxers",
-  "tops",
-  "tracks",
-  "headwear",
-  "sunglasses",
-  "hoodies",
-  "lingerie",
-];
+import type { ColorVariant, Product, SizeStock } from "@/types";
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"];
+
+const toSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const emptyProduct = (): Product => ({
   id: `prod_${Date.now().toString(36)}`,
@@ -53,8 +44,8 @@ const emptyProduct = (): Product => ({
   name: "",
   description: "",
   price: 0,
-  compareAtPrice: null,
-  category: "boxers",
+  discountType: null,
+  discountValue: null,
   collectionId: "boxers",
   variants: [],
   details: [""],
@@ -71,18 +62,25 @@ const emptyProduct = (): Product => ({
 
 export function ProductForm({ initial }: { initial?: Product }) {
   const router = useRouter();
+  const products = useAdminStore((s) => s.products);
   const collections = useAdminStore((s) => s.collections);
   const upsertProduct = useAdminStore((s) => s.upsertProduct);
   const deleteProduct = useAdminStore((s) => s.deleteProduct);
 
   const [draft, setDraft] = React.useState<Product>(initial ?? emptyProduct());
+  const [slugManuallyEdited, setSlugManuallyEdited] = React.useState(!!initial);
 
   // Reset draft when editing a different product (e.g. navigating between edit pages).
   const [prevId, setPrevId] = React.useState(initial?.id);
   if (initial && prevId !== initial.id) {
     setPrevId(initial.id);
     setDraft(initial);
+    setSlugManuallyEdited(true);
   }
+
+  const slugConflict =
+    draft.slug !== "" &&
+    products.some((p) => p.slug === draft.slug && p.id !== draft.id);
 
   const update = <K extends keyof Product>(key: K, value: Product[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -97,7 +95,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
       sizes: DEFAULT_SIZES.map((s) => ({
         size: s,
         stock: 0,
-        sku: `${draft.slug || "sku"}-${s}`,
+        sku: "", // assigned by the backend on save
       })),
     };
     update("variants", [...draft.variants, v]);
@@ -139,6 +137,10 @@ export function ProductForm({ initial }: { initial?: Product }) {
   const handleSave = () => {
     if (!draft.name || !draft.slug) {
       toast.error("Name and slug are required.");
+      return;
+    }
+    if (slugConflict) {
+      toast.error("Slug is already used by another product.");
       return;
     }
     upsertProduct(draft);
@@ -199,16 +201,35 @@ export function ProductForm({ initial }: { initial?: Product }) {
                   <Label>Name</Label>
                   <Input
                     value={draft.name}
-                    onChange={(e) => update("name", e.target.value)}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      update("name", name);
+                      if (!slugManuallyEdited) {
+                        update("slug", toSlug(name));
+                      }
+                    }}
                   />
                 </div>
                 <div>
                   <Label>Slug</Label>
                   <Input
                     value={draft.slug}
-                    onChange={(e) => update("slug", e.target.value)}
+                    onChange={(e) => {
+                      setSlugManuallyEdited(true);
+                      update("slug", e.target.value);
+                    }}
                     placeholder="signature-boxers"
+                    className={
+                      slugConflict
+                        ? "border-amber-400 focus-visible:ring-amber-400"
+                        : ""
+                    }
                   />
+                  {slugConflict && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      This slug is already used by another product.
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
@@ -221,48 +242,72 @@ export function ProductForm({ initial }: { initial?: Product }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Price</Label>
+                  <Label>Price (GHS)</Label>
                   <Input
                     type="number"
                     value={draft.price}
                     onChange={(e) => update("price", Number(e.target.value))}
                   />
                 </div>
-                <div>
-                  <Label>Compare-at price</Label>
-                  <Input
-                    type="number"
-                    value={draft.compareAtPrice ?? ""}
-                    onChange={(e) =>
-                      update(
-                        "compareAtPrice",
-                        e.target.value ? Number(e.target.value) : null,
-                      )
-                    }
-                  />
-                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Category</Label>
+              <div className="space-y-2">
+                <Label>Discount</Label>
+                <div className="grid grid-cols-2 gap-3">
                   <Select
-                    value={draft.category}
-                    onValueChange={(v) =>
-                      update("category", v as ProductCategory)
-                    }
+                    value={draft.discountType ?? "none"}
+                    onValueChange={(v) => {
+                      if (v === "none") {
+                        update("discountType", null);
+                        update("discountValue", null);
+                      } else {
+                        update("discountType", v as "fixed" | "percentage");
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {CATEGORIES.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="none">No discount</SelectItem>
+                      <SelectItem value="fixed">Fixed amount off</SelectItem>
+                      <SelectItem value="percentage">Percentage off</SelectItem>
                     </SelectContent>
                   </Select>
+                  {draft.discountType && (
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500 pointer-events-none select-none">
+                        {draft.discountType === "percentage" ? "%" : "GHS"}
+                      </span>
+                      <Input
+                        type="number"
+                        min={0}
+                        className={
+                          draft.discountType === "percentage" ? "pl-8" : "pl-12"
+                        }
+                        value={draft.discountValue ?? ""}
+                        onChange={(e) =>
+                          update(
+                            "discountValue",
+                            e.target.value === ""
+                              ? null
+                              : Number(e.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
+                {draft.discountType &&
+                  draft.discountValue &&
+                  draft.discountValue > 0 && (
+                    <p className="text-xs text-zinc-500">
+                      {draft.discountType === "percentage"
+                        ? `Customer pays GHS ${(draft.price * (1 - draft.discountValue / 100)).toFixed(2)}`
+                        : `Customer pays GHS ${(draft.price - draft.discountValue).toFixed(2)}`}
+                    </p>
+                  )}
+              </div>
+              <div className="grid grid-cols-1 gap-3">
                 <div>
                   <Label>Collection</Label>
                   <Select
@@ -301,127 +346,163 @@ export function ProductForm({ initial }: { initial?: Product }) {
                   No variants yet. Add at least one color.
                 </p>
               )}
-              {draft.variants.map((v, idx) => (
-                <Card key={v.id} className="bg-zinc-50/50">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={v.colorName}
-                        onChange={(e) =>
-                          updateVariant(idx, { colorName: e.target.value })
-                        }
-                        placeholder="Color name"
-                        className="flex-1"
-                      />
-                      <Input
-                        type="color"
-                        value={v.colorHex}
-                        onChange={(e) =>
-                          updateVariant(idx, { colorHex: e.target.value })
-                        }
-                        className="w-16 p-1 h-9"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeVariant(idx)}
-                        className="text-rose-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div>
-                      <Label>Images</Label>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {v.images.map((img, i) => (
-                          <div
-                            key={i}
-                            className="relative h-16 w-16 rounded overflow-hidden bg-white border border-zinc-200 group"
-                          >
-                            <Image
-                              src={img}
-                              alt=""
-                              fill
-                              sizes="64px"
-                              className="object-cover"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateVariant(idx, {
-                                  images: v.images.filter((_, k) => k !== i),
-                                })
-                              }
-                              className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                        <ImagePicker
-                          onSelect={(url) =>
-                            updateVariant(idx, { images: [...v.images, url] })
+              {draft.variants.map((v, idx) => {
+                const isOneSize =
+                  v.sizes.length === 1 &&
+                  v.sizes[0].size.toLowerCase().includes("one");
+                const isOnlyVariant = draft.variants.length === 1;
+                return (
+                  <Card key={v.id} className="bg-zinc-50/50">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={v.colorName}
+                          onChange={(e) =>
+                            updateVariant(idx, { colorName: e.target.value })
                           }
+                          placeholder="Color name"
+                          className="flex-1"
                         />
+                        <Input
+                          type="color"
+                          value={v.colorHex}
+                          onChange={(e) =>
+                            updateVariant(idx, { colorHex: e.target.value })
+                          }
+                          className="w-16 p-1 h-9"
+                        />
+                        {isOnlyVariant ? (
+                          <span className="shrink-0 text-xs text-zinc-400 px-2">
+                            Only color
+                          </span>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeVariant(idx)}
+                            className="text-rose-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                    </div>
 
-                    <div>
-                      <Label>Sizes & stock</Label>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Size</TableHead>
-                            <TableHead>SKU</TableHead>
-                            <TableHead className="text-right">Stock</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {v.sizes.map((s, sIdx) => (
-                            <TableRow key={`${v.id}-${sIdx}`}>
-                              <TableCell className="w-16">
-                                <Input
-                                  value={s.size}
-                                  onChange={(e) =>
-                                    updateSize(idx, sIdx, {
-                                      size: e.target.value,
-                                    })
-                                  }
-                                  className="h-8 text-xs"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={s.sku}
-                                  onChange={(e) =>
-                                    updateSize(idx, sIdx, {
-                                      sku: e.target.value,
-                                    })
-                                  }
-                                  className="h-8 text-xs font-mono"
-                                />
-                              </TableCell>
-                              <TableCell className="text-right w-24">
-                                <Input
-                                  type="number"
-                                  value={s.stock}
-                                  onChange={(e) =>
-                                    updateSize(idx, sIdx, {
-                                      stock: Number(e.target.value),
-                                    })
-                                  }
-                                  className="h-8 text-xs text-right"
-                                />
-                              </TableCell>
-                            </TableRow>
+                      <div>
+                        <Label>Images</Label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {v.images.map((img, i) => (
+                            <div
+                              key={i}
+                              className="relative h-16 w-16 rounded overflow-hidden bg-white border border-zinc-200 group"
+                            >
+                              <Image
+                                src={img}
+                                alt=""
+                                fill
+                                sizes="64px"
+                                className="object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateVariant(idx, {
+                                    images: v.images.filter((_, k) => k !== i),
+                                  })
+                                }
+                                className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
                           ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                          <ImagePicker
+                            onSelect={(url) =>
+                              updateVariant(idx, { images: [...v.images, url] })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label>Sizes &amp; stock</Label>
+                        {isOneSize ? (
+                          // One-size: flat row, no table needed
+                          <div className="mt-2 flex items-center gap-3">
+                            <span className="shrink-0 inline-flex items-center px-3 py-1.5 rounded-md bg-zinc-100 border border-zinc-200 text-xs font-medium text-zinc-600">
+                              One Size
+                            </span>
+                            <code className="flex-1 text-xs font-mono text-zinc-500">
+                              {v.sizes[0].sku || "SKU pending"}
+                            </code>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-xs text-zinc-500">
+                                Stock
+                              </span>
+                              <Input
+                                type="number"
+                                value={v.sizes[0].stock}
+                                onChange={(e) =>
+                                  updateSize(idx, 0, {
+                                    stock: Number(e.target.value),
+                                  })
+                                }
+                                className="w-20 h-8 text-xs text-right"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          // Multi-size: full table
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Size</TableHead>
+                                <TableHead>SKU</TableHead>
+                                <TableHead className="text-right">
+                                  Stock
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {v.sizes.map((s, sIdx) => (
+                                <TableRow key={`${v.id}-${sIdx}`}>
+                                  <TableCell className="w-20">
+                                    <Input
+                                      value={s.size}
+                                      onChange={(e) =>
+                                        updateSize(idx, sIdx, {
+                                          size: e.target.value,
+                                        })
+                                      }
+                                      className="h-8 text-xs"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <code className="text-xs font-mono text-zinc-500">
+                                      {s.sku || "SKU pending"}
+                                    </code>
+                                  </TableCell>
+                                  <TableCell className="text-right w-24">
+                                    <Input
+                                      type="number"
+                                      value={s.stock}
+                                      onChange={(e) =>
+                                        updateSize(idx, sIdx, {
+                                          stock: Number(e.target.value),
+                                        })
+                                      }
+                                      className="h-8 text-xs text-right"
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </CardContent>
           </Card>
 
