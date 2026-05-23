@@ -1,57 +1,54 @@
 "use client";
 
+import * as React from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
-interface ConfirmDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  onConfirm: () => void;
-  confirmLabel?: string;
-  destructive?: boolean;
-  loading?: boolean;
-}
 
 export function ConfirmDialog({
   open,
   onOpenChange,
   title,
   description,
-  onConfirm,
-  confirmLabel = "Confirm",
+  confirmText = "Confirm",
+  cancelText = "Cancel",
   destructive = false,
-  loading = false,
-}: ConfirmDialogProps) {
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  description?: React.ReactNode;
+  confirmText?: string;
+  cancelText?: string;
+  destructive?: boolean;
+  onConfirm: () => void;
+}) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
-            Cancel
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {cancelText}
           </Button>
           <Button
             variant={destructive ? "destructive" : "default"}
-            onClick={onConfirm}
-            disabled={loading}
+            onClick={() => {
+              onConfirm();
+              onOpenChange(false);
+            }}
           >
-            {loading ? "Please wait..." : confirmLabel}
+            {confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

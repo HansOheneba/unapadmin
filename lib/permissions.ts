@@ -11,7 +11,7 @@ type Action =
   | "export";
 
 const permissions: Record<AdminRole, Action[]> = {
-  SUPER_ADMIN: [
+  super_admin: [
     "view",
     "create",
     "edit",
@@ -21,9 +21,8 @@ const permissions: Record<AdminRole, Action[]> = {
     "manage_settings",
     "export",
   ],
-  MANAGER: ["view", "create", "edit", "delete", "manage_affiliates", "export"],
-  EDITOR: ["view", "create", "edit", "export"],
-  VIEWER: ["view"],
+  admin: ["view", "create", "edit", "delete", "manage_affiliates", "export"],
+  viewer: ["view"],
 };
 
 export function can(role: AdminRole | undefined, action: Action): boolean {

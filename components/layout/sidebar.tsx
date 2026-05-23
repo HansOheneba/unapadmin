@@ -1,108 +1,124 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Layers,
-  Package,
-  Archive,
   ShoppingCart,
   Users,
-  Truck,
-  RotateCcw,
-  Tag,
-  Image as ImageIcon,
-  Share2,
-  BarChart3,
+  Package,
+  Layers,
+  Megaphone,
+  Crown,
+  Star,
+  LineChart,
   Settings,
-  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDashboardStats } from "@/lib/hooks";
+import { useAdminStore } from "@/lib/store";
 
-const navGroups = [
+type NavItem = {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badgeKey?: "pendingOrders" | "lowStock" | "pendingReviews" | "innerCirclePending";
+};
+
+const navGroups: { label: string; items: NavItem[] }[] = [
   {
+    label: "Overview",
+    items: [{ label: "Dashboard", href: "/admin", icon: LayoutDashboard }],
+  },
+  {
+    label: "Commerce",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Collections", href: "/dashboard/collections", icon: Layers },
-      { label: "Products", href: "/dashboard/products", icon: Package },
-      { label: "Inventory", href: "/dashboard/inventory", icon: Archive, badge: "lowStock" },
-      { label: "Orders", href: "/dashboard/orders", icon: ShoppingCart, badge: "pending" },
-      { label: "Customers", href: "/dashboard/customers", icon: Users },
-      { label: "Deliveries", href: "/dashboard/deliveries", icon: Truck },
-      { label: "Returns", href: "/dashboard/returns", icon: RotateCcw, badge: "returns" },
+      { label: "Orders", href: "/admin/orders", icon: ShoppingCart, badgeKey: "pendingOrders" },
+      { label: "Customers", href: "/admin/customers", icon: Users },
+      { label: "Products", href: "/admin/products", icon: Package, badgeKey: "lowStock" },
+      { label: "Collections", href: "/admin/collections", icon: Layers },
     ],
   },
   {
+    label: "Marketing",
     items: [
-      { label: "Discounts", href: "/dashboard/discounts", icon: Tag },
-      { label: "Banners", href: "/dashboard/banners", icon: ImageIcon },
-      { label: "Affiliates", href: "/dashboard/affiliates", icon: Share2 },
+      { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
+      { label: "Inner Circle", href: "/admin/inner-circle", icon: Crown, badgeKey: "innerCirclePending" },
     ],
   },
   {
+    label: "Content",
     items: [
-      { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-      { label: "Settings", href: "/dashboard/settings", icon: Settings },
+      { label: "Reviews", href: "/admin/reviews", icon: Star, badgeKey: "pendingReviews" },
     ],
+  },
+  {
+    label: "Insights",
+    items: [{ label: "Analytics", href: "/admin/analytics", icon: LineChart }],
+  },
+  {
+    label: "System",
+    items: [{ label: "Settings", href: "/admin/settings", icon: Settings }],
   },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: stats } = useDashboardStats();
+  const orders = useAdminStore((s) => s.orders);
+  const products = useAdminStore((s) => s.products);
+  const reviews = useAdminStore((s) => s.reviews);
+  const innerCircle = useAdminStore((s) => s.innerCircle);
+  const lowStockThreshold = useAdminStore((s) => s.settings.lowStockThreshold);
 
-  const getBadge = (badge?: string) => {
-    if (!badge || !stats) return null;
-    if (badge === "lowStock" && stats.lowStockCount > 0)
-      return (
-        <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-5 text-center">
-          {stats.lowStockCount}
-        </span>
-      );
-    if (badge === "pending" && stats.pendingOrders > 0)
-      return (
-        <span className="ml-auto bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-5 text-center">
-          {stats.pendingOrders}
-        </span>
-      );
-    if (badge === "returns" && stats.openReturns > 0)
-      return (
-        <span className="ml-auto bg-zinc-400 text-white text-xs rounded-full px-1.5 py-0.5 min-w-5 text-center">
-          {stats.openReturns}
-        </span>
-      );
-    return null;
+  const badges = {
+    pendingOrders: orders.filter(
+      (o) => o.status === "pending" || o.status === "processing",
+    ).length,
+    lowStock: products.reduce(
+      (n, p) =>
+        n +
+        (p.variants.some((v) =>
+          v.sizes.some((s) => s.stock > 0 && s.stock <= lowStockThreshold),
+        )
+          ? 1
+          : 0),
+      0,
+    ),
+    pendingReviews: reviews.filter((r) => r.status === "pending").length,
+    innerCirclePending: innerCircle.filter((m) => m.status === "pending").length,
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 w-60 bg-black flex flex-col">
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-zinc-800">
-        <Link href="/dashboard">
+    <aside className="fixed inset-y-0 left-0 z-40 w-60 bg-zinc-900 text-white flex flex-col">
+      <div className="px-6 py-5 border-b border-white/10">
+        <Link href="/admin" className="flex items-center gap-2">
           <Image
-            src="/logos/unap_logo_white.png"
+            src="/logos/unapologeticWhite.png"
             alt="Unapologetic"
-            width={120}
-            height={32}
+            width={160}
+            height={24}
             className="object-contain"
+            priority
           />
         </Link>
+        <p className="mt-1 text-[10px] tracking-[0.2em] uppercase text-white/40">
+          Admin
+        </p>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
-        {navGroups.map((group, gi) => (
-          <div key={gi}>
-            {gi > 0 && <div className="border-t border-zinc-800 mb-4" />}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <div className="px-3 mb-1.5 text-[10px] tracking-[0.2em] uppercase text-white/40">
+              {group.label}
+            </div>
             <ul className="space-y-0.5">
               {group.items.map((item) => {
                 const isActive =
-                  item.href === "/dashboard"
-                    ? pathname === "/dashboard"
-                    : pathname.startsWith(item.href);
+                  item.href === "/admin"
+                    ? pathname === "/admin"
+                    : pathname === item.href || pathname.startsWith(item.href + "/");
+                const badge = item.badgeKey ? badges[item.badgeKey] : 0;
                 return (
                   <li key={item.href}>
                     <Link
@@ -110,13 +126,17 @@ export function Sidebar() {
                       className={cn(
                         "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
                         isActive
-                          ? "bg-zinc-800 text-white"
-                          : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
+                          ? "bg-white/10 text-white"
+                          : "text-white/70 hover:bg-white/5 hover:text-white",
                       )}
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
-                      {item.label}
-                      {getBadge(item.badge)}
+                      <span className="flex-1">{item.label}</span>
+                      {badge > 0 && (
+                        <span className="ml-auto rounded-full bg-amber-500/90 text-zinc-900 text-[10px] font-semibold px-1.5 py-0.5 min-w-5 text-center">
+                          {badge}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
@@ -125,19 +145,6 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
-
-      {/* Footer */}
-      <div className="border-t border-zinc-800 px-3 py-3 space-y-1">
-        <a
-          href={process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3000"}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Back to Storefront
-        </a>
-      </div>
     </aside>
   );
 }

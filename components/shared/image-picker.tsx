@@ -1,121 +1,108 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import Image from "next/image";
+import { ImagePlus, Link as LinkIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
-const LIBRARY_IMAGES = [
-  "/collections/boxers/boxersWhite.jpeg",
-  "/collections/boxers/boxersBlue.jpg",
-  "/collections/boxers/boxersBrown.jpeg",
-  "/collections/boxers/boxersGray.jpg",
-  "/collections/boxers/boxersCream.jpeg",
-  "/collections/glases/outlawGlasses1.jpg",
-  "/collections/glases/outlawGlasses3.jpg",
-  "/collections/glases/shadesFemale.jpg",
-  "/collections/headwear/boldSocietyCapBlack.jpg",
-  "/collections/headwear/boldSocietyCapCream.jpg",
-  "/collections/headwear/boldSocietyCapRed.jpg",
-  "/collections/headwear/suedeCapBlack.jpg",
-  "/collections/headwear/beanie.jpg",
-  "/collections/headwear/beanieRed.jpg",
-  "/collections/hoodies/hoodieBlackMan.jpg",
-  "/collections/hoodies/hoodieColors.jpg",
-  "/collections/female_shirts/shirtBrown.jpeg",
-  "/collections/female_shirts/shirtCream.jpeg",
-  "/collections/tracks/track.jpg",
-  "/collections/tracks/track2.jpg",
-  "/collections/men_shirt/shirtCollection.jpeg",
-  "/home/boxModel.jpg",
-  "/home/hoodieBlackMan.jpg",
-  "/home/manBeach.jpg",
-  "/home/shadesMan.jpg",
-  "/home/womanXman.jpg",
-  "/creed/creed.jpg",
-];
-
-interface ImagePickerProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSelect: (url: string) => void;
-}
+import { Button } from "@/components/ui/button";
+import { PUBLIC_IMAGES } from "@/lib/data/public-images";
 
 export function ImagePicker({
-  open,
-  onOpenChange,
   onSelect,
-}: ImagePickerProps) {
-  const [pasteUrl, setPasteUrl] = useState("");
+  trigger,
+}: {
+  onSelect: (url: string) => void;
+  trigger?: React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [url, setUrl] = React.useState("");
 
-  const handleSelect = (url: string) => {
-    onSelect(url);
-    onOpenChange(false);
+  const pick = (u: string) => {
+    if (!u) return;
+    onSelect(u);
+    setOpen(false);
+    setUrl("");
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger ?? (
+          <button
+            type="button"
+            className="h-16 w-16 rounded border border-dashed border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-500 flex items-center justify-center"
+          >
+            <ImagePlus className="h-5 w-5" />
+          </button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Select Image</DialogTitle>
+          <DialogTitle>Choose an image</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="library">
-          <TabsList>
-            <TabsTrigger value="library">From Library</TabsTrigger>
+        <Tabs defaultValue="library" className="flex-1 overflow-hidden flex flex-col">
+          <TabsList className="self-start">
+            <TabsTrigger value="library">From library</TabsTrigger>
             <TabsTrigger value="url">Paste URL</TabsTrigger>
           </TabsList>
-          <TabsContent value="library">
-            <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto">
-              {LIBRARY_IMAGES.map((img) => (
-                <button
-                  key={img}
-                  onClick={() => handleSelect(img)}
-                  className="relative aspect-square rounded overflow-hidden border border-zinc-100 hover:border-zinc-400 transition-colors focus:outline-none"
-                >
-                  <Image
-                    src={img}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="120px"
-                    onError={() => {}}
-                  />
-                </button>
-              ))}
-            </div>
-          </TabsContent>
-          <TabsContent value="url">
-            <div className="space-y-4">
-              <Input
-                placeholder="https://example.com/image.jpg"
-                value={pasteUrl}
-                onChange={(e) => setPasteUrl(e.target.value)}
-              />
-              {pasteUrl && (
-                <div className="relative h-40 rounded overflow-hidden border border-zinc-100">
-                  <Image
-                    src={pasteUrl}
-                    alt="Preview"
-                    fill
-                    className="object-contain"
-                  />
+
+          <TabsContent
+            value="library"
+            className="mt-4 overflow-y-auto pr-1 space-y-6"
+          >
+            {PUBLIC_IMAGES.map((group) => (
+              <div key={group.group}>
+                <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+                  {group.group}
                 </div>
-              )}
-              <Button
-                onClick={() => pasteUrl && handleSelect(pasteUrl)}
-                disabled={!pasteUrl}
-                className="w-full"
-              >
-                Use This Image
-              </Button>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {group.items.map((src) => (
+                    <button
+                      type="button"
+                      key={src}
+                      onClick={() => pick(src)}
+                      className="relative aspect-square rounded overflow-hidden bg-zinc-100 hover:ring-2 hover:ring-zinc-900 transition"
+                    >
+                      <Image
+                        src={src}
+                        alt=""
+                        fill
+                        sizes="120px"
+                        className="object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="url" className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <LinkIcon className="h-4 w-4 text-zinc-400" />
+              <Input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://..."
+              />
             </div>
+            {url && (
+              <div className="relative aspect-video bg-zinc-100 rounded overflow-hidden">
+                <Image src={url} alt="" fill className="object-contain" />
+              </div>
+            )}
+            <DialogFooter>
+              <Button onClick={() => pick(url)}>Use this URL</Button>
+            </DialogFooter>
           </TabsContent>
         </Tabs>
       </DialogContent>
