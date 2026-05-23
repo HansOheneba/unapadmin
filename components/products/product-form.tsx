@@ -32,7 +32,6 @@ import type {
   ColorVariant,
   Product,
   ProductCategory,
-  ProductTag,
   SizeStock,
 } from "@/types";
 
@@ -46,8 +45,6 @@ const CATEGORIES: ProductCategory[] = [
   "lingerie",
 ];
 
-const TAGS: ProductTag[] = ["Essential", "Signature", "Limited", "New"];
-
 const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"];
 
 const emptyProduct = (): Product => ({
@@ -58,7 +55,6 @@ const emptyProduct = (): Product => ({
   price: 0,
   compareAtPrice: null,
   category: "boxers",
-  tag: "Essential",
   collectionId: "boxers",
   variants: [],
   details: [""],
@@ -223,7 +219,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
                   onChange={(e) => update("description", e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Price</Label>
                   <Input
@@ -244,24 +240,6 @@ export function ProductForm({ initial }: { initial?: Product }) {
                       )
                     }
                   />
-                </div>
-                <div>
-                  <Label>Tag</Label>
-                  <Select
-                    value={draft.tag}
-                    onValueChange={(v) => update("tag", v as ProductTag)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TAGS.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

@@ -25,7 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { formatMoney } from "@/lib/format";
@@ -143,7 +142,6 @@ export default function ProductsPage() {
               <TableRow>
                 <TableHead>Product</TableHead>
                 <TableHead>Collection</TableHead>
-                <TableHead>Tag</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Sold</TableHead>
@@ -202,9 +200,6 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell className="text-sm text-zinc-700">
                         {collectionName}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{p.tag}</Badge>
                       </TableCell>
                       <TableCell className="text-sm">
                         {formatMoney(p.price, "GHS")}

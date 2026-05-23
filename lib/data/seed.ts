@@ -125,7 +125,6 @@ export const seedProducts: Product[] = [
     price: 120,
     compareAtPrice: 150,
     category: "boxers",
-    tag: "Essential",
     collectionId: "boxers",
     variants: [
       {
@@ -183,7 +182,6 @@ export const seedProducts: Product[] = [
     price: 220,
     compareAtPrice: null,
     category: "headwear",
-    tag: "Signature",
     collectionId: "headwear",
     variants: [
       {
@@ -231,7 +229,6 @@ export const seedProducts: Product[] = [
     price: 380,
     compareAtPrice: null,
     category: "sunglasses",
-    tag: "Limited",
     collectionId: "sunglasses",
     variants: [
       {
@@ -265,7 +262,6 @@ export const seedProducts: Product[] = [
     price: 650,
     compareAtPrice: 750,
     category: "hoodies",
-    tag: "Signature",
     collectionId: "hoodies",
     variants: [
       {
@@ -299,7 +295,6 @@ export const seedProducts: Product[] = [
     price: 480,
     compareAtPrice: null,
     category: "tracks",
-    tag: "New",
     collectionId: "tracks",
     variants: [
       {
@@ -332,7 +327,6 @@ export const seedProducts: Product[] = [
     price: 180,
     compareAtPrice: null,
     category: "tops",
-    tag: "Essential",
     collectionId: "tops",
     variants: [
       {
@@ -362,7 +356,6 @@ export const seedProducts: Product[] = [
     price: 350,
     compareAtPrice: null,
     category: "lingerie",
-    tag: "Limited",
     collectionId: "lingerie",
     variants: [
       {

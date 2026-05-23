@@ -139,8 +139,6 @@ export type ProductCategory =
   | "hoodies"
   | "lingerie";
 
-export type ProductTag = "Essential" | "Signature" | "Limited" | "New";
-
 export type Product = {
   id: string;
   slug: string;
@@ -149,7 +147,6 @@ export type Product = {
   price: number;
   compareAtPrice: number | null;
   category: ProductCategory;
-  tag: ProductTag;
   collectionId: string;
   variants: ColorVariant[];
   details: string[];
