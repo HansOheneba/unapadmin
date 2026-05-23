@@ -276,7 +276,11 @@ export const seedProducts: Product[] = [
         sizes: makeSizes({ S: 8, M: 12, L: 9, XL: 4, XXL: 2 }),
       },
     ],
-    details: ["400gsm cotton fleece", "Ribbed cuffs and hem", "Drawstring hood"],
+    details: [
+      "400gsm cotton fleece",
+      "Ribbed cuffs and hem",
+      "Drawstring hood",
+    ],
     careInstructions: ["Wash inside out", "Tumble dry low"],
     isVisible: true,
     isFeatured: true,
@@ -302,7 +306,10 @@ export const seedProducts: Product[] = [
         id: "tracks-1-black",
         colorName: "Black",
         colorHex: "#0a0a0a",
-        images: ["/collections/tracks/track.jpg", "/collections/tracks/track2.jpg"],
+        images: [
+          "/collections/tracks/track.jpg",
+          "/collections/tracks/track2.jpg",
+        ],
         sizes: makeSizes({ S: 5, M: 9, L: 7, XL: 3 }),
       },
     ],
@@ -381,7 +388,7 @@ export const seedProducts: Product[] = [
 
 // ───────────────────────────── Customers ─────────────────────────────
 const addr = (
-  overrides: Partial<CustomerAddress> & Pick<CustomerAddress, "country">
+  overrides: Partial<CustomerAddress> & Pick<CustomerAddress, "country">,
 ): CustomerAddress => ({
   id: `addr_${Math.random().toString(36).slice(2, 8)}`,
   label: "Home",
@@ -715,8 +722,7 @@ const makeOrder = (
     status,
     paymentStatus,
     paymentMethod: customer.country === "Ghana" ? "momo" : "card",
-    paymentReference:
-      paymentStatus === "paid" ? `TXN${1000000 + i}` : null,
+    paymentReference: paymentStatus === "paid" ? `TXN${1000000 + i}` : null,
     subtotal,
     shippingFee,
     discount: 0,
@@ -725,13 +731,25 @@ const makeOrder = (
     currency: customer.currency,
     notes: "",
     customerNote: i % 5 === 0 ? "Please pack discreetly." : "",
-    carrier: ["shipped", "in_transit", "out_for_delivery", "delivered"].includes(status)
+    carrier: [
+      "shipped",
+      "in_transit",
+      "out_for_delivery",
+      "delivered",
+    ].includes(status)
       ? "DHL Express"
       : null,
-    estimatedDelivery: ["shipped", "in_transit", "out_for_delivery"].includes(status)
+    estimatedDelivery: ["shipped", "in_transit", "out_for_delivery"].includes(
+      status,
+    )
       ? days(daysAgo - 3)
       : null,
-    shippedAt: ["shipped", "in_transit", "out_for_delivery", "delivered"].includes(status)
+    shippedAt: [
+      "shipped",
+      "in_transit",
+      "out_for_delivery",
+      "delivered",
+    ].includes(status)
       ? days(daysAgo - 1)
       : null,
     deliveredAt: status === "delivered" ? days(Math.max(0, daysAgo - 3)) : null,
@@ -743,34 +761,127 @@ const makeOrder = (
 const p = (id: string) => seedProducts.find((x) => x.id === id)!;
 
 export const seedOrders: Order[] = [
-  makeOrder(52, seedCustomers[0], "delivered", "paid",
-    [itemFromProduct(p("boxers-1"), 0, "L", 3), itemFromProduct(p("headwear-1"), 0, "One Size", 1)], 3),
-  makeOrder(51, seedCustomers[1], "out_for_delivery", "paid",
-    [itemFromProduct(p("hoodies-1"), 0, "M", 1)], 1),
-  makeOrder(50, seedCustomers[3], "in_transit", "paid",
-    [itemFromProduct(p("tracks-1"), 0, "L", 2), itemFromProduct(p("tops-1"), 0, "L", 2)], 2),
-  makeOrder(49, seedCustomers[0], "shipped", "paid",
-    [itemFromProduct(p("boxers-1"), 1, "M", 2)], 4),
-  makeOrder(48, seedCustomers[4], "processing", "paid",
-    [itemFromProduct(p("tops-1"), 0, "S", 1)], 1),
-  makeOrder(47, seedCustomers[1], "pending", "unpaid",
-    [itemFromProduct(p("sunglasses-1"), 0, "One Size", 1)], 0),
-  makeOrder(46, seedCustomers[3], "delivered", "paid",
-    [itemFromProduct(p("hoodies-1"), 0, "XL", 1), itemFromProduct(p("headwear-1"), 1, "One Size", 1)], 14),
-  makeOrder(45, seedCustomers[0], "delivered", "paid",
-    [itemFromProduct(p("boxers-1"), 0, "L", 5)], 21),
-  makeOrder(44, seedCustomers[4], "cancelled", "refunded",
-    [itemFromProduct(p("tops-1"), 0, "M", 1)], 18),
-  makeOrder(43, seedCustomers[5], "refunded", "refunded",
-    [itemFromProduct(p("hoodies-1"), 0, "M", 1)], 60),
-  makeOrder(42, seedCustomers[1], "delivered", "paid",
-    [itemFromProduct(p("sunglasses-1"), 0, "One Size", 1)], 9),
-  makeOrder(41, seedCustomers[3], "processing", "paid",
-    [itemFromProduct(p("tracks-1"), 0, "M", 1)], 1),
-  makeOrder(40, seedCustomers[0], "delivered", "paid",
-    [itemFromProduct(p("headwear-1"), 0, "One Size", 2)], 30),
-  makeOrder(39, seedCustomers[4], "pending", "unpaid",
-    [itemFromProduct(p("boxers-1"), 2, "M", 1)], 0),
+  makeOrder(
+    52,
+    seedCustomers[0],
+    "delivered",
+    "paid",
+    [
+      itemFromProduct(p("boxers-1"), 0, "L", 3),
+      itemFromProduct(p("headwear-1"), 0, "One Size", 1),
+    ],
+    3,
+  ),
+  makeOrder(
+    51,
+    seedCustomers[1],
+    "out_for_delivery",
+    "paid",
+    [itemFromProduct(p("hoodies-1"), 0, "M", 1)],
+    1,
+  ),
+  makeOrder(
+    50,
+    seedCustomers[3],
+    "in_transit",
+    "paid",
+    [
+      itemFromProduct(p("tracks-1"), 0, "L", 2),
+      itemFromProduct(p("tops-1"), 0, "L", 2),
+    ],
+    2,
+  ),
+  makeOrder(
+    49,
+    seedCustomers[0],
+    "shipped",
+    "paid",
+    [itemFromProduct(p("boxers-1"), 1, "M", 2)],
+    4,
+  ),
+  makeOrder(
+    48,
+    seedCustomers[4],
+    "processing",
+    "paid",
+    [itemFromProduct(p("tops-1"), 0, "S", 1)],
+    1,
+  ),
+  makeOrder(
+    47,
+    seedCustomers[1],
+    "pending",
+    "unpaid",
+    [itemFromProduct(p("sunglasses-1"), 0, "One Size", 1)],
+    0,
+  ),
+  makeOrder(
+    46,
+    seedCustomers[3],
+    "delivered",
+    "paid",
+    [
+      itemFromProduct(p("hoodies-1"), 0, "XL", 1),
+      itemFromProduct(p("headwear-1"), 1, "One Size", 1),
+    ],
+    14,
+  ),
+  makeOrder(
+    45,
+    seedCustomers[0],
+    "delivered",
+    "paid",
+    [itemFromProduct(p("boxers-1"), 0, "L", 5)],
+    21,
+  ),
+  makeOrder(
+    44,
+    seedCustomers[4],
+    "cancelled",
+    "refunded",
+    [itemFromProduct(p("tops-1"), 0, "M", 1)],
+    18,
+  ),
+  makeOrder(
+    43,
+    seedCustomers[5],
+    "refunded",
+    "refunded",
+    [itemFromProduct(p("hoodies-1"), 0, "M", 1)],
+    60,
+  ),
+  makeOrder(
+    42,
+    seedCustomers[1],
+    "delivered",
+    "paid",
+    [itemFromProduct(p("sunglasses-1"), 0, "One Size", 1)],
+    9,
+  ),
+  makeOrder(
+    41,
+    seedCustomers[3],
+    "processing",
+    "paid",
+    [itemFromProduct(p("tracks-1"), 0, "M", 1)],
+    1,
+  ),
+  makeOrder(
+    40,
+    seedCustomers[0],
+    "delivered",
+    "paid",
+    [itemFromProduct(p("headwear-1"), 0, "One Size", 2)],
+    30,
+  ),
+  makeOrder(
+    39,
+    seedCustomers[4],
+    "pending",
+    "unpaid",
+    [itemFromProduct(p("boxers-1"), 2, "M", 1)],
+    0,
+  ),
 ];
 
 // ───────────────────────────── Reviews ─────────────────────────────
@@ -965,7 +1076,6 @@ export const seedInnerCircle: InnerCircleMember[] = [
   },
 ];
 
-
 // ───────────────────────────── Settings & admins ─────────────────────────────
 export const seedSettings: StoreSettings = {
   adminEmailForOrders: "orders@unapologetic.store",
@@ -974,6 +1084,13 @@ export const seedSettings: StoreSettings = {
 };
 
 export const seedAdmins: AdminUser[] = [
+  {
+    id: "adm_000",
+    name: "Super Admin",
+    email: "admin@unapologetic.store",
+    role: "super_admin",
+    createdAt: days(365),
+  },
   {
     id: "adm_001",
     name: "Hans Opoku",

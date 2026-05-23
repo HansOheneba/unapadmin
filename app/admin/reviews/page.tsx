@@ -2,9 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Star, CheckCircle2, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import {
+  Star,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/store";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +32,7 @@ import type { Review } from "@/types";
 type Filter = "all" | Review["status"];
 
 export default function ReviewsPage() {
+  const { can } = useAuth();
   const reviews = useAdminStore((s) => s.reviews);
   const updateStatus = useAdminStore((s) => s.updateReviewStatus);
   const remove = useAdminStore((s) => s.deleteReview);
@@ -64,8 +72,12 @@ export default function ReviewsPage() {
         <TabsList>
           <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
           <TabsTrigger value="pending">Pending ({counts.pending})</TabsTrigger>
-          <TabsTrigger value="approved">Approved ({counts.approved})</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected ({counts.rejected})</TabsTrigger>
+          <TabsTrigger value="approved">
+            Approved ({counts.approved})
+          </TabsTrigger>
+          <TabsTrigger value="rejected">
+            Rejected ({counts.rejected})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value={tab} className="mt-4">
@@ -86,7 +98,10 @@ export default function ReviewsPage() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-zinc-500">
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-zinc-500"
+                      >
                         No reviews in this category.
                       </TableCell>
                     </TableRow>
@@ -156,7 +171,7 @@ export default function ReviewsPage() {
                               {fmtDate(r.createdAt)}
                             </TableCell>
                             <TableCell className="text-right">
-                              {r.status !== "approved" && (
+                              {can("edit") && r.status !== "approved" && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -169,7 +184,7 @@ export default function ReviewsPage() {
                                   Approve
                                 </Button>
                               )}
-                              {r.status !== "rejected" && (
+                              {can("edit") && r.status !== "rejected" && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -181,14 +196,16 @@ export default function ReviewsPage() {
                                   Reject
                                 </Button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-rose-600"
-                                onClick={() => setToDelete(r.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                              {can("delete") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-rose-600"
+                                  onClick={() => setToDelete(r.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                           {isOpen && (
@@ -210,6 +227,7 @@ export default function ReviewsPage() {
                                     <Textarea
                                       rows={2}
                                       className="mt-1"
+                                      readOnly={!can("edit")}
                                       value={noteDraft[r.id] ?? r.adminNote}
                                       onChange={(e) =>
                                         setNoteDraft((d) => ({
@@ -218,7 +236,9 @@ export default function ReviewsPage() {
                                         }))
                                       }
                                       onBlur={() => {
-                                        const v = noteDraft[r.id] ?? r.adminNote;
+                                        if (!can("edit")) return;
+                                        const v =
+                                          noteDraft[r.id] ?? r.adminNote;
                                         if (v !== r.adminNote) {
                                           updateStatus(r.id, r.status, v);
                                           toast.success("Note saved.");

@@ -120,7 +120,11 @@ export function ProductForm({ initial }: { initial?: Product }) {
       draft.variants.filter((_, i) => i !== idx),
     );
 
-  const updateSize = (vIdx: number, sIdx: number, patch: Partial<SizeStock>) => {
+  const updateSize = (
+    vIdx: number,
+    sIdx: number,
+    patch: Partial<SizeStock>,
+  ) => {
     update(
       "variants",
       draft.variants.map((v, i) =>
@@ -166,11 +170,18 @@ export function ProductForm({ initial }: { initial?: Product }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={() => router.push("/admin/products")}>
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/admin/products")}
+          >
             Cancel
           </Button>
           {initial && (
-            <Button variant="outline" onClick={handleDelete} className="text-rose-600">
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              className="text-rose-600"
+            >
               Delete
             </Button>
           )}
@@ -182,7 +193,9 @@ export function ProductForm({ initial }: { initial?: Product }) {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base font-semibold">Basic info</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                Basic info
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -494,7 +507,9 @@ export function ProductForm({ initial }: { initial?: Product }) {
               <Row label="Reviews" value={draft.reviewCount} />
               <Row
                 label="Rating"
-                value={draft.averageRating ? draft.averageRating.toFixed(1) : "—"}
+                value={
+                  draft.averageRating ? draft.averageRating.toFixed(1) : "—"
+                }
               />
             </CardContent>
           </Card>

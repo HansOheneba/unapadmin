@@ -51,8 +51,8 @@ export default function AnalyticsPage() {
     d.setDate(d.getDate() - 30);
     return d.toISOString().slice(0, 10);
   });
-  const [to, setTo] = React.useState<string>(
-    () => new Date().toISOString().slice(0, 10),
+  const [to, setTo] = React.useState<string>(() =>
+    new Date().toISOString().slice(0, 10),
   );
 
   const inRange = React.useMemo(() => {
@@ -69,7 +69,8 @@ export default function AnalyticsPage() {
 
   // Revenue over time (daily)
   const dailyRevenue = React.useMemo(() => {
-    const buckets: Record<string, { date: string; ghs: number; ngn: number }> = {};
+    const buckets: Record<string, { date: string; ghs: number; ngn: number }> =
+      {};
     const start = new Date(from);
     const end = new Date(to);
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -155,7 +156,9 @@ export default function AnalyticsPage() {
   // Payment split
   const paymentSplit = React.useMemo(() => {
     const m: Record<string, number> = {};
-    inRange.forEach((o) => (m[o.paymentMethod] = (m[o.paymentMethod] ?? 0) + 1));
+    inRange.forEach(
+      (o) => (m[o.paymentMethod] = (m[o.paymentMethod] ?? 0) + 1),
+    );
     return Object.entries(m).map(([method, count]) => ({ method, count }));
   }, [inRange]);
 
@@ -189,7 +192,10 @@ export default function AnalyticsPage() {
       });
     return Object.entries(m)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, v]) => ({ date, aov: v.count === 0 ? 0 : v.revenue / v.count }));
+      .map(([date, v]) => ({
+        date,
+        aov: v.count === 0 ? 0 : v.revenue / v.count,
+      }));
   }, [paid]);
 
   const exportReport = () => {
@@ -248,7 +254,9 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Revenue over time</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Revenue over time
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
@@ -281,8 +289,19 @@ export default function AnalyticsPage() {
                   }
                 />
                 <ChartLegend content={<ChartLegendContent />} />
-                <Line dataKey="ghs" stroke="var(--color-ghs)" strokeWidth={2} dot={false} />
-                <Line dataKey="ngn" stroke="var(--color-ngn)" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+                <Line
+                  dataKey="ghs"
+                  stroke="var(--color-ghs)"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  dataKey="ngn"
+                  stroke="var(--color-ngn)"
+                  strokeWidth={2}
+                  dot={false}
+                  strokeDasharray="4 4"
+                />
               </LineChart>
             </ChartContainer>
           </CardContent>
@@ -290,7 +309,9 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Orders by status</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Orders by status
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
@@ -310,7 +331,12 @@ export default function AnalyticsPage() {
             >
               <BarChart data={ordersByStatus}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="status" tickLine={false} axisLine={false} hide />
+                <XAxis
+                  dataKey="status"
+                  tickLine={false}
+                  axisLine={false}
+                  hide
+                />
                 <YAxis hide />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
@@ -327,14 +353,20 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Top products</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Top products
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
               config={{ revenue: { label: "Revenue", color: "#0a0a0a" } }}
               className="h-72"
             >
-              <BarChart data={topProducts} layout="vertical" margin={{ left: 16 }}>
+              <BarChart
+                data={topProducts}
+                layout="vertical"
+                margin={{ left: 16 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis
@@ -352,7 +384,11 @@ export default function AnalyticsPage() {
                     />
                   }
                 />
-                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 4, 4, 0]} />
+                <Bar
+                  dataKey="revenue"
+                  fill="var(--color-revenue)"
+                  radius={[0, 4, 4, 0]}
+                />
               </BarChart>
             </ChartContainer>
           </CardContent>
@@ -360,7 +396,9 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Sales by collection</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Sales by collection
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
@@ -383,7 +421,11 @@ export default function AnalyticsPage() {
                     />
                   }
                 />
-                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="revenue"
+                  fill="var(--color-revenue)"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ChartContainer>
           </CardContent>
@@ -393,7 +435,9 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Sales by country</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Sales by country
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
@@ -408,8 +452,16 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="country" tickLine={false} axisLine={false} />
                 <YAxis hide />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="orders" fill="var(--color-orders)" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="revenue"
+                  fill="var(--color-revenue)"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="orders"
+                  fill="var(--color-orders)"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ChartContainer>
           </CardContent>
@@ -417,7 +469,9 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Payment methods</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Payment methods
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer

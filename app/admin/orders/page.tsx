@@ -121,7 +121,11 @@ export default function OrdersPage() {
             {filtered.length} of {orders.length} orders
           </p>
         </div>
-        <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
+        <Button
+          variant="outline"
+          onClick={exportCsv}
+          disabled={filtered.length === 0}
+        >
           <Download className="h-4 w-4" />
           Export CSV
         </Button>
@@ -221,7 +225,10 @@ export default function OrdersPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-zinc-500">
+                  <TableCell
+                    colSpan={8}
+                    className="text-center py-12 text-zinc-500"
+                  >
                     No orders match the current filters.
                   </TableCell>
                 </TableRow>

@@ -22,6 +22,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ImagePicker } from "@/components/shared/image-picker";
 import type { Collection } from "@/types";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 const emptyCollection = (): Collection => ({
   id: "",
@@ -37,6 +38,7 @@ const emptyCollection = (): Collection => ({
 });
 
 export default function CollectionsPage() {
+  const { can } = useAuth();
   const collections = useAdminStore((s) => s.collections);
   const products = useAdminStore((s) => s.products);
   const upsert = useAdminStore((s) => s.upsertCollection);
@@ -65,12 +67,15 @@ export default function CollectionsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">Collections</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            Sort order controls the storefront layout (even = hero left, odd = right).
+            Sort order controls the storefront layout (even = hero left, odd =
+            right).
           </p>
         </div>
-        <Button onClick={() => setEditing(emptyCollection())}>
-          <Plus className="h-4 w-4" /> New collection
-        </Button>
+        {can("create") && (
+          <Button onClick={() => setEditing(emptyCollection())}>
+            <Plus className="h-4 w-4" /> New collection
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -127,30 +132,41 @@ export default function CollectionsPage() {
                   {productCount(c.id)} products
                 </span>
                 <span
-                  className={
-                    c.isVisible ? "text-emerald-600" : "text-zinc-400"
-                  }
+                  className={c.isVisible ? "text-emerald-600" : "text-zinc-400"}
                 >
                   {c.isVisible ? "Visible" : "Hidden"}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setEditing(c)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-rose-600"
-                  onClick={() => setToDelete(c.id)}
-                >
-                  Delete
-                </Button>
+                {can("edit") ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setEditing(c)}
+                  >
+                    Edit
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    disabled
+                  >
+                    View only
+                  </Button>
+                )}
+                {can("delete") && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-rose-600"
+                    onClick={() => setToDelete(c.id)}
+                  >
+                    Delete
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

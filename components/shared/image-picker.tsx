@@ -49,7 +49,10 @@ export function ImagePicker({
         <DialogHeader>
           <DialogTitle>Choose an image</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="library" className="flex-1 overflow-hidden flex flex-col">
+        <Tabs
+          defaultValue="library"
+          className="flex-1 overflow-hidden flex flex-col"
+        >
           <TabsList className="self-start">
             <TabsTrigger value="library">From library</TabsTrigger>
             <TabsTrigger value="url">Paste URL</TabsTrigger>

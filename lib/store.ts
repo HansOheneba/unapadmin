@@ -213,9 +213,10 @@ export const useAdminStore = create<State & Actions>()(
               updates.trackingNumber = extras.trackingNumber;
             if (status === "shipped" && !o.shippedAt) updates.shippedAt = now();
             if (status === "delivered") updates.deliveredAt = now();
-            if (extras?.note) updates.notes = o.notes
-              ? `${o.notes}\n[${new Date().toLocaleString()}] ${extras.note}`
-              : extras.note;
+            if (extras?.note)
+              updates.notes = o.notes
+                ? `${o.notes}\n[${new Date().toLocaleString()}] ${extras.note}`
+                : extras.note;
             return { ...o, ...updates };
           }),
         })),
@@ -308,8 +309,7 @@ export const useAdminStore = create<State & Actions>()(
                     ...m,
                     status,
                     notes: note ?? m.notes,
-                    approvedAt:
-                      status === "approved" ? now() : m.approvedAt,
+                    approvedAt: status === "approved" ? now() : m.approvedAt,
                   }
                 : m,
             ),

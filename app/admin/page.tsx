@@ -64,7 +64,11 @@ export default function DashboardPage() {
   // Group orders by currency for revenue maths (mix is intentional in seeds).
   const today = new Date();
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const startOfPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const startOfPrevMonth = new Date(
+    today.getFullYear(),
+    today.getMonth() - 1,
+    1,
+  );
   const endOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
 
   const paidOrders = orders.filter((o) => o.paymentStatus === "paid");
@@ -108,7 +112,9 @@ export default function DashboardPage() {
       n +
       p.variants.reduce(
         (m, v) =>
-          m + v.sizes.filter((s) => s.stock > 0 && s.stock <= lowStockThreshold).length,
+          m +
+          v.sizes.filter((s) => s.stock > 0 && s.stock <= lowStockThreshold)
+            .length,
         0,
       ),
     0,
@@ -121,7 +127,8 @@ export default function DashboardPage() {
 
   // 30-day revenue chart (combined display in GHS-equivalent buckets — labelled by date).
   const revenueChart = (() => {
-    const buckets: Record<string, { date: string; ghs: number; ngn: number }> = {};
+    const buckets: Record<string, { date: string; ghs: number; ngn: number }> =
+      {};
     for (let i = 29; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -155,7 +162,13 @@ export default function DashboardPage() {
   const topProducts = (() => {
     const map = new Map<
       string,
-      { productId: string; name: string; image: string; units: number; revenue: number }
+      {
+        productId: string;
+        name: string;
+        image: string;
+        units: number;
+        revenue: number;
+      }
     >();
     monthOrders.forEach((o) => {
       o.items.forEach((it) => {
@@ -194,7 +207,8 @@ export default function DashboardPage() {
 
   const recentOrders = [...orders]
     .sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
     .slice(0, 10);
 
@@ -283,7 +297,10 @@ export default function DashboardPage() {
               }}
               className="h-72"
             >
-              <LineChart data={revenueChart} margin={{ left: 8, right: 16, top: 8 }}>
+              <LineChart
+                data={revenueChart}
+                margin={{ left: 8, right: 16, top: 8 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="date"
@@ -351,9 +368,7 @@ export default function DashboardPage() {
               className="h-72"
             >
               <PieChart>
-                <ChartTooltip
-                  content={<ChartTooltipContent hideLabel />}
-                />
+                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                 <Pie
                   data={ordersByStatus}
                   dataKey="count"
@@ -455,8 +470,16 @@ export default function DashboardPage() {
                     />
                   }
                 />
-                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="orders" fill="var(--color-orders)" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="revenue"
+                  fill="var(--color-revenue)"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="orders"
+                  fill="var(--color-orders)"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ChartContainer>
           </CardContent>

@@ -4,6 +4,8 @@ import * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/store";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,12 +38,22 @@ import { fmtDate } from "@/lib/format";
 import type { AdminRole, StoreSettings } from "@/types";
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const { isSuperAdmin } = useAuth();
   const settings = useAdminStore((s) => s.settings);
   const admins = useAdminStore((s) => s.admins);
   const updateSettings = useAdminStore((s) => s.updateSettings);
   const inviteAdmin = useAdminStore((s) => s.inviteAdmin);
   const removeAdmin = useAdminStore((s) => s.removeAdmin);
   const resetAll = useAdminStore((s) => s.resetAll);
+
+  const [prevAuth, setPrevAuth] = React.useState(isSuperAdmin);
+  if (prevAuth !== isSuperAdmin) {
+    setPrevAuth(isSuperAdmin);
+    if (!isSuperAdmin) router.replace("/admin");
+  }
+
+  if (!isSuperAdmin) return null;
 
   const [draft, setDraft] = React.useState<StoreSettings>(settings);
   const [inviteOpen, setInviteOpen] = React.useState(false);
@@ -84,7 +96,9 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Notifications</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Notifications
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
@@ -188,7 +202,10 @@ export default function SettingsPage() {
           <div className="space-y-3">
             <div>
               <Label>Full name</Label>
-              <Input value={inviteName} onChange={(e) => setInviteName(e.target.value)} />
+              <Input
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
+              />
             </div>
             <div>
               <Label>Email</Label>

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/store";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { formatMoney } from "@/lib/format";
 
 export default function ProductsPage() {
+  const { can } = useAuth();
   const products = useAdminStore((s) => s.products);
   const collections = useAdminStore((s) => s.collections);
   const lowStockThreshold = useAdminStore((s) => s.settings.lowStockThreshold);
@@ -39,7 +41,9 @@ export default function ProductsPage() {
 
   const [collection, setCollection] = React.useState<string>("all");
   const [stock, setStock] = React.useState<"all" | "in" | "low" | "out">("all");
-  const [visibility, setVisibility] = React.useState<"all" | "visible" | "hidden">("all");
+  const [visibility, setVisibility] = React.useState<
+    "all" | "visible" | "hidden"
+  >("all");
   const [q, setQ] = React.useState("");
   const [toDelete, setToDelete] = React.useState<string | null>(null);
 
@@ -49,9 +53,16 @@ export default function ProductsPage() {
     if (visibility === "hidden" && p.isVisible) return false;
     if (stock === "out" && p.totalStock > 0) return false;
     if (stock === "in" && p.totalStock <= lowStockThreshold) return false;
-    if (stock === "low" && (p.totalStock === 0 || p.totalStock > lowStockThreshold))
+    if (
+      stock === "low" &&
+      (p.totalStock === 0 || p.totalStock > lowStockThreshold)
+    )
       return false;
-    if (q && !p.name.toLowerCase().includes(q.toLowerCase()) && !p.slug.includes(q.toLowerCase()))
+    if (
+      q &&
+      !p.name.toLowerCase().includes(q.toLowerCase()) &&
+      !p.slug.includes(q.toLowerCase())
+    )
       return false;
     return true;
   });
@@ -65,11 +76,13 @@ export default function ProductsPage() {
             {filtered.length} of {products.length} products
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/products/new">
-            <Plus className="h-4 w-4" /> New product
-          </Link>
-        </Button>
+        {can("create") && (
+          <Button asChild>
+            <Link href="/admin/products/new">
+              <Plus className="h-4 w-4" /> New product
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -141,15 +154,18 @@ export default function ProductsPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-zinc-500">
+                  <TableCell
+                    colSpan={8}
+                    className="text-center py-12 text-zinc-500"
+                  >
                     No products match.
                   </TableCell>
                 </TableRow>
               ) : (
                 filtered.map((p) => {
                   const collectionName =
-                    collections.find((c) => c.id === p.collectionId)?.subtitle ??
-                    p.collectionId;
+                    collections.find((c) => c.id === p.collectionId)
+                      ?.subtitle ?? p.collectionId;
                   const stockPip =
                     p.totalStock === 0
                       ? "red"
@@ -178,7 +194,9 @@ export default function ProductsPage() {
                             <div className="text-sm font-medium text-zinc-900 line-clamp-1">
                               {p.name}
                             </div>
-                            <div className="text-xs text-zinc-500">{p.slug}</div>
+                            <div className="text-xs text-zinc-500">
+                              {p.slug}
+                            </div>
                           </div>
                         </Link>
                       </TableCell>
@@ -211,7 +229,9 @@ export default function ProductsPage() {
                       <TableCell>
                         <Switch
                           checked={p.isVisible}
+                          disabled={!can("edit")}
                           onCheckedChange={() => {
+                            if (!can("edit")) return;
                             toggleVisibility(p.id);
                             toast.success(
                               `${p.name} ${p.isVisible ? "hidden" : "now visible"}`,
@@ -220,27 +240,38 @@ export default function ProductsPage() {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button asChild variant="ghost" size="sm">
-                          <Link href={`/admin/products/${p.id}`}>Edit</Link>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const id = duplicateProduct(p.id);
-                            if (id) toast.success("Product duplicated.");
-                          }}
-                        >
-                          Duplicate
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setToDelete(p.id)}
-                          className="text-rose-600 hover:text-rose-700"
-                        >
-                          Delete
-                        </Button>
+                        {can("edit") && (
+                          <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/products/${p.id}`}>Edit</Link>
+                          </Button>
+                        )}
+                        {can("create") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const id = duplicateProduct(p.id);
+                              if (id) toast.success("Product duplicated.");
+                            }}
+                          >
+                            Duplicate
+                          </Button>
+                        )}
+                        {can("delete") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setToDelete(p.id)}
+                            className="text-rose-600 hover:text-rose-700"
+                          >
+                            Delete
+                          </Button>
+                        )}
+                        {!can("edit") && (
+                          <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/products/${p.id}`}>View</Link>
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

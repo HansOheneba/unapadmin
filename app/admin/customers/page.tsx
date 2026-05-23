@@ -4,10 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Search, X, Crown } from "lucide-react";
 import { useAdminStore } from "@/lib/store";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +27,9 @@ import { fmtDate, formatMoney, relative } from "@/lib/format";
 
 export default function CustomersPage() {
   const customers = useAdminStore((s) => s.customers);
-  const [status, setStatus] = React.useState<"all" | "active" | "suspended" | "unverified">("all");
+  const [status, setStatus] = React.useState<
+    "all" | "active" | "suspended" | "unverified"
+  >("all");
   const [country, setCountry] = React.useState<"all" | "Ghana" | "Nigeria">(
     "all",
   );
@@ -46,7 +45,8 @@ export default function CustomersPage() {
     if (innerCircle === "no" && c.innerCircle) return false;
     if (q) {
       const needle = q.toLowerCase();
-      const haystack = `${c.firstName} ${c.lastName} ${c.email} ${c.phone}`.toLowerCase();
+      const haystack =
+        `${c.firstName} ${c.lastName} ${c.email} ${c.phone}`.toLowerCase();
       if (!haystack.includes(needle)) return false;
     }
     return true;
@@ -113,7 +113,10 @@ export default function CustomersPage() {
               <SelectItem value="no">Standard</SelectItem>
             </SelectContent>
           </Select>
-          {(status !== "all" || country !== "all" || innerCircle !== "all" || q) && (
+          {(status !== "all" ||
+            country !== "all" ||
+            innerCircle !== "all" ||
+            q) && (
             <Button
               variant="ghost"
               size="sm"
@@ -143,7 +146,10 @@ export default function CustomersPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-zinc-500">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-12 text-zinc-500"
+                  >
                     No customers match the current filters.
                   </TableCell>
                 </TableRow>

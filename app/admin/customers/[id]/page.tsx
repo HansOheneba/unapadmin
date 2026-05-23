@@ -7,16 +7,12 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Crown, Mail, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/store";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -34,6 +30,7 @@ import { fmtDate, formatMoney } from "@/lib/format";
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { can } = useAuth();
   const customers = useAdminStore((s) => s.customers);
   const allOrders = useAdminStore((s) => s.orders);
   const products = useAdminStore((s) => s.products);
@@ -65,9 +62,7 @@ export default function CustomerDetailPage() {
   }
 
   const aov =
-    customer.totalOrders === 0
-      ? 0
-      : customer.totalSpend / customer.totalOrders;
+    customer.totalOrders === 0 ? 0 : customer.totalSpend / customer.totalOrders;
 
   const wishlistProducts = customer.wishlist
     .map((pid) => products.find((p) => p.id === pid))
@@ -76,7 +71,11 @@ export default function CustomerDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/admin/customers")}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/admin/customers")}
+        >
           <ArrowLeft className="h-4 w-4" /> Back to customers
         </Button>
       </div>
@@ -185,15 +184,21 @@ export default function CustomerDetailPage() {
               <CardContent>
                 <Textarea
                   rows={8}
+                  readOnly={!can("edit")}
                   value={notesDraft}
                   onChange={(e) => setNotesDraft(e.target.value)}
                   onBlur={() => {
+                    if (!can("edit")) return;
                     if (notesDraft !== customer.notes) {
                       updateCustomer(customer.id, { notes: notesDraft });
                       toast.success("Notes saved.");
                     }
                   }}
-                  placeholder="Notes about this customer (saved on blur)"
+                  placeholder={
+                    can("edit")
+                      ? "Notes about this customer (saved on blur)"
+                      : "No notes"
+                  }
                 />
               </CardContent>
             </Card>
@@ -216,7 +221,10 @@ export default function CustomerDetailPage() {
                 <TableBody>
                   {orders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-zinc-500">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-8 text-zinc-500"
+                      >
                         No orders yet.
                       </TableCell>
                     </TableRow>
@@ -265,16 +273,18 @@ export default function CustomerDetailPage() {
                 <Card key={a.id}>
                   <CardContent className="p-5 text-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="font-semibold text-zinc-900">{a.label}</div>
-                      {a.isDefault && (
-                        <Badge variant="zinc">Default</Badge>
-                      )}
+                      <div className="font-semibold text-zinc-900">
+                        {a.label}
+                      </div>
+                      {a.isDefault && <Badge variant="zinc">Default</Badge>}
                     </div>
                     <div className="text-zinc-700">
                       {a.firstName} {a.lastName}
                     </div>
                     <div className="text-zinc-600">{a.address}</div>
-                    {a.address2 && <div className="text-zinc-600">{a.address2}</div>}
+                    {a.address2 && (
+                      <div className="text-zinc-600">{a.address2}</div>
+                    )}
                     <div className="text-zinc-600">
                       {a.city}, {a.region}
                     </div>

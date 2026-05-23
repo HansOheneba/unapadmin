@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/store";
+import { useAuth } from "@/lib/hooks/useAuth";
 import {
   ORDER_LIFECYCLE,
   ORDER_STATUSES,
@@ -61,9 +62,8 @@ import type { OrderStatus } from "@/types";
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const order = useAdminStore((s) =>
-    s.orders.find((o) => o.id === params.id),
-  );
+  const { can } = useAuth();
+  const order = useAdminStore((s) => s.orders.find((o) => o.id === params.id));
   const updateStatus = useAdminStore((s) => s.updateOrderStatus);
   const updateNotes = useAdminStore((s) => s.updateOrderNotes);
   const refund = useAdminStore((s) => s.refundOrder);
@@ -106,7 +106,9 @@ export default function OrderDetailPage() {
 
   const handleStatusUpdate = () => {
     if (nextStatus === "shipped" && (!carrier || !tracking)) {
-      toast.error("Carrier and tracking number are required when marking shipped.");
+      toast.error(
+        "Carrier and tracking number are required when marking shipped.",
+      );
       return;
     }
     updateStatus(order.id, nextStatus, {
@@ -148,7 +150,11 @@ export default function OrderDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/admin/orders")}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/admin/orders")}
+          >
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
@@ -171,7 +177,7 @@ export default function OrderDetailPage() {
             <Printer className="h-4 w-4" />
             Print invoice
           </Button>
-          {!isTerminal && (
+          {!isTerminal && can("edit") && (
             <>
               <Button
                 variant="outline"
@@ -183,9 +189,7 @@ export default function OrderDetailPage() {
               <Button variant="outline" onClick={() => setRefundOpen(true)}>
                 Refund
               </Button>
-              <Button onClick={() => setStatusOpen(true)}>
-                Update status
-              </Button>
+              <Button onClick={() => setStatusOpen(true)}>Update status</Button>
             </>
           )}
         </div>
@@ -324,8 +328,14 @@ export default function OrderDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <Row label="Subtotal" value={formatMoney(order.subtotal, order.currency)} />
-            <Row label="Shipping" value={formatMoney(order.shippingFee, order.currency)} />
+            <Row
+              label="Subtotal"
+              value={formatMoney(order.subtotal, order.currency)}
+            />
+            <Row
+              label="Shipping"
+              value={formatMoney(order.shippingFee, order.currency)}
+            />
             {order.discount > 0 && (
               <Row
                 label={`Discount${order.discountCode ? ` (${order.discountCode})` : ""}`}
@@ -339,7 +349,10 @@ export default function OrderDetailPage() {
               bold
             />
             <div className="h-px bg-zinc-200 my-2" />
-            <Row label="Payment method" value={order.paymentMethod.toUpperCase()} />
+            <Row
+              label="Payment method"
+              value={order.paymentMethod.toUpperCase()}
+            />
             {order.paymentReference && (
               <Row label="Reference" value={order.paymentReference} mono />
             )}
@@ -408,15 +421,19 @@ export default function OrderDetailPage() {
           <CardContent>
             <Textarea
               rows={6}
+              readOnly={!can("edit")}
               value={notesDraft}
               onChange={(e) => setNotesDraft(e.target.value)}
               onBlur={() => {
+                if (!can("edit")) return;
                 if (notesDraft !== order.notes) {
                   updateNotes(order.id, notesDraft);
                   toast.success("Notes saved.");
                 }
               }}
-              placeholder="Add internal notes (saved on blur)"
+              placeholder={
+                can("edit") ? "Add internal notes (saved on blur)" : "No notes"
+              }
             />
           </CardContent>
         </Card>

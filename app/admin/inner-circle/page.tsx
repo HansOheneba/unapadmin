@@ -4,6 +4,7 @@ import * as React from "react";
 import { Crown, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/store";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +31,7 @@ import type { InnerCircleMember } from "@/types";
 type Filter = "all" | InnerCircleMember["status"];
 
 export default function InnerCirclePage() {
+  const { can } = useAuth();
   const members = useAdminStore((s) => s.innerCircle);
   const updateStatus = useAdminStore((s) => s.updateInnerCircleStatus);
 
@@ -106,7 +108,10 @@ export default function InnerCirclePage() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8 text-zinc-500"
+                      >
                         No applications in this category.
                       </TableCell>
                     </TableRow>
@@ -138,7 +143,7 @@ export default function InnerCirclePage() {
                           {m.notes || "—"}
                         </TableCell>
                         <TableCell className="text-right">
-                          {m.status !== "approved" && (
+                          {can("edit") && m.status !== "approved" && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -150,7 +155,7 @@ export default function InnerCirclePage() {
                               Approve
                             </Button>
                           )}
-                          {m.status !== "waitlisted" && (
+                          {can("edit") && m.status !== "waitlisted" && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -161,7 +166,7 @@ export default function InnerCirclePage() {
                               Waitlist
                             </Button>
                           )}
-                          {m.status !== "rejected" && (
+                          {can("edit") && m.status !== "rejected" && (
                             <Button
                               variant="ghost"
                               size="sm"

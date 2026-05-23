@@ -4,6 +4,7 @@ import * as React from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/store";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ const empty = (): BannerMessage => ({
 });
 
 export default function AnnouncementsPage() {
+  const { can } = useAuth();
   const config = useAdminStore((s) => s.bannerConfig);
   const messages = useAdminStore((s) => s.bannerMessages);
   const updateConfig = useAdminStore((s) => s.updateBannerConfig);
@@ -75,19 +77,25 @@ export default function AnnouncementsPage() {
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Announcements</h1>
+          <h1 className="text-2xl font-semibold text-zinc-900">
+            Announcements
+          </h1>
           <p className="text-sm text-zinc-500 mt-1">
             Promo bar shown at the top of every storefront page.
           </p>
         </div>
-        <Button onClick={() => setEditing(empty())}>
-          <Plus className="h-4 w-4" /> New message
-        </Button>
+        {can("create") && (
+          <Button onClick={() => setEditing(empty())}>
+            <Plus className="h-4 w-4" /> New message
+          </Button>
+        )}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Live preview</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Live preview
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {!config.isEnabled || activeMessages.length === 0 ? (
@@ -117,7 +125,9 @@ export default function AnnouncementsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Banner settings</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Banner settings
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -125,7 +135,11 @@ export default function AnnouncementsPage() {
               <Switch
                 id="enabled"
                 checked={config.isEnabled}
-                onCheckedChange={(v) => updateConfig({ isEnabled: v })}
+                disabled={!can("edit")}
+                onCheckedChange={(v) => {
+                  if (!can("edit")) return;
+                  updateConfig({ isEnabled: v });
+                }}
               />
             </div>
             <div>
@@ -136,7 +150,8 @@ export default function AnnouncementsPage() {
                 value={config.rotationIntervalMs / 1000}
                 onChange={(e) =>
                   updateConfig({
-                    rotationIntervalMs: Math.max(1, Number(e.target.value)) * 1000,
+                    rotationIntervalMs:
+                      Math.max(1, Number(e.target.value)) * 1000,
                   })
                 }
               />
@@ -186,7 +201,10 @@ export default function AnnouncementsPage() {
               <TableBody>
                 {sorted.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-zinc-500">
+                    <TableCell
+                      colSpan={5}
+                      className="text-center py-8 text-zinc-500"
+                    >
                       No messages yet.
                     </TableCell>
                   </TableRow>
@@ -225,21 +243,25 @@ export default function AnnouncementsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditing(m)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-rose-600"
-                          onClick={() => setToDelete(m.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        {can("edit") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditing(m)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        {can("delete") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-rose-600"
+                            onClick={() => setToDelete(m.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -303,7 +325,9 @@ function MessageEditor({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{message.id ? "Edit message" : "New message"}</DialogTitle>
+          <DialogTitle>
+            {message.id ? "Edit message" : "New message"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
