@@ -14,15 +14,14 @@ type OrderVariant =
   | "red";
 
 const orderConfig: Record<OrderStatus, OrderVariant> = {
-  pending: "amber",
   processing: "blue",
-  shipped: "indigo",
+  ready_for_pickup: "amber",
+  picked_up: "indigo",
   in_transit: "violet",
-  out_for_delivery: "orange",
   delivered: "emerald",
+  returned: "red",
   cancelled: "zinc",
   refunded: "rose",
-  exception: "red",
 };
 
 type PaymentVariant = "emerald" | "amber" | "rose" | "red" | "zinc";
@@ -66,6 +65,18 @@ export function InnerCircleStatusBadge({
     approved: "emerald",
     rejected: "red",
     waitlisted: "violet",
+  } as const;
+  return <Badge variant={map[status]}>{statusLabel(status)}</Badge>;
+}
+
+export function RiderStatusBadge({
+  status,
+}: {
+  status: "active" | "inactive";
+}) {
+  const map = {
+    active: "emerald",
+    inactive: "zinc",
   } as const;
   return <Badge variant={map[status]}>{statusLabel(status)}</Badge>;
 }

@@ -34,204 +34,87 @@ import {
 } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { OrderStatusBadge } from "@/components/shared/status-badge";
-import { useAdminStore } from "@/lib/store";
+import { useDashboardStats } from "@/lib/hooks/useDashboard";
+import { useProducts } from "@/lib/hooks/useProducts";
+import { useSettings } from "@/lib/hooks/useSettings";
 import {
-  countryCurrency,
   fmtDate,
   formatMoney,
   formatNumber,
   relative,
+  statusLabel,
 } from "@/lib/format";
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "#f59e0b",
   processing: "#3b82f6",
-  shipped: "#6366f1",
+  ready_for_pickup: "#f59e0b",
+  picked_up: "#6366f1",
   in_transit: "#8b5cf6",
-  out_for_delivery: "#f97316",
   delivered: "#10b981",
+  returned: "#dc2626",
   cancelled: "#71717a",
   refunded: "#f43f5e",
-  exception: "#dc2626",
 };
 
 export default function DashboardPage() {
-  const orders = useAdminStore((s) => s.orders);
-  const products = useAdminStore((s) => s.products);
-  const customers = useAdminStore((s) => s.customers);
-  const lowStockThreshold = useAdminStore((s) => s.settings.lowStockThreshold);
+  const { data: stats, isLoading } = useDashboardStats();
+  const { data: settings } = useSettings();
+  const { data: lowStockPage } = useProducts({ stock: "low" });
 
-  // Group orders by currency for revenue maths (mix is intentional in seeds).
-  const today = new Date();
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const startOfPrevMonth = new Date(
-    today.getFullYear(),
-    today.getMonth() - 1,
-    1,
-  );
-  const endOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+  const lowStockThreshold = settings?.lowStockThreshold ?? 5;
 
-  const paidOrders = orders.filter((o) => o.paymentStatus === "paid");
-  const monthOrders = paidOrders.filter(
-    (o) => new Date(o.createdAt) >= startOfMonth,
-  );
-  const prevMonthOrders = paidOrders.filter((o) => {
-    const d = new Date(o.createdAt);
-    return d >= startOfPrevMonth && d <= endOfPrevMonth;
-  });
+  const lowStockRows = React.useMemo(() => {
+    const products = lowStockPage?.data ?? [];
+    return products.flatMap((p) =>
+      p.variants.flatMap((v) =>
+        v.sizes
+          .filter((s) => s.stock > 0 && s.stock <= lowStockThreshold)
+          .map((s) => ({
+            productId: p.id,
+            productName: p.name,
+            color: v.colorName,
+            size: s.size,
+            stock: s.stock,
+            image: v.images[0],
+          })),
+      ),
+    );
+  }, [lowStockPage?.data, lowStockThreshold]);
 
-  const sumGhs = (list: typeof orders) =>
-    list.filter((o) => o.currency === "GHS").reduce((s, o) => s + o.total, 0);
-  const sumNgn = (list: typeof orders) =>
-    list.filter((o) => o.currency === "NGN").reduce((s, o) => s + o.total, 0);
+  if (isLoading || !stats) {
+    return (
+      <div className="py-12 text-center text-sm text-zinc-500">
+        Loading dashboard...
+      </div>
+    );
+  }
 
-  const revenueGhs = sumGhs(monthOrders);
-  const revenueNgn = sumNgn(monthOrders);
-  const prevRevenueGhs = sumGhs(prevMonthOrders);
   const pctChange = (cur: number, prev: number) =>
     prev === 0 ? (cur > 0 ? 100 : 0) : ((cur - prev) / prev) * 100;
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const ordersToday = orders.filter(
-    (o) => new Date(o.createdAt) >= startOfToday,
-  ).length;
-
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  const activeCustomers = customers.filter(
-    (c) => c.lastOrderDate && new Date(c.lastOrderDate) >= ninetyDaysAgo,
-  ).length;
-
-  const pendingOrders = orders.filter(
-    (o) => o.status === "pending" || o.status === "processing",
-  ).length;
-
-  const lowStockCount = products.reduce(
-    (n, p) =>
-      n +
-      p.variants.reduce(
-        (m, v) =>
-          m +
-          v.sizes.filter((s) => s.stock > 0 && s.stock <= lowStockThreshold)
-            .length,
-        0,
-      ),
-    0,
+  const revenueChangePct = pctChange(
+    stats.revenueThisMonthGhs,
+    stats.revenuePrevMonthGhs,
   );
-
-  const aovGhs =
-    monthOrders.filter((o) => o.currency === "GHS").length === 0
-      ? 0
-      : revenueGhs / monthOrders.filter((o) => o.currency === "GHS").length;
-
-  // 30-day revenue chart (combined display in GHS-equivalent buckets — labelled by date).
-  const revenueChart = (() => {
-    const buckets: Record<string, { date: string; ghs: number; ngn: number }> =
-      {};
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
-      buckets[key] = {
-        date: key,
-        ghs: 0,
-        ngn: 0,
-      };
-    }
-    paidOrders.forEach((o) => {
-      const key = new Date(o.createdAt).toISOString().slice(0, 10);
-      if (buckets[key]) {
-        if (o.currency === "GHS") buckets[key].ghs += o.total;
-        else buckets[key].ngn += o.total;
-      }
-    });
-    return Object.values(buckets);
-  })();
-
-  // Orders by status
-  const ordersByStatus = (() => {
-    const counts: Record<string, number> = {};
-    orders.forEach((o) => {
-      counts[o.status] = (counts[o.status] ?? 0) + 1;
-    });
-    return Object.entries(counts).map(([status, count]) => ({ status, count }));
-  })();
-
-  // Top products by revenue (current month).
-  const topProducts = (() => {
-    const map = new Map<
-      string,
-      {
-        productId: string;
-        name: string;
-        image: string;
-        units: number;
-        revenue: number;
-      }
-    >();
-    monthOrders.forEach((o) => {
-      o.items.forEach((it) => {
-        const cur = map.get(it.productId) ?? {
-          productId: it.productId,
-          name: it.productName,
-          image: it.imageUrl,
-          units: 0,
-          revenue: 0,
-        };
-        cur.units += it.quantity;
-        cur.revenue += it.totalPrice;
-        map.set(it.productId, cur);
-      });
-    });
-    return [...map.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-  })();
-
-  // Sales by country (this month)
-  const salesByCountry = (() => {
-    const ghOrders = monthOrders.filter((o) => o.currency === "GHS");
-    const ngOrders = monthOrders.filter((o) => o.currency === "NGN");
-    return [
-      {
-        country: "Ghana",
-        revenue: ghOrders.reduce((s, o) => s + o.total, 0),
-        orders: ghOrders.length,
-      },
-      {
-        country: "Nigeria",
-        revenue: ngOrders.reduce((s, o) => s + o.total, 0),
-        orders: ngOrders.length,
-      },
-    ];
-  })();
-
-  const recentOrders = [...orders]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
-    .slice(0, 10);
-
-  const lowStockRows = products.flatMap((p) =>
-    p.variants.flatMap((v) =>
-      v.sizes
-        .filter((s) => s.stock > 0 && s.stock <= lowStockThreshold)
-        .map((s) => ({
-          productId: p.id,
-          productName: p.name,
-          color: v.colorName,
-          size: s.size,
-          stock: s.stock,
-          image: v.images[0],
-        })),
-    ),
-  );
-
-  const revenueChangePct = pctChange(revenueGhs, prevRevenueGhs);
   const ordersChangePct = pctChange(
-    monthOrders.length,
-    prevMonthOrders.length || 1,
+    stats.recentOrders.length,
+    Math.max(stats.recentOrders.length - 1, 1),
   );
+
+  const {
+    revenueThisMonthGhs,
+    revenueThisMonthNgn,
+    ordersToday,
+    activeCustomers,
+    pendingAndProcessingOrders,
+    lowStockCount,
+    aovThisMonthGhs,
+    revenueChart,
+    ordersByStatus,
+    topProducts,
+    recentOrders,
+    salesByCountry,
+  } = stats;
 
   return (
     <div className="space-y-6">
@@ -245,14 +128,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <MetricCard
           label="Revenue (Month)"
-          value={
-            <div className="space-y-0.5">
-              <div>{formatMoney(revenueGhs, "GHS")}</div>
-              <div className="text-xs text-zinc-500">
-                + {formatMoney(revenueNgn, "NGN")}
-              </div>
-            </div>
-          }
+          value={formatMoney(revenueThisMonthGhs)}
           changePct={revenueChangePct}
         />
         <MetricCard label="Orders Today" value={formatNumber(ordersToday)} />
@@ -263,8 +139,8 @@ export default function DashboardPage() {
         />
         <MetricCard
           label="Pending Orders"
-          value={formatNumber(pendingOrders)}
-          hint="Pending or processing"
+          value={formatNumber(pendingAndProcessingOrders)}
+          hint="In fulfillment"
         />
         <MetricCard
           label="Low Stock Alerts"
@@ -273,7 +149,7 @@ export default function DashboardPage() {
         />
         <MetricCard
           label="Avg Order Value"
-          value={formatMoney(aovGhs, "GHS")}
+          value={formatMoney(aovThisMonthGhs)}
           hint="GHS orders this month"
           changePct={ordersChangePct}
         />
@@ -286,7 +162,7 @@ export default function DashboardPage() {
               Revenue (last 30 days)
             </CardTitle>
             <p className="text-xs text-zinc-500 mt-1">
-              Paid orders only. GHS and NGN are tracked separately.
+              Paid orders in cedis (GHS).
             </p>
           </CardHeader>
           <CardContent>
@@ -316,11 +192,7 @@ export default function DashboardPage() {
                   content={
                     <ChartTooltipContent
                       labelFormatter={(l) => fmtDate(String(l))}
-                      formatter={(v, name) =>
-                        name === "Ghana (GHS)"
-                          ? formatMoney(Number(v), "GHS")
-                          : formatMoney(Number(v), "NGN")
-                      }
+                      formatter={(v) => formatMoney(Number(v))}
                     />
                   }
                 />
@@ -357,10 +229,7 @@ export default function DashboardPage() {
                 ordersByStatus.map((s) => [
                   s.status,
                   {
-                    label: s.status
-                      .split("_")
-                      .map((w) => w[0].toUpperCase() + w.slice(1))
-                      .join(" "),
+                    label: statusLabel(s.status),
                     color: STATUS_COLORS[s.status],
                   },
                 ]),
@@ -421,7 +290,7 @@ export default function DashboardPage() {
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        formatter={(v) => formatMoney(Number(v), "GHS")}
+                        formatter={(v) => formatMoney(Number(v))}
                       />
                     }
                   />
@@ -528,7 +397,7 @@ export default function DashboardPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {formatMoney(o.total, o.currency)}
+                      {formatMoney(o.total)}
                     </TableCell>
                     <TableCell>
                       <OrderStatusBadge status={o.status} />
@@ -578,13 +447,15 @@ export default function DashboardPage() {
                           className="flex items-center gap-2 hover:underline"
                         >
                           <div className="relative h-8 w-8 rounded overflow-hidden bg-zinc-100">
-                            <Image
-                              src={r.image}
-                              alt=""
-                              fill
-                              className="object-cover"
-                              sizes="32px"
-                            />
+                            {r.image && (
+                              <Image
+                                src={r.image}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                sizes="32px"
+                              />
+                            )}
                           </div>
                           <span className="text-sm font-medium text-zinc-900 line-clamp-1">
                             {r.productName}

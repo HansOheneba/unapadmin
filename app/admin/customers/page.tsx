@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Search, X, Crown } from "lucide-react";
-import { useAdminStore } from "@/lib/store";
+import { useCustomers } from "@/lib/hooks/useCustomers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CustomerStatusBadge } from "@/components/shared/status-badge";
+import { ListPagination } from "@/components/shared/list-pagination";
+import { PAGE_SIZE } from "@/lib/constants/pagination";
 import { fmtDate, formatMoney, relative } from "@/lib/format";
 
 export default function CustomersPage() {
-  const customers = useAdminStore((s) => s.customers);
   const [status, setStatus] = React.useState<
     "all" | "active" | "suspended" | "unverified"
   >("all");
@@ -37,26 +38,36 @@ export default function CustomersPage() {
     "all",
   );
   const [q, setQ] = React.useState("");
+  const [page, setPage] = React.useState(1);
 
-  const filtered = customers.filter((c) => {
-    if (status !== "all" && c.status !== status) return false;
-    if (country !== "all" && c.country !== country) return false;
-    if (innerCircle === "yes" && !c.innerCircle) return false;
-    if (innerCircle === "no" && c.innerCircle) return false;
-    if (q) {
-      const needle = q.toLowerCase();
-      const haystack =
-        `${c.firstName} ${c.lastName} ${c.email} ${c.phone}`.toLowerCase();
-      if (!haystack.includes(needle)) return false;
-    }
-    return true;
-  });
+  const listParams = React.useMemo(
+    () => ({
+      status: status === "all" ? undefined : status,
+      country: country === "all" ? undefined : country,
+      innerCircle:
+        innerCircle === "all" ? undefined : innerCircle === "yes" ? "true" : "false",
+      q: q || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    [status, country, innerCircle, q, page],
+  );
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [status, country, innerCircle, q]);
+
+  const { data, isLoading } = useCustomers(listParams);
+  const customers = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
 
   const clear = () => {
     setStatus("all");
     setCountry("all");
     setInnerCircle("all");
     setQ("");
+    setPage(1);
   };
 
   return (
@@ -64,7 +75,7 @@ export default function CustomersPage() {
       <div>
         <h1 className="text-2xl font-semibold text-zinc-900">Customers</h1>
         <p className="text-sm text-zinc-500 mt-1">
-          {filtered.length} of {customers.length} customers
+          {total} customer{total === 1 ? "" : "s"}
         </p>
       </div>
 
@@ -144,7 +155,16 @@ export default function CustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-12 text-zinc-500"
+                  >
+                    Loading customers...
+                  </TableCell>
+                </TableRow>
+              ) : customers.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
@@ -154,7 +174,7 @@ export default function CustomersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((c) => (
+                customers.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>
                       <Link
@@ -177,7 +197,7 @@ export default function CustomersPage() {
                     </TableCell>
                     <TableCell>{c.totalOrders}</TableCell>
                     <TableCell className="text-sm">
-                      {formatMoney(c.totalSpend, c.currency)}
+                      {formatMoney(c.totalSpend)}
                     </TableCell>
                     <TableCell>
                       <CustomerStatusBadge status={c.status} />
@@ -193,6 +213,12 @@ export default function CustomersPage() {
               )}
             </TableBody>
           </Table>
+          <ListPagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>

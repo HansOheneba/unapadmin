@@ -3,7 +3,11 @@
 import * as React from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useAdminStore } from "@/lib/store";
+import {
+  useAdminUsers,
+  useSettings,
+  useSettingsMutations,
+} from "@/lib/hooks/useSettings";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,12 +44,9 @@ import type { AdminRole, StoreSettings } from "@/types";
 export default function SettingsPage() {
   const router = useRouter();
   const { isSuperAdmin } = useAuth();
-  const settings = useAdminStore((s) => s.settings);
-  const admins = useAdminStore((s) => s.admins);
-  const updateSettings = useAdminStore((s) => s.updateSettings);
-  const inviteAdmin = useAdminStore((s) => s.inviteAdmin);
-  const removeAdmin = useAdminStore((s) => s.removeAdmin);
-  const resetAll = useAdminStore((s) => s.resetAll);
+  const { data: settings, isLoading: settingsLoading } = useSettings();
+  const { data: admins = [], isLoading: adminsLoading } = useAdminUsers();
+  const { update, invite, removeAdmin } = useSettingsMutations();
 
   const [prevAuth, setPrevAuth] = React.useState(isSuperAdmin);
   if (prevAuth !== isSuperAdmin) {
@@ -53,29 +54,42 @@ export default function SettingsPage() {
     if (!isSuperAdmin) router.replace("/admin");
   }
 
-  if (!isSuperAdmin) return null;
-
-  const [draft, setDraft] = React.useState<StoreSettings>(settings);
+  const [draft, setDraft] = React.useState<StoreSettings | null>(null);
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const [inviteName, setInviteName] = React.useState("");
   const [inviteEmail, setInviteEmail] = React.useState("");
   const [inviteRole, setInviteRole] = React.useState<AdminRole>("admin");
   const [toRemove, setToRemove] = React.useState<string | null>(null);
-  const [resetOpen, setResetOpen] = React.useState(false);
 
   const [prevSettings, setPrevSettings] = React.useState(settings);
-  if (prevSettings !== settings) {
+  if (settings && prevSettings !== settings) {
     setPrevSettings(settings);
     setDraft(settings);
   }
 
-  const save = () => {
-    updateSettings(draft);
-    toast.success("Settings saved.");
+  if (!isSuperAdmin) return null;
+
+  if (settingsLoading || adminsLoading || !settings || !draft) {
+    return (
+      <div className="py-12 text-center text-sm text-zinc-500">
+        Loading settings...
+      </div>
+    );
+  }
+
+  const save = async () => {
+    try {
+      await update.mutateAsync(draft);
+      toast.success("Settings saved.");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to save settings.",
+      );
+    }
   };
 
   const u = <K extends keyof StoreSettings>(k: K, v: StoreSettings[K]) =>
-    setDraft((d) => ({ ...d, [k]: v }));
+    setDraft((d) => (d ? { ...d, [k]: v } : d));
 
   return (
     <div className="space-y-6">
@@ -86,12 +100,9 @@ export default function SettingsPage() {
             Notification emails, low stock threshold, and admin access.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={() => setResetOpen(true)}>
-            Reset demo data
-          </Button>
-          <Button onClick={save}>Save changes</Button>
-        </div>
+        <Button onClick={save} disabled={update.isPending}>
+          Save changes
+        </Button>
       </div>
 
       <Card>
@@ -237,17 +248,27 @@ export default function SettingsPage() {
               Cancel
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 if (!inviteName || !inviteEmail) {
                   toast.error("Name and email are required.");
                   return;
                 }
-                inviteAdmin(inviteName, inviteEmail, inviteRole);
-                toast.success("Admin invited.");
-                setInviteName("");
-                setInviteEmail("");
-                setInviteRole("admin");
-                setInviteOpen(false);
+                try {
+                  await invite.mutateAsync({
+                    name: inviteName,
+                    email: inviteEmail,
+                    role: inviteRole,
+                  });
+                  toast.success("Admin invited.");
+                  setInviteName("");
+                  setInviteEmail("");
+                  setInviteRole("admin");
+                  setInviteOpen(false);
+                } catch (e) {
+                  toast.error(
+                    e instanceof Error ? e.message : "Failed to invite admin.",
+                  );
+                }
               }}
             >
               Send invite
@@ -263,26 +284,17 @@ export default function SettingsPage() {
         description="They will immediately lose access to the admin dashboard."
         destructive
         confirmText="Remove access"
-        onConfirm={() => {
-          if (toRemove) {
-            removeAdmin(toRemove);
+        onConfirm={async () => {
+          if (!toRemove) return;
+          try {
+            await removeAdmin.mutateAsync(toRemove);
             toast.success("Admin removed.");
             setToRemove(null);
+          } catch (e) {
+            toast.error(
+              e instanceof Error ? e.message : "Failed to remove admin.",
+            );
           }
-        }}
-      />
-
-      <ConfirmDialog
-        open={resetOpen}
-        onOpenChange={setResetOpen}
-        title="Reset all data?"
-        description="This will discard every local change and restore the original demo data. There is no undo."
-        destructive
-        confirmText="Yes, reset everything"
-        onConfirm={() => {
-          resetAll();
-          toast.success("Demo data restored.");
-          setResetOpen(false);
         }}
       />
     </div>

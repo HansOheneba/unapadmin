@@ -3,11 +3,15 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { AdminUser } from "@/types";
-import { seedAdmins } from "@/lib/data/seed";
+import { clearToken, setToken } from "@/lib/api/token";
 
 type AuthState = {
   currentUser: AdminUser | null;
-  login: (email: string) => boolean;
+  token: string | null;
+  hydrated: boolean;
+  setSession: (token: string, user: AdminUser) => void;
+  setUser: (user: AdminUser) => void;
+  setHydrated: (v: boolean) => void;
   logout: () => void;
 };
 
@@ -15,23 +19,34 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       currentUser: null,
+      token: null,
+      hydrated: false,
 
-      login: (email: string) => {
-        const found = seedAdmins.find(
-          (a) => a.email.toLowerCase() === email.trim().toLowerCase(),
-        );
-        if (found) {
-          set({ currentUser: found });
-          return true;
-        }
-        return false;
+      setSession: (token, user) => {
+        setToken(token);
+        set({ token, currentUser: user });
       },
 
-      logout: () => set({ currentUser: null }),
+      setUser: (user) => set({ currentUser: user }),
+
+      setHydrated: (v) => set({ hydrated: v }),
+
+      logout: () => {
+        clearToken();
+        set({ currentUser: null, token: null });
+      },
     }),
     {
       name: "unap-auth",
       storage: createJSONStorage(() => localStorage),
+      partialize: (s) => ({
+        currentUser: s.currentUser,
+        token: s.token,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.token) setToken(state.token);
+        state?.setHydrated(true);
+      },
     },
   ),
 );

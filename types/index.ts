@@ -1,4 +1,5 @@
-// Centralized types — mirrors ADMIN_SPEC.md
+// Catalog types align with storefront lib/data/types.ts + lib/products.ts.
+// See docs/storefront-catalog-types.ts and docs/catalog-field-mapping.md.
 
 export type Country = "Ghana" | "Nigeria";
 export type Currency = "GHS" | "NGN";
@@ -54,15 +55,14 @@ export type Customer = {
 };
 
 export type OrderStatus =
-  | "pending"
   | "processing"
-  | "shipped"
+  | "ready_for_pickup"
+  | "picked_up"
   | "in_transit"
-  | "out_for_delivery"
   | "delivered"
+  | "returned"
   | "cancelled"
-  | "refunded"
-  | "exception";
+  | "refunded";
 
 export type PaymentStatus =
   | "unpaid"
@@ -86,6 +86,34 @@ export type OrderItem = {
   imageUrl: string;
 };
 
+export type DeliveryType = "accra_inhouse" | "outside_accra";
+
+export type DeliveryEventType =
+  | "assigned"
+  | "picked_up"
+  | "out_for_delivery"
+  | "delivered"
+  | "failed";
+
+export type DeliveryEvent = {
+  id: string;
+  orderId: string;
+  riderId: string | null;
+  riderName: string | null;
+  type: DeliveryEventType;
+  note: string | null;
+  at: string;
+};
+
+/** Rider-app assignment status (maps to order fields + events). */
+export type AssignmentStatus =
+  | "unassigned"
+  | "assigned"
+  | "picked_up"
+  | "out_for_delivery"
+  | "delivered"
+  | "failed";
+
 export type Order = {
   id: string;
   trackingNumber: string;
@@ -108,18 +136,28 @@ export type Order = {
   currency: Currency;
   notes: string;
   customerNote: string;
+  deliveryType: DeliveryType;
+  riderId: string | null;
+  riderNote: string;
   carrier: string | null;
   estimatedDelivery: string | null;
   shippedAt: string | null;
+  pickedUpAt: string | null;
+  outForDeliveryAt: string | null;
   deliveredAt: string | null;
+  failedAt: string | null;
+  failureReason: string | null;
+  deliveryAttempts: number;
+  returnVerifiedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
+export type Gender = "male" | "female";
+
 export type SizeStock = {
   size: string;
   stock: number;
-  sku: string;
 };
 
 export type ColorVariant = {
@@ -136,14 +174,12 @@ export type Product = {
   name: string;
   description: string;
   price: number;
-  discountType: "fixed" | "percentage" | null;
-  discountValue: number | null;
+  gender: Gender;
   collectionId: string;
   variants: ColorVariant[];
   details: string[];
   careInstructions: string[];
-  isVisible: boolean;
-  isFeatured: boolean;
+  isActive: boolean;
   totalStock: number;
   totalSold: number;
   averageRating: number;
@@ -159,7 +195,7 @@ export type Collection = {
   tagline: string;
   featured: string;
   href: string;
-  isVisible: boolean;
+  isActive: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -224,8 +260,104 @@ export type AdminUser = {
   createdAt: string;
 };
 
+export type RiderStatus = "active" | "inactive";
+
+export type VehicleType = "motorcycle" | "bicycle" | "car" | "van";
+
+export type Rider = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  whatsapp: string | null;
+  email: string | null;
+  country: Country;
+  city: string;
+  zone: string;
+  status: RiderStatus;
+  vehicleType: VehicleType;
+  plateNumber: string;
+  vehicleMake: string | null;
+  vehicleModel: string | null;
+  vehicleColor: string | null;
+  licenseNumber: string | null;
+  notes: string;
+  activeDeliveries: number;
+  totalDeliveries: number;
+  joinedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type StoreSettings = {
   adminEmailForOrders: string;
   adminEmailForLowStock: string;
   lowStockThreshold: number;
+};
+
+export type Paginated<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type CollectionWithCount = Collection & { productCount: number };
+
+export type DashboardStats = {
+  revenueThisMonthGhs: number;
+  revenueThisMonthNgn: number;
+  revenuePrevMonthGhs: number;
+  revenuePrevMonthNgn: number;
+  ordersToday: number;
+  activeCustomers: number;
+  pendingAndProcessingOrders: number;
+  lowStockCount: number;
+  aovThisMonthGhs: number;
+  revenueChart: { date: string; ghs: number; ngn: number }[];
+  ordersByStatus: { status: OrderStatus; count: number }[];
+  topProducts: {
+    productId: string;
+    name: string;
+    image: string;
+    units: number;
+    revenue: number;
+  }[];
+  recentOrders: Order[];
+  salesByCountry: { country: string; revenue: number; orders: number }[];
+};
+
+export type AnalyticsReport = {
+  dailyRevenue: { date: string; ghs: number; ngn: number }[];
+  ordersByStatus: { status: OrderStatus; count: number }[];
+  topProducts: {
+    productId: string;
+    name: string;
+    units: number;
+    revenue: number;
+  }[];
+  topProductsNgn: {
+    productId: string;
+    name: string;
+    units: number;
+    revenue: number;
+  }[];
+  salesByCollection: {
+    collectionId: string;
+    collection: string;
+    revenueGhs: number;
+    revenueNgn: number;
+  }[];
+  salesByCountry: { country: string; revenue: number; orders: number }[];
+  paymentSplit: { method: string; count: number }[];
+  newVsReturning: { label: "New" | "Returning"; value: number }[];
+  aovTrend: { date: string; aovGhs: number; aovNgn: number }[];
+  summary: {
+    totalRevenueGhs: number;
+    totalRevenueNgn: number;
+    totalOrders: number;
+    totalPaidOrders: number;
+    newCustomers: number;
+  };
 };

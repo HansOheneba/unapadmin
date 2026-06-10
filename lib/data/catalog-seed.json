@@ -1,0 +1,2624 @@
+{
+  "syncedAt": "2026-06-09T16:04:55.239Z",
+  "storefrontPath": "/Users/hansopoku/Desktop/code/unapologetic",
+  "collections": [
+    {
+      "id": "underwear",
+      "subtitle": "Underwear",
+      "title": "The Second Skin",
+      "tagline": "What you wear underneath sets the tone for everything above it.",
+      "featured": "/collections/boxers/boxModel.jpg",
+      "href": "/collections/underwear",
+      "isActive": true,
+      "sortOrder": 1,
+      "createdAt": "2026-01-23T10:00:00.000Z",
+      "updatedAt": "2026-05-18T10:00:00.000Z"
+    },
+    {
+      "id": "tops",
+      "subtitle": "Tops",
+      "title": "The Anti-Uniform",
+      "tagline": "Move in silence. Let the fabric do the talking.",
+      "featured": "/collections/men_shirt/shirtCollection.jpeg",
+      "href": "/collections/tops",
+      "isActive": true,
+      "sortOrder": 2,
+      "createdAt": "2026-02-02T10:00:00.000Z",
+      "updatedAt": "2026-05-18T10:00:00.000Z"
+    },
+    {
+      "id": "bottoms",
+      "subtitle": "Bottoms",
+      "title": "Grounded Power",
+      "tagline": "Every step is a statement. Every stride is intentional.",
+      "featured": "/home/manStudio.jpg",
+      "href": "/collections/bottoms",
+      "isActive": true,
+      "sortOrder": 3,
+      "createdAt": "2026-02-12T10:00:00.000Z",
+      "updatedAt": "2026-05-18T10:00:00.000Z"
+    },
+    {
+      "id": "tracksuits",
+      "subtitle": "Tracksuits",
+      "title": "Street Sovereign",
+      "tagline": "Built for motion. Designed for presence.",
+      "featured": "/collections/tracks/track.jpg",
+      "href": "/collections/tracksuits",
+      "isActive": true,
+      "sortOrder": 4,
+      "createdAt": "2026-02-22T10:00:00.000Z",
+      "updatedAt": "2026-05-18T10:00:00.000Z"
+    },
+    {
+      "id": "active-wear",
+      "subtitle": "Active Wear",
+      "title": "No Retreat",
+      "tagline": "Performance without apology. Movement without compromise.",
+      "featured": "/home/track.jpg",
+      "href": "/collections/active-wear",
+      "isActive": true,
+      "sortOrder": 5,
+      "createdAt": "2026-03-04T10:00:00.000Z",
+      "updatedAt": "2026-05-18T10:00:00.000Z"
+    },
+    {
+      "id": "sunglasses",
+      "subtitle": "Sunglasses",
+      "title": "The Eclipse Edit",
+      "tagline": "The world looks different when you stop apologizing for the view.",
+      "featured": "/collections/glases/outlawGlasses1.jpg",
+      "href": "/collections/sunglasses",
+      "isActive": true,
+      "sortOrder": 6,
+      "createdAt": "2026-03-14T10:00:00.000Z",
+      "updatedAt": "2026-05-18T10:00:00.000Z"
+    },
+    {
+      "id": "accessories",
+      "subtitle": "Accessories",
+      "title": "Bold Society",
+      "tagline": "The details that finish the statement.",
+      "featured": "/collections/headwear/boldSocietyCapBlack.jpeg",
+      "href": "/collections/accessories",
+      "isActive": true,
+      "sortOrder": 7,
+      "createdAt": "2026-03-24T10:00:00.000Z",
+      "updatedAt": "2026-05-18T10:00:00.000Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "no-apology-boxer-brief",
+      "slug": "no-apology-boxer-brief",
+      "name": "No Apology Boxer Brief",
+      "description": "Built for those who refuse to compromise. Combed cotton with a structured waistband and reinforced seams. The everyday essential that never asks permission.",
+      "price": 280,
+      "gender": "male",
+      "collectionId": "underwear",
+      "variants": [
+        {
+          "id": "midnight-black",
+          "colorName": "Midnight Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/boxers/boxersBlackWhite.jpeg",
+            "/collections/boxers/boxersBlackWhite2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        },
+        {
+          "id": "stone-white",
+          "colorName": "Stone White",
+          "colorHex": "#f5f0e8",
+          "images": [
+            "/collections/boxers/boxersBlackWhite.jpeg",
+            "/collections/boxers/boxersBlackWhite2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        },
+        {
+          "id": "slate-grey",
+          "colorName": "Slate Grey",
+          "colorHex": "#6b7280",
+          "images": [
+            "/collections/boxers/boxersBlackWhite.jpeg",
+            "/collections/boxers/boxersBlackWhite2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        }
+      ],
+      "details": [
+        "95% Combed Cotton, 5% Elastane",
+        "Structured waistband with woven label",
+        "Flatlock seams",
+        "Mid-rise fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 162,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-02-22T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "silent-standard-trunk",
+      "slug": "silent-standard-trunk",
+      "name": "Silent Standard Trunk",
+      "description": "Shorter leg, same conviction. A trunk cut for warm climates and warmer confidence.",
+      "price": 260,
+      "gender": "male",
+      "collectionId": "underwear",
+      "variants": [
+        {
+          "id": "deep-navy",
+          "colorName": "Deep Navy",
+          "colorHex": "#1e3a5f",
+          "images": [
+            "/collections/boxers/boxersBlue.jpg",
+            "/collections/boxers/boxersBlue2.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        },
+        {
+          "id": "charcoal",
+          "colorName": "Charcoal",
+          "colorHex": "#374151",
+          "images": [
+            "/collections/boxers/boxersBlue.jpg",
+            "/collections/boxers/boxersBlue2.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 108,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-02-23T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "raw-edge-brief",
+      "slug": "raw-edge-brief",
+      "name": "Raw Edge Brief",
+      "description": "Minimal coverage. Maximum attitude. For the man who stripped away everything unnecessary.",
+      "price": 240,
+      "gender": "male",
+      "collectionId": "underwear",
+      "variants": [
+        {
+          "id": "sand",
+          "colorName": "Sand",
+          "colorHex": "#d4c5a9",
+          "images": [
+            "/collections/boxers/boxersCream.jpeg",
+            "/collections/boxers/boxersCream2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        },
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/boxers/boxersCream.jpeg",
+            "/collections/boxers/boxersCream2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 108,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-02-24T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "unbound-lace-set",
+      "slug": "unbound-lace-set",
+      "name": "Unbound Lace Set",
+      "description": "Deliberate softness with unapologetic structure. A lace set that refuses to be invisible.",
+      "price": 420,
+      "gender": "female",
+      "collectionId": "underwear",
+      "variants": [
+        {
+          "id": "midnight-black",
+          "colorName": "Midnight Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/female_undergarments/lingerie.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "deep-wine",
+          "colorName": "Deep Wine",
+          "colorHex": "#6b1d3a",
+          "images": [
+            "/collections/female_undergarments/lingerie.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Stretch lace and mesh construction",
+        "Adjustable straps",
+        "Soft-touch lining"
+      ],
+      "careInstructions": [
+        "Hand wash cold",
+        "Do not tumble dry",
+        "Lay flat to dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-02-25T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "second-skin-bodysuit",
+      "slug": "second-skin-bodysuit",
+      "name": "Second Skin Bodysuit",
+      "description": "One piece. Zero compromise. Sculpted to move with you and hold its line all day.",
+      "price": 480,
+      "gender": "female",
+      "collectionId": "underwear",
+      "variants": [
+        {
+          "id": "onyx",
+          "colorName": "Onyx",
+          "colorHex": "#111111",
+          "images": [
+            "/collections/female_undergarments/lingerie.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-02-26T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "anti-uniform-tee",
+      "slug": "anti-uniform-tee",
+      "name": "Anti-Uniform Tee",
+      "description": "Heavyweight cotton with a dropped shoulder and a presence that fills the room before you speak.",
+      "price": 380,
+      "gender": "male",
+      "collectionId": "tops",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/men_shirt/shirtCollection.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "off-white",
+          "colorName": "Off White",
+          "colorHex": "#f5f0e8",
+          "images": [
+            "/collections/men_shirt/shirtCollection.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-02-27T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "creed-heavyweight-tee",
+      "slug": "creed-heavyweight-tee",
+      "name": "Creed Heavyweight Tee",
+      "description": "240gsm cotton. Minimal branding. Maximum weight. For those who let the cloth speak first.",
+      "price": 420,
+      "gender": "male",
+      "collectionId": "tops",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/men_shirt/shirtCollection.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-02-28T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "sovereign-silk-blouse",
+      "slug": "sovereign-silk-blouse",
+      "name": "Sovereign Silk Blouse",
+      "description": "Fluid drape with sharp intent. A blouse for boardrooms, rooftops, and everywhere in between.",
+      "price": 520,
+      "gender": "female",
+      "collectionId": "tops",
+      "variants": [
+        {
+          "id": "espresso",
+          "colorName": "Espresso",
+          "colorHex": "#3d2314",
+          "images": [
+            "/collections/female_shirts/shirtBrown.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "cream",
+          "colorName": "Cream",
+          "colorHex": "#f5f0e8",
+          "images": [
+            "/collections/female_shirts/shirtBrown.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-01T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "unapologetic-crop-tank",
+      "slug": "unapologetic-crop-tank",
+      "name": "Unapologetic Crop Tank",
+      "description": "Clean lines. Bare conviction. A cropped tank that does not negotiate with the weather or the room.",
+      "price": 280,
+      "gender": "female",
+      "collectionId": "tops",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/female_shirts/shirtCream.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "ivory",
+          "colorName": "Ivory",
+          "colorHex": "#faf8f5",
+          "images": [
+            "/collections/female_shirts/shirtCream.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-02T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "shadow-cargo-pant",
+      "slug": "shadow-cargo-pant",
+      "name": "Shadow Cargo Pant",
+      "description": "Utility without the uniform. Relaxed cargo silhouette with reinforced pockets and a tapered leg.",
+      "price": 580,
+      "gender": "male",
+      "collectionId": "bottoms",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/manStudio.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "olive",
+          "colorName": "Olive",
+          "colorHex": "#4a5d3a",
+          "images": [
+            "/home/manStudio.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-03T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "refusal-straight-jean",
+      "slug": "refusal-straight-jean",
+      "name": "Refusal Straight Jean",
+      "description": "Straight leg. Dark wash. No distressing. Jeans that look like they have never asked for approval.",
+      "price": 620,
+      "gender": "male",
+      "collectionId": "bottoms",
+      "variants": [
+        {
+          "id": "indigo-black",
+          "colorName": "Indigo Black",
+          "colorHex": "#1c1c2e",
+          "images": [
+            "/home/manStudio.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-04T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "silent-standard-short",
+      "slug": "silent-standard-short",
+      "name": "Silent Standard Short",
+      "description": "Above the knee. Below the noise. Tailored shorts for Accra heat and global presence.",
+      "price": 380,
+      "gender": "male",
+      "collectionId": "bottoms",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/manStudio.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "stone",
+          "colorName": "Stone",
+          "colorHex": "#9ca3af",
+          "images": [
+            "/home/manStudio.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-05T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "high-rise-power-pant",
+      "slug": "high-rise-power-pant",
+      "name": "High-Rise Power Pant",
+      "description": "Structured waist. Clean leg. A trouser that commands the room without raising its voice.",
+      "price": 640,
+      "gender": "female",
+      "collectionId": "bottoms",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/womanXman.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "camel",
+          "colorName": "Camel",
+          "colorHex": "#c4a882",
+          "images": [
+            "/home/womanXman.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-06T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "curve-cargo-pant",
+      "slug": "curve-cargo-pant",
+      "name": "Curve Cargo Pant",
+      "description": "Relaxed fit with intentional volume. Cargo pockets reimagined for movement and style.",
+      "price": 560,
+      "gender": "female",
+      "collectionId": "bottoms",
+      "variants": [
+        {
+          "id": "charcoal",
+          "colorName": "Charcoal",
+          "colorHex": "#374151",
+          "images": [
+            "/collections/female_shirts/shirtBrown.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-07T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "street-sovereign-track-set",
+      "slug": "street-sovereign-track-set",
+      "name": "Street Sovereign Track Set",
+      "description": "Full zip jacket and tapered jogger in matching heavyweight fleece. Built for the street, refined for everywhere else.",
+      "price": 980,
+      "gender": "male",
+      "collectionId": "tracksuits",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/tracks/track.jpg",
+            "/collections/tracks/track2.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "grey-marl",
+          "colorName": "Grey Marl",
+          "colorHex": "#6b7280",
+          "images": [
+            "/collections/tracks/track.jpg",
+            "/collections/tracks/track2.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-08T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "no-apology-track-pant",
+      "slug": "no-apology-track-pant",
+      "name": "No Apology Track Pant",
+      "description": "The jogger that started it all. Tapered leg, ribbed cuffs, and a waistband that holds its ground.",
+      "price": 520,
+      "gender": "male",
+      "collectionId": "tracksuits",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/tracks/track2.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-09T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "eclipse-track-set",
+      "slug": "eclipse-track-set",
+      "name": "Eclipse Track Set",
+      "description": "Cropped zip jacket and high-waist jogger. Monochrome power with a silhouette that does the talking.",
+      "price": 920,
+      "gender": "female",
+      "collectionId": "tracksuits",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/tracks/track.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "stone",
+          "colorName": "Stone",
+          "colorHex": "#d1d5db",
+          "images": [
+            "/collections/tracks/track.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-10T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "power-movement-jogger",
+      "slug": "power-movement-jogger",
+      "name": "Power Movement Jogger",
+      "description": "Soft fleece, sharp taper. The jogger you reach for when comfort and presence must coexist.",
+      "price": 480,
+      "gender": "female",
+      "collectionId": "tracksuits",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/tracks/track2.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-11T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "performance-refusal-tee",
+      "slug": "performance-refusal-tee",
+      "name": "Performance Refusal Tee",
+      "description": "Moisture-wicking mesh with a relaxed athletic cut. Train hard. Look sharper than everyone else in the room.",
+      "price": 340,
+      "gender": "male",
+      "collectionId": "active-wear",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/track.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "graphite",
+          "colorName": "Graphite",
+          "colorHex": "#4b5563",
+          "images": [
+            "/home/track.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-12T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "sprint-standard-short",
+      "slug": "sprint-standard-short",
+      "name": "Sprint Standard Short",
+      "description": "Lightweight training short with inner brief and zip pocket. Built for speed, finished for style.",
+      "price": 320,
+      "gender": "male",
+      "collectionId": "active-wear",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/track.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-13T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "training-essential-quarter-zip",
+      "slug": "training-essential-quarter-zip",
+      "name": "Training Essential Quarter-Zip",
+      "description": "Layer up without slowing down. Quarter-zip pullover in technical fleece for early runs and late sessions.",
+      "price": 480,
+      "gender": "male",
+      "collectionId": "active-wear",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/track.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "S",
+              "stock": 18
+            },
+            {
+              "size": "M",
+              "stock": 15
+            },
+            {
+              "size": "L",
+              "stock": 12
+            },
+            {
+              "size": "XL",
+              "stock": 9
+            },
+            {
+              "size": "XXL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-14T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "flex-sovereign-legging",
+      "slug": "flex-sovereign-legging",
+      "name": "Flex Sovereign Legging",
+      "description": "High-compression legging with a sculpting waistband. Holds you in. Lets you move without limits.",
+      "price": 420,
+      "gender": "female",
+      "collectionId": "active-wear",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/womanXman.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "deep-plum",
+          "colorName": "Deep Plum",
+          "colorHex": "#4a1942",
+          "images": [
+            "/home/womanXman.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-15T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "power-movement-sports-bra",
+      "slug": "power-movement-sports-bra",
+      "name": "Power Movement Sports Bra",
+      "description": "Medium support. Maximum confidence. Racerback design with a clean front and zero distractions.",
+      "price": 280,
+      "gender": "female",
+      "collectionId": "active-wear",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/hoodieBlackMan.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        },
+        {
+          "id": "white",
+          "colorName": "White",
+          "colorHex": "#f5f0e8",
+          "images": [
+            "/home/hoodieBlackMan.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 120,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-16T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "active-refusal-tank",
+      "slug": "active-refusal-tank",
+      "name": "Active Refusal Tank",
+      "description": "Breathable mesh tank with a cropped athletic fit. For the woman who does not cool down.",
+      "price": 260,
+      "gender": "female",
+      "collectionId": "active-wear",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/home/womanXman.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "XS",
+              "stock": 18
+            },
+            {
+              "size": "S",
+              "stock": 15
+            },
+            {
+              "size": "M",
+              "stock": 12
+            },
+            {
+              "size": "L",
+              "stock": 9
+            },
+            {
+              "size": "XL",
+              "stock": 6
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 60,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-17T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "outlaw-i",
+      "slug": "outlaw-i",
+      "name": "Outlaw I",
+      "description": "Oversized black frames with UV400 polarized lenses. For those who move through the world on their own terms.",
+      "price": 1200,
+      "gender": "male",
+      "collectionId": "sunglasses",
+      "variants": [
+        {
+          "id": "default",
+          "colorName": "Default",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/glases/outlawGlasses1.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "UV400 polarized lenses",
+        "Stainless steel hinges",
+        "Acetate frame"
+      ],
+      "careInstructions": [
+        "Store in provided case",
+        "Clean with microfiber cloth only",
+        "Avoid extreme heat"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-18T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "obsidian-lens",
+      "slug": "obsidian-lens",
+      "name": "Obsidian Lens",
+      "description": "Deep-tinted lenses in a sculpted rectangular frame. A statement piece that demands no explanation.",
+      "price": 1350,
+      "gender": "male",
+      "collectionId": "sunglasses",
+      "variants": [
+        {
+          "id": "default",
+          "colorName": "Default",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/glases/outlawGlasses3.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-19T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "outlaw-iii",
+      "slug": "outlaw-iii",
+      "name": "Outlaw III",
+      "description": "Classic proportions meet Unapologetic attitude. Bold enough to be noticed, clean enough to go anywhere.",
+      "price": 1100,
+      "gender": "male",
+      "collectionId": "sunglasses",
+      "variants": [
+        {
+          "id": "default",
+          "colorName": "Default",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/glases/outlawGlases4.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-20T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "eclipse-shades",
+      "slug": "eclipse-shades",
+      "name": "Eclipse Shades",
+      "description": "Wraparound silhouette with mirrored lenses. Limited production. Reflect everything the world throws at you.",
+      "price": 1180,
+      "gender": "male",
+      "collectionId": "sunglasses",
+      "variants": [
+        {
+          "id": "default",
+          "colorName": "Default",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/glases/outlawGlasses5.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-21T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "sovereign-shades",
+      "slug": "sovereign-shades",
+      "name": "Sovereign Shades",
+      "description": "Sleek cat-eye geometry with polarized lenses. For the woman who has already decided.",
+      "price": 980,
+      "gender": "female",
+      "collectionId": "sunglasses",
+      "variants": [
+        {
+          "id": "default",
+          "colorName": "Default",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/glases/shadesFemale.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-22T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "sovereign-ii",
+      "slug": "sovereign-ii",
+      "name": "Sovereign II",
+      "description": "Gradient lenses on a wider frame. Made for the ones who refuse to blend in.",
+      "price": 980,
+      "gender": "female",
+      "collectionId": "sunglasses",
+      "variants": [
+        {
+          "id": "default",
+          "colorName": "Default",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/glases/shadesFemale2.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-23T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "obsidian-womens",
+      "slug": "obsidian-womens",
+      "name": "Obsidian Womens",
+      "description": "Full black, full presence. Bold geometry for every room you walk into and own.",
+      "price": 1100,
+      "gender": "female",
+      "collectionId": "sunglasses",
+      "variants": [
+        {
+          "id": "default",
+          "colorName": "Default",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/glases/shadesFemale3.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-24T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "bold-society-cap",
+      "slug": "bold-society-cap",
+      "name": "Bold Society Cap",
+      "description": "Six-panel structured cap with embroidered wordmark. The finishing piece for those who stopped asking for a seat.",
+      "price": 380,
+      "gender": "male",
+      "collectionId": "accessories",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/headwear/boldSocietyCapBlack.jpeg",
+            "/collections/headwear/boldSocietyCapBlack2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        },
+        {
+          "id": "cream",
+          "colorName": "Cream",
+          "colorHex": "#f5f0e8",
+          "images": [
+            "/collections/headwear/boldSocietyCapBlack.jpeg",
+            "/collections/headwear/boldSocietyCapBlack2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        },
+        {
+          "id": "red",
+          "colorName": "Red",
+          "colorHex": "#c41e3a",
+          "images": [
+            "/collections/headwear/boldSocietyCapBlack.jpeg",
+            "/collections/headwear/boldSocietyCapBlack2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 54,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-25T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "refusal-brim-cap",
+      "slug": "refusal-brim-cap",
+      "name": "Refusal Brim Cap",
+      "description": "Suede finish with a low profile and a brim that holds its line. Understated until it is not.",
+      "price": 480,
+      "gender": "male",
+      "collectionId": "accessories",
+      "variants": [
+        {
+          "id": "black-suede",
+          "colorName": "Black Suede",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/headwear/suedeCapBlack.jpg",
+            "/collections/headwear/suedeCapBlack2.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-26T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "sovereign-cap",
+      "slug": "sovereign-cap",
+      "name": "Sovereign Cap",
+      "description": "Structured cap in a feminine proportion. Same conviction. Sharper silhouette.",
+      "price": 380,
+      "gender": "female",
+      "collectionId": "accessories",
+      "variants": [
+        {
+          "id": "cream",
+          "colorName": "Cream",
+          "colorHex": "#f5f0e8",
+          "images": [
+            "/collections/headwear/boldSocietyCapCream.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        },
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/headwear/boldSocietyCapCream.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 36,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-27T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "classic-knit-beanie",
+      "slug": "classic-knit-beanie",
+      "name": "Classic Knit Beanie",
+      "description": "Ribbed knit with a folded cuff and minimal branding. Warmth without the noise.",
+      "price": 260,
+      "gender": "male",
+      "collectionId": "accessories",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/headwear/beanie.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        },
+        {
+          "id": "red",
+          "colorName": "Red",
+          "colorHex": "#c41e3a",
+          "images": [
+            "/collections/headwear/beanie.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 36,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-28T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "statement-beanie",
+      "slug": "statement-beanie",
+      "name": "Statement Beanie",
+      "description": "Oversized knit with a slouch fit. For cold mornings and colder intentions.",
+      "price": 280,
+      "gender": "female",
+      "collectionId": "accessories",
+      "variants": [
+        {
+          "id": "burgundy",
+          "colorName": "Burgundy",
+          "colorHex": "#7f1d1d",
+          "images": [
+            "/collections/headwear/beanieRed.jpg"
+          ],
+          "sizes": [
+            {
+              "size": "One Size",
+              "stock": 18
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 18,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-29T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "no-apology-crew-sock",
+      "slug": "no-apology-crew-sock",
+      "name": "No Apology Crew Sock",
+      "description": "Cushioned crew sock with ribbed cuff and woven wordmark. The detail most people skip. We did not.",
+      "price": 120,
+      "gender": "male",
+      "collectionId": "accessories",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/boxers/boxersWhite.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S/M",
+              "stock": 18
+            },
+            {
+              "size": "L/XL",
+              "stock": 15
+            }
+          ]
+        },
+        {
+          "id": "white",
+          "colorName": "White",
+          "colorHex": "#f5f0e8",
+          "images": [
+            "/collections/boxers/boxersWhite.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S/M",
+              "stock": 18
+            },
+            {
+              "size": "L/XL",
+              "stock": 15
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 66,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-30T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "silent-standard-ankle-sock",
+      "slug": "silent-standard-ankle-sock",
+      "name": "Silent Standard Ankle Sock",
+      "description": "Low-cut performance sock with arch support. Invisible under sneakers. Present in every step.",
+      "price": 100,
+      "gender": "female",
+      "collectionId": "accessories",
+      "variants": [
+        {
+          "id": "black",
+          "colorName": "Black",
+          "colorHex": "#1a1a1a",
+          "images": [
+            "/collections/boxers/boxersWhite.jpeg"
+          ],
+          "sizes": [
+            {
+              "size": "S/M",
+              "stock": 18
+            },
+            {
+              "size": "L/XL",
+              "stock": 15
+            }
+          ]
+        }
+      ],
+      "details": [
+        "Premium construction",
+        "Designed in Accra",
+        "Unapologetic fit"
+      ],
+      "careInstructions": [
+        "Machine wash cold",
+        "Do not bleach",
+        "Tumble dry low or line dry"
+      ],
+      "isActive": true,
+      "totalStock": 33,
+      "totalSold": 0,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-03-31T10:00:00.000Z",
+      "updatedAt": "2026-05-20T10:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "collectionCount": 7,
+    "productCount": 38
+  }
+}

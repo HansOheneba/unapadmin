@@ -31,3 +31,21 @@ h6 {
   font-family: var(--font-heading);
   letter-spacing: -0.01em;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #order-print-sheet,
+  #order-print-sheet * {
+    visibility: visible;
+  }
+
+  #order-print-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

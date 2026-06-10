@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Download, Printer, Search, X } from "lucide-react";
-import { useAdminStore } from "@/lib/store";
+import { Download, Search, X } from "lucide-react";
+import { useOrders } from "@/lib/hooks/useOrders";
+import { useRiders } from "@/lib/hooks/useRiders";
+import { isAccraInhouse } from "@/lib/delivery";
 import {
   ORDER_STATUSES,
   PAYMENT_STATUSES,
-  countryCurrency,
   downloadCsv,
   fmtDate,
   formatMoney,
@@ -32,71 +33,84 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import {
   OrderStatusBadge,
   PaymentStatusBadge,
 } from "@/components/shared/status-badge";
+import { ListPagination } from "@/components/shared/list-pagination";
+import { PAGE_SIZE } from "@/lib/constants/pagination";
 import type { OrderStatus, PaymentStatus } from "@/types";
 
 export default function OrdersPage() {
-  const orders = useAdminStore((s) => s.orders);
   const [status, setStatus] = React.useState<OrderStatus | "all">("all");
   const [payment, setPayment] = React.useState<PaymentStatus | "all">("all");
   const [country, setCountry] = React.useState<"all" | "Ghana" | "Nigeria">(
     "all",
   );
+  const [rider, setRider] = React.useState<string>("all");
   const [from, setFrom] = React.useState("");
   const [to, setTo] = React.useState("");
   const [q, setQ] = React.useState("");
+  const [page, setPage] = React.useState(1);
 
-  const filtered = React.useMemo(() => {
-    return orders.filter((o) => {
-      if (status !== "all" && o.status !== status) return false;
-      if (payment !== "all" && o.paymentStatus !== payment) return false;
-      if (country !== "all" && o.currency !== countryCurrency(country))
-        return false;
-      if (from && new Date(o.createdAt) < new Date(from)) return false;
-      if (to) {
-        const end = new Date(to);
-        end.setHours(23, 59, 59, 999);
-        if (new Date(o.createdAt) > end) return false;
-      }
-      if (q) {
-        const needle = q.toLowerCase();
-        if (
-          !o.id.toLowerCase().includes(needle) &&
-          !o.trackingNumber.toLowerCase().includes(needle) &&
-          !o.customerName.toLowerCase().includes(needle) &&
-          !o.customerEmail.toLowerCase().includes(needle)
-        )
-          return false;
-      }
-      return true;
-    });
-  }, [orders, status, payment, country, from, to, q]);
+  const listParams = React.useMemo(
+    () => ({
+      status: status === "all" ? undefined : status,
+      paymentStatus: payment === "all" ? undefined : payment,
+      country: country === "all" ? undefined : country,
+      riderId:
+        rider === "all" ? undefined : rider === "unassigned" ? "unassigned" : rider,
+      from: from || undefined,
+      to: to || undefined,
+      q: q || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    [status, payment, country, rider, from, to, q, page],
+  );
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [status, payment, country, rider, from, to, q]);
+
+  const { data, isLoading } = useOrders(listParams);
+  const { data: ridersPage } = useRiders({ page: 1, pageSize: 50 });
+  const riders = ridersPage?.data ?? [];
+  const riderMap = React.useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of ridersPage?.data ?? []) {
+      m.set(r.id, `${r.firstName} ${r.lastName}`);
+    }
+    return m;
+  }, [ridersPage?.data]);
+
+  const orders = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
 
   const clearFilters = () => {
     setStatus("all");
     setPayment("all");
     setCountry("all");
+    setRider("all");
     setFrom("");
     setTo("");
     setQ("");
+    setPage(1);
   };
 
   const exportCsv = () => {
     downloadCsv(
       `orders-${new Date().toISOString().slice(0, 10)}.csv`,
-      filtered.map((o) => ({
+      orders.map((o) => ({
         order_id: o.id,
         tracking: o.trackingNumber,
         customer: o.customerName,
         email: o.customerEmail,
-        country: o.currency === "GHS" ? "Ghana" : "Nigeria",
+        country: o.shippingAddress.country,
         items: o.items.reduce((s, i) => s + i.quantity, 0),
         total: o.total,
-        currency: o.currency,
+        currency: "GHS",
         status: o.status,
         payment: o.paymentStatus,
         created_at: o.createdAt,
@@ -108,6 +122,7 @@ export default function OrdersPage() {
     status !== "all" ||
     payment !== "all" ||
     country !== "all" ||
+    rider !== "all" ||
     !!from ||
     !!to ||
     !!q;
@@ -118,92 +133,108 @@ export default function OrdersPage() {
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">Orders</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            {filtered.length} of {orders.length} orders
+            {total} order{total === 1 ? "" : "s"}
           </p>
         </div>
         <Button
           variant="outline"
           onClick={exportCsv}
-          disabled={filtered.length === 0}
+          disabled={orders.length === 0}
         >
           <Download className="h-4 w-4" />
           Export CSV
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
-          <div className="lg:col-span-2 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search order, tracking, customer..."
-              className="pl-9"
-            />
-          </div>
-          <Select value={status} onValueChange={(v) => setStatus(v as never)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {ORDER_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {statusLabel(s)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={payment} onValueChange={(v) => setPayment(v as never)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Payment" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All payments</SelectItem>
-              {PAYMENT_STATUSES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {statusLabel(p)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={country} onValueChange={(v) => setCountry(v as never)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Country" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All countries</SelectItem>
-              <SelectItem value="Ghana">🇬🇭 Ghana</SelectItem>
-              <SelectItem value="Nigeria">🇳🇬 Nigeria</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-2">
+      <Card className="overflow-hidden">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-52 md:w-60 shrink-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search..."
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+            <Select value={status} onValueChange={(v) => setStatus(v as never)}>
+              <SelectTrigger className="h-9 w-[9.5rem] text-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                {ORDER_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {statusLabel(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={payment} onValueChange={(v) => setPayment(v as never)}>
+              <SelectTrigger className="h-9 w-[8.5rem] text-sm">
+                <SelectValue placeholder="Payment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All payments</SelectItem>
+                {PAYMENT_STATUSES.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {statusLabel(p)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={rider} onValueChange={setRider}>
+              <SelectTrigger className="h-9 w-[10rem] text-sm">
+                <SelectValue placeholder="Rider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All riders</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {riders.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.firstName} {r.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={country} onValueChange={(v) => setCountry(v as never)}>
+              <SelectTrigger className="h-9 w-[7.5rem] text-sm">
+                <SelectValue placeholder="Country" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="Ghana">🇬🇭 Ghana</SelectItem>
+                <SelectItem value="Nigeria">🇳🇬 Nigeria</SelectItem>
+              </SelectContent>
+            </Select>
             <Input
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="text-xs"
+              className="h-9 w-[8.75rem] text-sm"
+              aria-label="From date"
             />
-            <span className="text-xs text-zinc-400">to</span>
+            <span className="text-xs text-zinc-400">–</span>
             <Input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="text-xs"
+              className="h-9 w-[8.75rem] text-sm"
+              aria-label="To date"
             />
+            {hasFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-9 px-2 text-xs text-zinc-500"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear
+              </Button>
+            )}
           </div>
-          {hasFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="md:col-span-2 lg:col-span-6 justify-self-start text-xs"
-            >
-              <X className="h-3 w-3" />
-              Clear filters
-            </Button>
-          )}
         </CardContent>
       </Card>
 
@@ -218,22 +249,32 @@ export default function OrdersPage() {
                 <TableHead>Total</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Delivery</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
+                    className="text-center py-12 text-zinc-500"
+                  >
+                    Loading orders...
+                  </TableCell>
+                </TableRow>
+              ) : orders.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={9}
                     className="text-center py-12 text-zinc-500"
                   >
                     No orders match the current filters.
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((o) => {
+                orders.map((o) => {
                   const firstItem = o.items[0];
                   const more = o.items.length - 1;
                   return (
@@ -267,13 +308,35 @@ export default function OrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">
-                        {formatMoney(o.total, o.currency)}
+                        {formatMoney(o.total)}
                       </TableCell>
                       <TableCell>
                         <PaymentStatusBadge status={o.paymentStatus} />
                       </TableCell>
                       <TableCell>
                         <OrderStatusBadge status={o.status} />
+                      </TableCell>
+                      <TableCell>
+                        {isAccraInhouse(o) ? (
+                          o.status === "delivered" && o.riderId ? (
+                            <span className="text-xs text-zinc-600">
+                              Delivered by{" "}
+                              {riderMap.get(o.riderId) ?? o.riderId}
+                            </span>
+                          ) : o.riderId ? (
+                            <span className="text-xs text-zinc-600">
+                              {riderMap.get(o.riderId) ?? o.riderId}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-zinc-400">
+                              No rider
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-xs text-zinc-500">
+                            Outside Accra
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div
@@ -294,6 +357,12 @@ export default function OrdersPage() {
               )}
             </TableBody>
           </Table>
+          <ListPagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>

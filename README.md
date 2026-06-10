@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Unapologetic Admin Dashboard
 
-## Getting Started
+Staff CMS for the Unapologetic streetwear brand. Separate from the customer storefront.
 
-First, run the development server:
+## Quick start
 
 ```bash
+cp .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Runs on [http://localhost:3001](http://localhost:3001).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Source of truth
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Storefront catalog wins** on any conflict. See `AGENTS.md` and `docs/README.md`.
 
-## Learn More
+## Catalog sync
 
-To learn more about Next.js, take a look at the following resources:
+Product and collection seed data is synced from the storefront repo:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run sync-catalog
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This writes `lib/data/catalog-seed.json` (7 collections, 38 products). See `docs/catalog-field-mapping.md` for how admin shapes map to the storefront.
 
-## Deploy on Vercel
+## Mock mode (default)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+With `NEXT_PUBLIC_USE_MOCK_API=true`, all API calls use an in-memory backend seeded from `lib/data/seed.ts`. No backend required for local development.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Sign in:** use a seeded admin email (e.g. `admin@unapologetic.store`) and any 6-digit OTP.
+
+## Real API
+
+Set `NEXT_PUBLIC_USE_MOCK_API=false` and point `NEXT_PUBLIC_API_URL` at the backend. See `docs/backend-api-spec.json` for the full contract.
+
+## Pages
+
+| Route | Purpose |
+|-------|---------|
+| `/admin` | Dashboard KPIs and charts |
+| `/admin/orders` | Order management |
+| `/admin/customers` | Customer CRM |
+| `/admin/products` | Product catalog with variants |
+| `/admin/collections` | Collection management |
+| `/admin/announcements` | Storefront banner bar |
+| `/admin/inner-circle` | Membership applications |
+| `/admin/reviews` | Review moderation |
+| `/admin/analytics` | Sales analytics |
+| `/admin/settings` | Store settings and admin users |
+
+## Build
+
+```bash
+npm run build
+```

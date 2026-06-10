@@ -3,10 +3,12 @@
 import * as React from "react";
 import { Search, LogOut, ShoppingBag, User, Package } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/auth-store";
-import { useAdminStore } from "@/lib/store";
+import { logout as apiLogout } from "@/lib/api/auth";
+import { globalSearch } from "@/lib/api/search";
+import { queryKeys } from "@/lib/hooks/query-keys";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 type SearchResult =
@@ -18,9 +20,6 @@ export function Topbar() {
   const router = useRouter();
   const currentUser = useAuthStore((s) => s.currentUser);
   const logout = useAuthStore((s) => s.logout);
-  const orders = useAdminStore((s) => s.orders);
-  const customers = useAdminStore((s) => s.customers);
-  const products = useAdminStore((s) => s.products);
 
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [q, setQ] = React.useState("");
@@ -28,8 +27,11 @@ export function Topbar() {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const env =
-    process.env.NEXT_PUBLIC_ENV?.toUpperCase() === "LIVE" ? "LIVE" : "STAGING";
+  const { data: searchData } = useQuery({
+    queryKey: queryKeys.search(q),
+    queryFn: () => globalSearch(q),
+    enabled: q.trim().length >= 2,
+  });
 
   const initials = currentUser
     ? currentUser.name
@@ -47,59 +49,35 @@ export function Topbar() {
         ? "Admin"
         : "Viewer";
 
-  const results: SearchResult[] = (() => {
-    const needle = q.trim().toLowerCase();
-    if (needle.length < 2) return [];
+  const results: SearchResult[] = React.useMemo(() => {
+    if (!searchData) return [];
     const out: SearchResult[] = [];
-
-    for (const o of orders) {
-      if (
-        o.id.toLowerCase().includes(needle) ||
-        o.customerName.toLowerCase().includes(needle) ||
-        o.customerEmail.toLowerCase().includes(needle) ||
-        o.trackingNumber.toLowerCase().includes(needle)
-      ) {
-        out.push({
-          type: "order",
-          id: o.id,
-          label: o.id,
-          sub: `${o.customerName} - ${o.status}`,
-        });
-        if (out.filter((r) => r.type === "order").length >= 4) break;
-      }
-    }
-
-    for (const c of customers) {
-      const hay =
-        `${c.firstName} ${c.lastName} ${c.email} ${c.phone}`.toLowerCase();
-      if (hay.includes(needle)) {
-        out.push({
-          type: "customer",
-          id: c.id,
-          label: `${c.firstName} ${c.lastName}`,
-          sub: c.email,
-        });
-        if (out.filter((r) => r.type === "customer").length >= 4) break;
-      }
-    }
-
-    for (const p of products) {
-      if (
-        p.name.toLowerCase().includes(needle) ||
-        p.slug.toLowerCase().includes(needle)
-      ) {
-        out.push({
-          type: "product",
-          id: p.id,
-          label: p.name,
-          sub: p.collectionId,
-        });
-        if (out.filter((r) => r.type === "product").length >= 4) break;
-      }
-    }
-
+    searchData.orders.forEach((o) => {
+      out.push({
+        type: "order",
+        id: o.id,
+        label: o.id,
+        sub: `${o.customerName} - ${o.status}`,
+      });
+    });
+    searchData.customers.forEach((c) => {
+      out.push({
+        type: "customer",
+        id: c.id,
+        label: `${c.firstName} ${c.lastName}`,
+        sub: c.email,
+      });
+    });
+    searchData.products.forEach((p) => {
+      out.push({
+        type: "product",
+        id: p.id,
+        label: p.name,
+        sub: p.collectionId,
+      });
+    });
     return out;
-  })();
+  }, [searchData]);
 
   const navigate = (r: SearchResult) => {
     setQ("");
@@ -109,7 +87,6 @@ export function Topbar() {
     else router.push(`/admin/products/${r.id}`);
   };
 
-  // Close dropdown when clicking outside.
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -123,7 +100,12 @@ export function Topbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleConfirmLogout = () => {
+  const handleConfirmLogout = async () => {
+    try {
+      await apiLogout();
+    } catch {
+      // proceed with local logout
+    }
     logout();
     toast.success("Signed out.");
     router.push("/login");
@@ -138,12 +120,9 @@ export function Topbar() {
   return (
     <>
       <header className="bg-white border-b border-zinc-100 h-14 flex items-center px-6 gap-4 sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-zinc-900">
-            Unapologetic Admin
-          </span>
-          <Badge variant={env === "LIVE" ? "emerald" : "amber"}>{env}</Badge>
-        </div>
+        <span className="text-sm font-semibold text-zinc-900 shrink-0">
+          Unapologetic Admin
+        </span>
 
         <div className="flex-1 max-w-md" ref={containerRef}>
           <div className="relative">

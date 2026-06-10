@@ -1,8 +1,9 @@
 import { format, formatDistanceToNow } from "date-fns";
-import type { Currency, OrderStatus, PaymentStatus } from "@/types";
+import type { OrderStatus, PaymentStatus } from "@/types";
 
-export function formatMoney(amount: number, currency: Currency = "GHS") {
-  return `${currency} ${amount.toLocaleString("en-US", {
+/** All order amounts are stored and displayed in Ghana cedis (Paystack handles FX). */
+export function formatMoney(amount: number) {
+  return `₵${amount.toLocaleString("en-GH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -25,15 +26,14 @@ export function relative(d: string | Date) {
 }
 
 export const ORDER_STATUSES: OrderStatus[] = [
-  "pending",
   "processing",
-  "shipped",
+  "ready_for_pickup",
+  "picked_up",
   "in_transit",
-  "out_for_delivery",
   "delivered",
+  "returned",
   "cancelled",
   "refunded",
-  "exception",
 ];
 
 export const PAYMENT_STATUSES: PaymentStatus[] = [
@@ -44,16 +44,24 @@ export const PAYMENT_STATUSES: PaymentStatus[] = [
   "failed",
 ];
 
-export const ORDER_LIFECYCLE: OrderStatus[] = [
-  "pending",
+/** Sequential fulfillment flow for Accra in-house orders. */
+export const FULFILLMENT_STEPS: OrderStatus[] = [
   "processing",
-  "shipped",
+  "ready_for_pickup",
+  "picked_up",
   "in_transit",
-  "out_for_delivery",
   "delivered",
 ];
 
+const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
+  ready_for_pickup: "Ready for pickup",
+  picked_up: "Picked up",
+  in_transit: "In transit",
+  returned: "Returned",
+};
+
 export function statusLabel(s: string) {
+  if (s in STATUS_LABELS) return STATUS_LABELS[s as OrderStatus]!;
   return s
     .split("_")
     .map((w) => w[0].toUpperCase() + w.slice(1))
@@ -64,10 +72,6 @@ export const COUNTRY_FLAG: Record<string, string> = {
   Ghana: "🇬🇭",
   Nigeria: "🇳🇬",
 };
-
-export function countryCurrency(country: "Ghana" | "Nigeria"): Currency {
-  return country === "Ghana" ? "GHS" : "NGN";
-}
 
 export function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
   if (rows.length === 0) return;

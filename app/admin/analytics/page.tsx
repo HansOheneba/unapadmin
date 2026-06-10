@@ -13,11 +13,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useAdminStore } from "@/lib/store";
+import { useAnalytics } from "@/lib/hooks/useAnalytics";
+import { getOrders } from "@/lib/api/orders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ChartContainer,
   ChartLegend,
@@ -27,25 +29,21 @@ import {
 } from "@/components/ui/chart";
 import { downloadCsv, fmtDate, formatMoney } from "@/lib/format";
 import { Download } from "lucide-react";
+import { toast } from "sonner";
+import type { Currency } from "@/types";
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "#f59e0b",
   processing: "#3b82f6",
-  shipped: "#6366f1",
+  ready_for_pickup: "#f59e0b",
+  picked_up: "#6366f1",
   in_transit: "#8b5cf6",
-  out_for_delivery: "#f97316",
   delivered: "#10b981",
+  returned: "#dc2626",
   cancelled: "#71717a",
   refunded: "#f43f5e",
-  exception: "#dc2626",
 };
 
 export default function AnalyticsPage() {
-  const orders = useAdminStore((s) => s.orders);
-  const customers = useAdminStore((s) => s.customers);
-  const collections = useAdminStore((s) => s.collections);
-  const products = useAdminStore((s) => s.products);
-
   const [from, setFrom] = React.useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
@@ -54,167 +52,65 @@ export default function AnalyticsPage() {
   const [to, setTo] = React.useState<string>(() =>
     new Date().toISOString().slice(0, 10),
   );
+  const [topProductsCurrency, setTopProductsCurrency] =
+    React.useState<Currency>("GHS");
 
-  const inRange = React.useMemo(() => {
-    const f = new Date(from);
-    const t = new Date(to);
-    t.setHours(23, 59, 59, 999);
-    return orders.filter((o) => {
-      const d = new Date(o.createdAt);
-      return d >= f && d <= t;
-    });
-  }, [orders, from, to]);
+  const { data: report, isLoading } = useAnalytics(from, to);
 
-  const paid = inRange.filter((o) => o.paymentStatus === "paid");
-
-  // Revenue over time (daily)
-  const dailyRevenue = React.useMemo(() => {
-    const buckets: Record<string, { date: string; ghs: number; ngn: number }> =
-      {};
-    const start = new Date(from);
-    const end = new Date(to);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const k = d.toISOString().slice(0, 10);
-      buckets[k] = { date: k, ghs: 0, ngn: 0 };
+  const exportReport = async () => {
+    try {
+      const { data: orders } = await getOrders({ from, to });
+      downloadCsv(
+        `analytics-${from}-to-${to}.csv`,
+        orders.map((o) => ({
+          order_id: o.id,
+          date: o.createdAt,
+          customer: o.customerName,
+          country: o.currency === "GHS" ? "Ghana" : "Nigeria",
+          total: o.total,
+          currency: o.currency,
+          payment_method: o.paymentMethod,
+          payment_status: o.paymentStatus,
+          status: o.status,
+          items: o.items.reduce((s, i) => s + i.quantity, 0),
+        })),
+      );
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to export report.",
+      );
     }
-    paid.forEach((o) => {
-      const k = new Date(o.createdAt).toISOString().slice(0, 10);
-      if (!buckets[k]) buckets[k] = { date: k, ghs: 0, ngn: 0 };
-      if (o.currency === "GHS") buckets[k].ghs += o.total;
-      else buckets[k].ngn += o.total;
-    });
-    return Object.values(buckets);
-  }, [paid, from, to]);
-
-  // Orders by status
-  const ordersByStatus = React.useMemo(() => {
-    const m: Record<string, number> = {};
-    inRange.forEach((o) => (m[o.status] = (m[o.status] ?? 0) + 1));
-    return Object.entries(m).map(([status, count]) => ({ status, count }));
-  }, [inRange]);
-
-  // Top products by revenue (GHS only for simplicity)
-  const topProducts = React.useMemo(() => {
-    const m = new Map<
-      string,
-      { name: string; units: number; revenue: number }
-    >();
-    paid
-      .filter((o) => o.currency === "GHS")
-      .forEach((o) => {
-        o.items.forEach((it) => {
-          const cur = m.get(it.productId) ?? {
-            name: it.productName,
-            units: 0,
-            revenue: 0,
-          };
-          cur.units += it.quantity;
-          cur.revenue += it.totalPrice;
-          m.set(it.productId, cur);
-        });
-      });
-    return [...m.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 8);
-  }, [paid]);
-
-  // Sales by collection
-  const salesByCollection = React.useMemo(() => {
-    const m: Record<string, number> = {};
-    paid
-      .filter((o) => o.currency === "GHS")
-      .forEach((o) => {
-        o.items.forEach((it) => {
-          m[it.collectionId] = (m[it.collectionId] ?? 0) + it.totalPrice;
-        });
-      });
-    return collections.map((c) => ({
-      collection: c.subtitle,
-      revenue: m[c.id] ?? 0,
-    }));
-  }, [paid, collections]);
-
-  // Sales by country
-  const salesByCountry = React.useMemo(
-    () => [
-      {
-        country: "Ghana",
-        revenue: paid
-          .filter((o) => o.currency === "GHS")
-          .reduce((s, o) => s + o.total, 0),
-        orders: paid.filter((o) => o.currency === "GHS").length,
-      },
-      {
-        country: "Nigeria",
-        revenue: paid
-          .filter((o) => o.currency === "NGN")
-          .reduce((s, o) => s + o.total, 0),
-        orders: paid.filter((o) => o.currency === "NGN").length,
-      },
-    ],
-    [paid],
-  );
-
-  // Payment split
-  const paymentSplit = React.useMemo(() => {
-    const m: Record<string, number> = {};
-    inRange.forEach(
-      (o) => (m[o.paymentMethod] = (m[o.paymentMethod] ?? 0) + 1),
-    );
-    return Object.entries(m).map(([method, count]) => ({ method, count }));
-  }, [inRange]);
-
-  // New vs returning customers (based on totalOrders snapshot)
-  const newVsReturning = React.useMemo(() => {
-    const f = new Date(from);
-    const t = new Date(to);
-    const newCount = customers.filter((c) => {
-      const d = new Date(c.joinedDate);
-      return d >= f && d <= t;
-    }).length;
-    return [
-      { label: "New", value: newCount },
-      {
-        label: "Returning",
-        value: customers.filter((c) => c.totalOrders > 1).length,
-      },
-    ];
-  }, [customers, from, to]);
-
-  // AOV trend
-  const aovTrend = React.useMemo(() => {
-    const m: Record<string, { count: number; revenue: number }> = {};
-    paid
-      .filter((o) => o.currency === "GHS")
-      .forEach((o) => {
-        const k = new Date(o.createdAt).toISOString().slice(0, 10);
-        m[k] = m[k] ?? { count: 0, revenue: 0 };
-        m[k].count += 1;
-        m[k].revenue += o.total;
-      });
-    return Object.entries(m)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, v]) => ({
-        date,
-        aov: v.count === 0 ? 0 : v.revenue / v.count,
-      }));
-  }, [paid]);
-
-  const exportReport = () => {
-    downloadCsv(
-      `analytics-${from}-to-${to}.csv`,
-      inRange.map((o) => ({
-        order_id: o.id,
-        date: o.createdAt,
-        customer: o.customerName,
-        country: o.currency === "GHS" ? "Ghana" : "Nigeria",
-        total: o.total,
-        currency: o.currency,
-        payment_method: o.paymentMethod,
-        payment_status: o.paymentStatus,
-        status: o.status,
-        items: o.items.reduce((s, i) => s + i.quantity, 0),
-      })),
-    );
   };
+
+  if (isLoading || !report) {
+    return (
+      <div className="py-12 text-center text-sm text-zinc-500">
+        Loading analytics...
+      </div>
+    );
+  }
+
+  const {
+    dailyRevenue,
+    ordersByStatus,
+    topProducts,
+    topProductsNgn,
+    salesByCollection,
+    salesByCountry,
+    paymentSplit,
+    newVsReturning,
+    aovTrend,
+    summary,
+  } = report;
+
+  const activeTopProducts =
+    topProductsCurrency === "GHS" ? topProducts : topProductsNgn;
+
+  const salesByCollectionChart = salesByCollection.map((c) => ({
+    collection: c.collection,
+    revenue:
+      topProductsCurrency === "GHS" ? c.revenueGhs : c.revenueNgn,
+  }));
 
   return (
     <div className="space-y-6">
@@ -222,7 +118,8 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">Analytics</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            Data for {fmtDate(from)} → {fmtDate(to)} · {inRange.length} orders
+            Data for {fmtDate(from)} → {fmtDate(to)} · {summary.totalOrders}{" "}
+            orders
           </p>
         </div>
         <div className="flex items-end gap-2">
@@ -282,8 +179,8 @@ export default function AnalyticsPage() {
                       labelFormatter={(l) => fmtDate(String(l))}
                       formatter={(v, name) =>
                         name === "Ghana"
-                          ? formatMoney(Number(v), "GHS")
-                          : formatMoney(Number(v), "NGN")
+                          ? formatMoney(Number(v))
+                          : formatMoney(Number(v))
                       }
                     />
                   }
@@ -352,52 +249,73 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base font-semibold">
               Top products
             </CardTitle>
+            <Tabs
+              value={topProductsCurrency}
+              onValueChange={(v) => setTopProductsCurrency(v as Currency)}
+            >
+              <TabsList className="h-8">
+                <TabsTrigger value="GHS" className="text-xs px-3">
+                  GHS
+                </TabsTrigger>
+                <TabsTrigger value="NGN" className="text-xs px-3">
+                  NGN
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
           <CardContent>
-            <ChartContainer
-              config={{ revenue: { label: "Revenue", color: "#0a0a0a" } }}
-              className="h-72"
-            >
-              <BarChart
-                data={topProducts}
-                layout="vertical"
-                margin={{ left: 16 }}
+            {activeTopProducts.length === 0 ? (
+              <p className="text-sm text-zinc-500 text-center py-8">
+                No paid orders in this period for {topProductsCurrency}.
+              </p>
+            ) : (
+              <ChartContainer
+                config={{ revenue: { label: "Revenue", color: "#0a0a0a" } }}
+                className="h-72"
               >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" hide />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={140}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 12 }}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(v) => formatMoney(Number(v), "GHS")}
-                    />
-                  }
-                />
-                <Bar
-                  dataKey="revenue"
-                  fill="var(--color-revenue)"
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ChartContainer>
+                <BarChart
+                  data={activeTopProducts}
+                  layout="vertical"
+                  margin={{ left: 16 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" hide />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={140}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(v) =>
+                          formatMoney(Number(v))
+                        }
+                      />
+                    }
+                  />
+                  <Bar
+                    dataKey="revenue"
+                    fill="var(--color-revenue)"
+                    radius={[0, 4, 4, 0]}
+                  />
+                </BarChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-base font-semibold">
-              Sales by collection
+              Sales by collection ({topProductsCurrency})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -405,7 +323,7 @@ export default function AnalyticsPage() {
               config={{ revenue: { label: "Revenue", color: "#0a0a0a" } }}
               className="h-72"
             >
-              <BarChart data={salesByCollection}>
+              <BarChart data={salesByCollectionChart}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="collection"
@@ -417,7 +335,9 @@ export default function AnalyticsPage() {
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
-                      formatter={(v) => formatMoney(Number(v), "GHS")}
+                      formatter={(v) =>
+                        formatMoney(Number(v))
+                      }
                     />
                   }
                 />
@@ -541,17 +461,35 @@ export default function AnalyticsPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-base font-semibold">
-            Average order value (GHS)
+            Average order value
           </CardTitle>
+          <Tabs
+            value={topProductsCurrency}
+            onValueChange={(v) => setTopProductsCurrency(v as Currency)}
+          >
+            <TabsList className="h-8">
+              <TabsTrigger value="GHS" className="text-xs px-3">
+                GHS
+              </TabsTrigger>
+              <TabsTrigger value="NGN" className="text-xs px-3">
+                NGN
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent>
           <ChartContainer
             config={{ aov: { label: "AOV", color: "#0a0a0a" } }}
             className="h-60"
           >
-            <LineChart data={aovTrend}>
+            <LineChart
+              data={aovTrend.map((d) => ({
+                date: d.date,
+                aov: topProductsCurrency === "GHS" ? d.aovGhs : d.aovNgn,
+              }))}
+            >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="date"
@@ -565,7 +503,9 @@ export default function AnalyticsPage() {
                 content={
                   <ChartTooltipContent
                     labelFormatter={(l) => fmtDate(String(l))}
-                    formatter={(v) => formatMoney(Number(v), "GHS")}
+                    formatter={(v) =>
+                      formatMoney(Number(v))
+                    }
                   />
                 }
               />

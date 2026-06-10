@@ -3,7 +3,11 @@
 import * as React from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useAdminStore } from "@/lib/store";
+import {
+  useAnnouncementMutations,
+  useBannerConfig,
+  useBannerMessages,
+} from "@/lib/hooks/useAnnouncements";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,12 +47,11 @@ const empty = (): BannerMessage => ({
 
 export default function AnnouncementsPage() {
   const { can } = useAuth();
-  const config = useAdminStore((s) => s.bannerConfig);
-  const messages = useAdminStore((s) => s.bannerMessages);
-  const updateConfig = useAdminStore((s) => s.updateBannerConfig);
-  const upsert = useAdminStore((s) => s.upsertBannerMessage);
-  const remove = useAdminStore((s) => s.deleteBannerMessage);
-  const reorder = useAdminStore((s) => s.reorderBannerMessages);
+  const { data: config, isLoading: configLoading } = useBannerConfig();
+  const { data: messages = [], isLoading: messagesLoading } =
+    useBannerMessages();
+  const { updateConfig, upsertMessage, removeMessage, reorderMessages } =
+    useAnnouncementMutations();
 
   const [editing, setEditing] = React.useState<BannerMessage | null>(null);
   const [toDelete, setToDelete] = React.useState<string | null>(null);
@@ -58,20 +61,34 @@ export default function AnnouncementsPage() {
   const activeMessages = sorted.filter((m) => m.isActive);
 
   React.useEffect(() => {
-    if (!config.isEnabled || activeMessages.length <= 1) return;
+    if (!config?.isEnabled || activeMessages.length <= 1) return;
     const t = setInterval(() => {
       setActiveIndex((i) => (i + 1) % activeMessages.length);
     }, config.rotationIntervalMs);
     return () => clearInterval(t);
-  }, [config.isEnabled, config.rotationIntervalMs, activeMessages.length]);
+  }, [config?.isEnabled, config?.rotationIntervalMs, activeMessages.length]);
 
-  const move = (idx: number, dir: -1 | 1) => {
+  const move = async (idx: number, dir: -1 | 1) => {
     const next = [...sorted];
     const t = idx + dir;
     if (t < 0 || t >= next.length) return;
     [next[idx], next[t]] = [next[t], next[idx]];
-    reorder(next.map((m) => m.id));
+    try {
+      await reorderMessages.mutateAsync(next.map((m) => m.id));
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to reorder messages.",
+      );
+    }
   };
+
+  if (configLoading || messagesLoading || !config) {
+    return (
+      <div className="py-12 text-center text-sm text-zinc-500">
+        Loading announcements...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -136,9 +153,17 @@ export default function AnnouncementsPage() {
                 id="enabled"
                 checked={config.isEnabled}
                 disabled={!can("edit")}
-                onCheckedChange={(v) => {
+                onCheckedChange={async (v) => {
                   if (!can("edit")) return;
-                  updateConfig({ isEnabled: v });
+                  try {
+                    await updateConfig.mutateAsync({ isEnabled: v });
+                  } catch (e) {
+                    toast.error(
+                      e instanceof Error
+                        ? e.message
+                        : "Failed to update banner.",
+                    );
+                  }
                 }}
               />
             </div>
@@ -148,12 +173,20 @@ export default function AnnouncementsPage() {
                 type="number"
                 step="0.5"
                 value={config.rotationIntervalMs / 1000}
-                onChange={(e) =>
-                  updateConfig({
-                    rotationIntervalMs:
-                      Math.max(1, Number(e.target.value)) * 1000,
-                  })
-                }
+                onChange={async (e) => {
+                  try {
+                    await updateConfig.mutateAsync({
+                      rotationIntervalMs:
+                        Math.max(1, Number(e.target.value)) * 1000,
+                    });
+                  } catch (err) {
+                    toast.error(
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to update rotation.",
+                    );
+                  }
+                }}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -162,9 +195,19 @@ export default function AnnouncementsPage() {
                 <Input
                   type="color"
                   value={config.backgroundColor}
-                  onChange={(e) =>
-                    updateConfig({ backgroundColor: e.target.value })
-                  }
+                  onChange={async (e) => {
+                    try {
+                      await updateConfig.mutateAsync({
+                        backgroundColor: e.target.value,
+                      });
+                    } catch (err) {
+                      toast.error(
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to update color.",
+                      );
+                    }
+                  }}
                   className="h-9 p-1"
                 />
               </div>
@@ -173,7 +216,19 @@ export default function AnnouncementsPage() {
                 <Input
                   type="color"
                   value={config.textColor}
-                  onChange={(e) => updateConfig({ textColor: e.target.value })}
+                  onChange={async (e) => {
+                    try {
+                      await updateConfig.mutateAsync({
+                        textColor: e.target.value,
+                      });
+                    } catch (err) {
+                      toast.error(
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to update color.",
+                      );
+                    }
+                  }}
                   className="h-9 p-1"
                 />
               </div>
@@ -276,16 +331,22 @@ export default function AnnouncementsPage() {
         <MessageEditor
           message={editing}
           onClose={() => setEditing(null)}
-          onSave={(m) => {
+          onSave={async (m) => {
             const id = m.id || `bm_${Date.now().toString(36)}`;
             const sortOrder =
               m.sortOrder ||
               (messages.length === 0
                 ? 1
                 : Math.max(...messages.map((x) => x.sortOrder)) + 1);
-            upsert({ ...m, id, sortOrder });
-            toast.success("Message saved.");
-            setEditing(null);
+            try {
+              await upsertMessage.mutateAsync({ ...m, id, sortOrder });
+              toast.success("Message saved.");
+              setEditing(null);
+            } catch (e) {
+              toast.error(
+                e instanceof Error ? e.message : "Failed to save message.",
+              );
+            }
           }}
         />
       )}
@@ -296,11 +357,16 @@ export default function AnnouncementsPage() {
         title="Delete message?"
         destructive
         confirmText="Delete"
-        onConfirm={() => {
-          if (toDelete) {
-            remove(toDelete);
+        onConfirm={async () => {
+          if (!toDelete) return;
+          try {
+            await removeMessage.mutateAsync(toDelete);
             toast.success("Message deleted.");
             setToDelete(null);
+          } catch (e) {
+            toast.error(
+              e instanceof Error ? e.message : "Failed to delete message.",
+            );
           }
         }}
       />

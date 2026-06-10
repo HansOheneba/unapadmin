@@ -15,10 +15,11 @@ import {
   LineChart,
   Settings,
   Eye,
+  Bike,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAdminStore } from "@/lib/store";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useBadgeCounts } from "@/lib/hooks/useDashboard";
 
 type NavItem = {
   label: string;
@@ -54,6 +55,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         badgeKey: "lowStock",
       },
       { label: "Collections", href: "/admin/collections", icon: Layers },
+      { label: "Riders", href: "/admin/riders", icon: Bike },
     ],
   },
   {
@@ -99,33 +101,15 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { isSuperAdmin, isViewer } = useAuth();
-  const orders = useAdminStore((s) => s.orders);
-  const products = useAdminStore((s) => s.products);
-  const reviews = useAdminStore((s) => s.reviews);
-  const innerCircle = useAdminStore((s) => s.innerCircle);
-  const lowStockThreshold = useAdminStore((s) => s.settings.lowStockThreshold);
-
-  const badges = {
-    pendingOrders: orders.filter(
-      (o) => o.status === "pending" || o.status === "processing",
-    ).length,
-    lowStock: products.reduce(
-      (n, p) =>
-        n +
-        (p.variants.some((v) =>
-          v.sizes.some((s) => s.stock > 0 && s.stock <= lowStockThreshold),
-        )
-          ? 1
-          : 0),
-      0,
-    ),
-    pendingReviews: reviews.filter((r) => r.status === "pending").length,
-    innerCirclePending: innerCircle.filter((m) => m.status === "pending")
-      .length,
-  };
+  const { data: badges = {
+    pendingOrders: 0,
+    lowStock: 0,
+    pendingReviews: 0,
+    innerCirclePending: 0,
+  } } = useBadgeCounts();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 w-60 bg-zinc-900 text-white flex flex-col">
+    <aside className="fixed inset-y-0 left-0 z-40 w-60 bg-black text-white flex flex-col">
       <div className="px-6 py-5 border-b border-white/10">
         <Link href="/admin" className="flex items-center gap-2">
           <Image

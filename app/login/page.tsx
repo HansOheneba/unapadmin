@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth-store";
+import { sendOtp, verifyOtp } from "@/lib/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,40 +19,63 @@ type Step = "email" | "otp";
 
 export default function LoginPage() {
   const router = useRouter();
-  const login = useAuthStore((s) => s.login);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const token = useAuthStore((s) => s.token);
+  const currentUser = useAuthStore((s) => s.currentUser);
+  const setSession = useAuthStore((s) => s.setSession);
+
+  React.useEffect(() => {
+    if (hydrated && token && currentUser) {
+      router.replace("/admin");
+    }
+  }, [hydrated, token, currentUser, router]);
 
   const [step, setStep] = React.useState<Step>("email");
   const [email, setEmail] = React.useState("");
   const [otp, setOtp] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
       toast.error("Please enter your email.");
       return;
     }
-    setStep("otp");
+    setLoading(true);
+    try {
+      await sendOtp(email.trim());
+      toast.success("Check your inbox for a verification code.");
+      setStep("otp");
+    } catch {
+      toast.error("Could not send code. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOtpComplete = async (value: string) => {
     if (value.length < 6) return;
     setLoading(true);
-
-    // Simulate a small network delay for realism
-    await new Promise((r) => setTimeout(r, 600));
-
-    const ok = login(email);
-    if (ok) {
+    try {
+      const { token, user } = await verifyOtp(email.trim(), value);
+      setSession(token, user);
       toast.success("Signed in.");
       router.push("/admin");
-    } else {
-      toast.error("No admin account found for that email.");
-      setStep("email");
+    } catch {
+      toast.error("Invalid or expired code.");
       setOtp("");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+        <div className="text-sm text-zinc-500">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
@@ -88,10 +112,11 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   autoFocus
+                  disabled={loading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Continue
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Sending..." : "Continue"}
               </Button>
             </form>
           ) : (
@@ -117,9 +142,6 @@ export default function LoginPage() {
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
-                <p className="text-xs text-zinc-400 text-center">
-                  Enter any 6-digit code to continue.
-                </p>
               </div>
               <Button
                 className="w-full"

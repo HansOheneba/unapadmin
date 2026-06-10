@@ -5,7 +5,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Trash2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
-import { useAdminStore } from "@/lib/store";
+import { useCollections } from "@/lib/hooks/useCollections";
+import { useProductMutations, useProducts } from "@/lib/hooks/useProducts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,18 +20,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ImagePicker } from "@/components/shared/image-picker";
+import { VariantSizePicker } from "@/components/products/variant-size-picker";
+import {
+  getSizeGuide,
+  sizeGuideSizeLabels,
+} from "@/lib/catalog/size-guides";
 import type { ColorVariant, Product, SizeStock } from "@/types";
 
-const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"];
+const filterSizesForGuide = (
+  sizes: SizeStock[],
+  collectionId: string,
+  gender: Product["gender"],
+): SizeStock[] => {
+  const allowed = new Set(
+    sizeGuideSizeLabels(getSizeGuide(collectionId, gender)),
+  );
+  return sizes.filter((s) => allowed.has(s.size));
+};
 
 const toSlug = (name: string) =>
   name
@@ -44,14 +51,12 @@ const emptyProduct = (): Product => ({
   name: "",
   description: "",
   price: 0,
-  discountType: null,
-  discountValue: null,
-  collectionId: "boxers",
+  gender: "male",
+  collectionId: "underwear",
   variants: [],
   details: [""],
   careInstructions: [""],
-  isVisible: true,
-  isFeatured: false,
+  isActive: true,
   totalStock: 0,
   totalSold: 0,
   averageRating: 0,
@@ -62,10 +67,10 @@ const emptyProduct = (): Product => ({
 
 export function ProductForm({ initial }: { initial?: Product }) {
   const router = useRouter();
-  const products = useAdminStore((s) => s.products);
-  const collections = useAdminStore((s) => s.collections);
-  const upsertProduct = useAdminStore((s) => s.upsertProduct);
-  const deleteProduct = useAdminStore((s) => s.deleteProduct);
+  const { data: productsPage } = useProducts();
+  const { data: collections = [] } = useCollections();
+  const { upsert, remove } = useProductMutations();
+  const products = productsPage?.data ?? [];
 
   const [draft, setDraft] = React.useState<Product>(initial ?? emptyProduct());
   const [slugManuallyEdited, setSlugManuallyEdited] = React.useState(!!initial);
@@ -82,8 +87,29 @@ export function ProductForm({ initial }: { initial?: Product }) {
     draft.slug !== "" &&
     products.some((p) => p.slug === draft.slug && p.id !== draft.id);
 
+  const sizeGuide = getSizeGuide(draft.collectionId, draft.gender);
+
   const update = <K extends keyof Product>(key: K, value: Product[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
+
+  const updateCatalogField = <K extends "collectionId" | "gender">(
+    key: K,
+    value: Product[K],
+  ) => {
+    setDraft((d) => {
+      const next = { ...d, [key]: value };
+      const collectionId =
+        key === "collectionId" ? (value as string) : d.collectionId;
+      const gender = key === "gender" ? (value as Product["gender"]) : d.gender;
+      return {
+        ...next,
+        variants: d.variants.map((v) => ({
+          ...v,
+          sizes: filterSizesForGuide(v.sizes, collectionId, gender),
+        })),
+      };
+    });
+  };
 
   // Variants
   const addVariant = () => {
@@ -92,11 +118,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
       colorName: "",
       colorHex: "#000000",
       images: [],
-      sizes: DEFAULT_SIZES.map((s) => ({
-        size: s,
-        stock: 0,
-        sku: "", // assigned by the backend on save
-      })),
+      sizes: [],
     };
     update("variants", [...draft.variants, v]);
   };
@@ -114,27 +136,26 @@ export function ProductForm({ initial }: { initial?: Product }) {
       draft.variants.filter((_, i) => i !== idx),
     );
 
-  const updateSize = (
-    vIdx: number,
-    sIdx: number,
-    patch: Partial<SizeStock>,
-  ) => {
-    update(
-      "variants",
-      draft.variants.map((v, i) =>
-        i !== vIdx
-          ? v
-          : {
-              ...v,
-              sizes: v.sizes.map((s, si) =>
-                si === sIdx ? { ...s, ...patch } : s,
-              ),
-            },
-      ),
-    );
-  };
+  const normalizeVariants = (variants: ColorVariant[]): ColorVariant[] =>
+    variants.map((v) => {
+      const colorName = v.colorName.trim();
+      const id =
+        v.id.startsWith("var_") && colorName
+          ? toSlug(colorName)
+          : v.id || (colorName ? toSlug(colorName) : v.id);
+      return {
+        ...v,
+        id,
+        colorName,
+        sizes: filterSizesForGuide(
+          v.sizes.map((s) => ({ ...s, size: s.size.trim() })),
+          draft.collectionId,
+          draft.gender,
+        ),
+      };
+    });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!draft.name || !draft.slug) {
       toast.error("Name and slug are required.");
       return;
@@ -143,17 +164,44 @@ export function ProductForm({ initial }: { initial?: Product }) {
       toast.error("Slug is already used by another product.");
       return;
     }
-    upsertProduct(draft);
-    toast.success(initial ? "Product updated." : "Product created.");
-    router.push(`/admin/products/${draft.id}`);
+    if (draft.variants.length === 0) {
+      toast.error("Add at least one color variant.");
+      return;
+    }
+    const variants = normalizeVariants(draft.variants);
+    for (const v of variants) {
+      if (!v.colorName) {
+        toast.error("Every variant needs a color name.");
+        return;
+      }
+      if (v.sizes.length === 0) {
+        toast.error(`${v.colorName} needs at least one size.`);
+        return;
+      }
+    }
+    try {
+      const saved = await upsert.mutateAsync({ ...draft, variants });
+      toast.success(initial ? "Product updated." : "Product created.");
+      router.push(`/admin/products/${saved.id}`);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to save product.",
+      );
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!initial) return;
     if (!confirm("Delete this product?")) return;
-    deleteProduct(initial.id);
-    toast.success("Product deleted.");
-    router.push("/admin/products");
+    try {
+      await remove.mutateAsync(initial.id);
+      toast.success("Product deleted.");
+      router.push("/admin/products");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to delete product.",
+      );
+    }
   };
 
   return (
@@ -240,79 +288,38 @@ export function ProductForm({ initial }: { initial?: Product }) {
                   onChange={(e) => update("description", e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Price (GHS)</Label>
-                  <Input
-                    type="number"
-                    value={draft.price}
-                    onChange={(e) => update("price", Number(e.target.value))}
-                  />
-                </div>
+              <div>
+                <Label>Price (GHS)</Label>
+                <Input
+                  type="number"
+                  value={draft.price}
+                  onChange={(e) => update("price", Number(e.target.value))}
+                  className="max-w-xs"
+                />
               </div>
-              <div className="space-y-2">
-                <Label>Discount</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Select
-                    value={draft.discountType ?? "none"}
-                    onValueChange={(v) => {
-                      if (v === "none") {
-                        update("discountType", null);
-                        update("discountValue", null);
-                      } else {
-                        update("discountType", v as "fixed" | "percentage");
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No discount</SelectItem>
-                      <SelectItem value="fixed">Fixed amount off</SelectItem>
-                      <SelectItem value="percentage">Percentage off</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {draft.discountType && (
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500 pointer-events-none select-none">
-                        {draft.discountType === "percentage" ? "%" : "GHS"}
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        className={
-                          draft.discountType === "percentage" ? "pl-8" : "pl-12"
-                        }
-                        value={draft.discountValue ?? ""}
-                        onChange={(e) =>
-                          update(
-                            "discountValue",
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value),
-                          )
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
-                {draft.discountType &&
-                  draft.discountValue &&
-                  draft.discountValue > 0 && (
-                    <p className="text-xs text-zinc-500">
-                      {draft.discountType === "percentage"
-                        ? `Customer pays GHS ${(draft.price * (1 - draft.discountValue / 100)).toFixed(2)}`
-                        : `Customer pays GHS ${(draft.price - draft.discountValue).toFixed(2)}`}
-                    </p>
-                  )}
+              <div>
+                <Label>Gender</Label>
+                <Select
+                  value={draft.gender}
+                  onValueChange={(v) =>
+                    updateCatalogField("gender", v as Product["gender"])
+                  }
+                >
+                  <SelectTrigger className="max-w-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <Label>Collection</Label>
                   <Select
                     value={draft.collectionId}
-                    onValueChange={(v) => update("collectionId", v)}
+                    onValueChange={(v) => updateCatalogField("collectionId", v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -347,9 +354,6 @@ export function ProductForm({ initial }: { initial?: Product }) {
                 </p>
               )}
               {draft.variants.map((v, idx) => {
-                const isOneSize =
-                  v.sizes.length === 1 &&
-                  v.sizes[0].size.toLowerCase().includes("one");
                 const isOnlyVariant = draft.variants.length === 1;
                 return (
                   <Card key={v.id} className="bg-zinc-50/50">
@@ -357,9 +361,16 @@ export function ProductForm({ initial }: { initial?: Product }) {
                       <div className="flex items-center gap-2">
                         <Input
                           value={v.colorName}
-                          onChange={(e) =>
-                            updateVariant(idx, { colorName: e.target.value })
-                          }
+                          onChange={(e) => {
+                            const colorName = e.target.value;
+                            const patch: Partial<ColorVariant> = { colorName };
+                            if (v.id.startsWith("var_") || !v.id) {
+                              patch.id = colorName
+                                ? toSlug(colorName)
+                                : v.id;
+                            }
+                            updateVariant(idx, patch);
+                          }}
                           placeholder="Color name"
                           className="flex-1"
                         />
@@ -423,82 +434,11 @@ export function ProductForm({ initial }: { initial?: Product }) {
                         </div>
                       </div>
 
-                      <div>
-                        <Label>Sizes &amp; stock</Label>
-                        {isOneSize ? (
-                          // One-size: flat row, no table needed
-                          <div className="mt-2 flex items-center gap-3">
-                            <span className="shrink-0 inline-flex items-center px-3 py-1.5 rounded-md bg-zinc-100 border border-zinc-200 text-xs font-medium text-zinc-600">
-                              One Size
-                            </span>
-                            <code className="flex-1 text-xs font-mono text-zinc-500">
-                              {v.sizes[0].sku || "SKU pending"}
-                            </code>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-xs text-zinc-500">
-                                Stock
-                              </span>
-                              <Input
-                                type="number"
-                                value={v.sizes[0].stock}
-                                onChange={(e) =>
-                                  updateSize(idx, 0, {
-                                    stock: Number(e.target.value),
-                                  })
-                                }
-                                className="w-20 h-8 text-xs text-right"
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          // Multi-size: full table
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Size</TableHead>
-                                <TableHead>SKU</TableHead>
-                                <TableHead className="text-right">
-                                  Stock
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {v.sizes.map((s, sIdx) => (
-                                <TableRow key={`${v.id}-${sIdx}`}>
-                                  <TableCell className="w-20">
-                                    <Input
-                                      value={s.size}
-                                      onChange={(e) =>
-                                        updateSize(idx, sIdx, {
-                                          size: e.target.value,
-                                        })
-                                      }
-                                      className="h-8 text-xs"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <code className="text-xs font-mono text-zinc-500">
-                                      {s.sku || "SKU pending"}
-                                    </code>
-                                  </TableCell>
-                                  <TableCell className="text-right w-24">
-                                    <Input
-                                      type="number"
-                                      value={s.stock}
-                                      onChange={(e) =>
-                                        updateSize(idx, sIdx, {
-                                          stock: Number(e.target.value),
-                                        })
-                                      }
-                                      className="h-8 text-xs text-right"
-                                    />
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        )}
-                      </div>
+                      <VariantSizePicker
+                        guide={sizeGuide}
+                        sizes={v.sizes}
+                        onChange={(sizes) => updateVariant(idx, { sizes })}
+                      />
                     </CardContent>
                   </Card>
                 );
@@ -533,24 +473,16 @@ export function ProductForm({ initial }: { initial?: Product }) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base font-semibold">
-                Visibility
+                Publishing
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="visible">Visible on storefront</Label>
+                <Label htmlFor="active">Active on storefront</Label>
                 <Switch
-                  id="visible"
-                  checked={draft.isVisible}
-                  onCheckedChange={(v) => update("isVisible", v)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="featured">Featured product</Label>
-                <Switch
-                  id="featured"
-                  checked={draft.isFeatured}
-                  onCheckedChange={(v) => update("isFeatured", v)}
+                  id="active"
+                  checked={draft.isActive}
+                  onCheckedChange={(v) => update("isActive", v)}
                 />
               </div>
             </CardContent>

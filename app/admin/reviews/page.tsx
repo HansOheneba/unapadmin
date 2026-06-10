@@ -10,7 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAdminStore } from "@/lib/store";
+import { useReviewMutations, useReviews } from "@/lib/hooks/useReviews";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ListPagination } from "@/components/shared/list-pagination";
 import { ReviewStatusBadge } from "@/components/shared/status-badge";
+import { PAGE_SIZE } from "@/lib/constants/pagination";
 import { fmtDate } from "@/lib/format";
 import type { Review } from "@/types";
 
@@ -33,28 +35,54 @@ type Filter = "all" | Review["status"];
 
 export default function ReviewsPage() {
   const { can } = useAuth();
-  const reviews = useAdminStore((s) => s.reviews);
-  const updateStatus = useAdminStore((s) => s.updateReviewStatus);
-  const remove = useAdminStore((s) => s.deleteReview);
-
   const [tab, setTab] = React.useState<Filter>("pending");
+  const [page, setPage] = React.useState(1);
   const [expanded, setExpanded] = React.useState<string | null>(null);
   const [noteDraft, setNoteDraft] = React.useState<Record<string, string>>({});
   const [toDelete, setToDelete] = React.useState<string | null>(null);
 
-  const counts = {
-    all: reviews.length,
-    pending: reviews.filter((r) => r.status === "pending").length,
-    approved: reviews.filter((r) => r.status === "approved").length,
-    rejected: reviews.filter((r) => r.status === "rejected").length,
-  };
+  React.useEffect(() => {
+    setPage(1);
+  }, [tab]);
 
-  const filtered = reviews
-    .filter((r) => (tab === "all" ? true : r.status === tab))
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+  const listParams = React.useMemo(
+    () => ({
+      ...(tab !== "all" ? { status: tab } : {}),
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    [tab, page],
+  );
+
+  const { data, isLoading } = useReviews(listParams);
+  const { data: allCount } = useReviews({ page: 1, pageSize: 1 });
+  const { data: pendingCount } = useReviews({
+    status: "pending",
+    page: 1,
+    pageSize: 1,
+  });
+  const { data: approvedCount } = useReviews({
+    status: "approved",
+    page: 1,
+    pageSize: 1,
+  });
+  const { data: rejectedCount } = useReviews({
+    status: "rejected",
+    page: 1,
+    pageSize: 1,
+  });
+  const { updateStatus, remove } = useReviewMutations();
+
+  const reviews = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+
+  const counts = {
+    all: allCount?.total ?? 0,
+    pending: pendingCount?.total ?? 0,
+    approved: approvedCount?.total ?? 0,
+    rejected: rejectedCount?.total ?? 0,
+  };
 
   return (
     <div className="space-y-6">
@@ -68,7 +96,13 @@ export default function ReviewsPage() {
         </p>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Filter)}>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          setTab(v as Filter);
+          setExpanded(null);
+        }}
+      >
         <TabsList>
           <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
           <TabsTrigger value="pending">Pending ({counts.pending})</TabsTrigger>
@@ -96,7 +130,16 @@ export default function ReviewsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-zinc-500"
+                      >
+                        Loading reviews...
+                      </TableCell>
+                    </TableRow>
+                  ) : reviews.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={7}
@@ -106,7 +149,7 @@ export default function ReviewsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filtered.map((r) => {
+                    reviews.map((r) => {
                       const isOpen = expanded === r.id;
                       return (
                         <React.Fragment key={r.id}>
@@ -176,9 +219,20 @@ export default function ReviewsPage() {
                                   variant="ghost"
                                   size="sm"
                                   className="text-emerald-700"
-                                  onClick={() => {
-                                    updateStatus(r.id, "approved");
-                                    toast.success("Review approved.");
+                                  onClick={async () => {
+                                    try {
+                                      await updateStatus.mutateAsync({
+                                        id: r.id,
+                                        status: "approved",
+                                      });
+                                      toast.success("Review approved.");
+                                    } catch (e) {
+                                      toast.error(
+                                        e instanceof Error
+                                          ? e.message
+                                          : "Failed to approve review.",
+                                      );
+                                    }
                                   }}
                                 >
                                   Approve
@@ -188,9 +242,20 @@ export default function ReviewsPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => {
-                                    updateStatus(r.id, "rejected");
-                                    toast.success("Review rejected.");
+                                  onClick={async () => {
+                                    try {
+                                      await updateStatus.mutateAsync({
+                                        id: r.id,
+                                        status: "rejected",
+                                      });
+                                      toast.success("Review rejected.");
+                                    } catch (e) {
+                                      toast.error(
+                                        e instanceof Error
+                                          ? e.message
+                                          : "Failed to reject review.",
+                                      );
+                                    }
                                   }}
                                 >
                                   Reject
@@ -235,13 +300,25 @@ export default function ReviewsPage() {
                                           [r.id]: e.target.value,
                                         }))
                                       }
-                                      onBlur={() => {
+                                      onBlur={async () => {
                                         if (!can("edit")) return;
                                         const v =
                                           noteDraft[r.id] ?? r.adminNote;
                                         if (v !== r.adminNote) {
-                                          updateStatus(r.id, r.status, v);
-                                          toast.success("Note saved.");
+                                          try {
+                                            await updateStatus.mutateAsync({
+                                              id: r.id,
+                                              status: r.status,
+                                              adminNote: v,
+                                            });
+                                            toast.success("Note saved.");
+                                          } catch (e) {
+                                            toast.error(
+                                              e instanceof Error
+                                                ? e.message
+                                                : "Failed to save note.",
+                                            );
+                                          }
                                         }
                                       }}
                                     />
@@ -256,6 +333,12 @@ export default function ReviewsPage() {
                   )}
                 </TableBody>
               </Table>
+              <ListPagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                onPageChange={setPage}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -268,11 +351,16 @@ export default function ReviewsPage() {
         description="This permanently removes the review."
         destructive
         confirmText="Delete review"
-        onConfirm={() => {
-          if (toDelete) {
-            remove(toDelete);
+        onConfirm={async () => {
+          if (!toDelete) return;
+          try {
+            await remove.mutateAsync(toDelete);
             toast.success("Review deleted.");
             setToDelete(null);
+          } catch (e) {
+            toast.error(
+              e instanceof Error ? e.message : "Failed to delete review.",
+            );
           }
         }}
       />

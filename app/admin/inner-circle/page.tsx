@@ -3,7 +3,10 @@
 import * as React from "react";
 import { Crown, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
-import { useAdminStore } from "@/lib/store";
+import {
+  useInnerCircle,
+  useInnerCircleMutations,
+} from "@/lib/hooks/useInnerCircle";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +28,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InnerCircleStatusBadge } from "@/components/shared/status-badge";
+import { ListPagination } from "@/components/shared/list-pagination";
+import { PAGE_SIZE } from "@/lib/constants/pagination";
 import { fmtDate } from "@/lib/format";
 import type { InnerCircleMember } from "@/types";
 
@@ -32,30 +37,62 @@ type Filter = "all" | InnerCircleMember["status"];
 
 export default function InnerCirclePage() {
   const { can } = useAuth();
-  const members = useAdminStore((s) => s.innerCircle);
-  const updateStatus = useAdminStore((s) => s.updateInnerCircleStatus);
-
   const [tab, setTab] = React.useState<Filter>("pending");
+  const [page, setPage] = React.useState(1);
   const [acting, setActing] = React.useState<{
     member: InnerCircleMember;
     status: InnerCircleMember["status"];
   } | null>(null);
   const [note, setNote] = React.useState("");
 
-  const counts = {
-    all: members.length,
-    pending: members.filter((m) => m.status === "pending").length,
-    approved: members.filter((m) => m.status === "approved").length,
-    rejected: members.filter((m) => m.status === "rejected").length,
-    waitlisted: members.filter((m) => m.status === "waitlisted").length,
-  };
+  React.useEffect(() => {
+    setPage(1);
+  }, [tab]);
 
-  const filtered = members
-    .filter((m) => (tab === "all" ? true : m.status === tab))
-    .sort(
-      (a, b) =>
-        new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime(),
-    );
+  const listParams = React.useMemo(
+    () => ({
+      ...(tab !== "all" ? { status: tab } : {}),
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    [tab, page],
+  );
+
+  const { data, isLoading } = useInnerCircle(listParams);
+  const { data: allCount } = useInnerCircle({ page: 1, pageSize: 1 });
+  const { data: pendingCount } = useInnerCircle({
+    status: "pending",
+    page: 1,
+    pageSize: 1,
+  });
+  const { data: approvedCount } = useInnerCircle({
+    status: "approved",
+    page: 1,
+    pageSize: 1,
+  });
+  const { data: rejectedCount } = useInnerCircle({
+    status: "rejected",
+    page: 1,
+    pageSize: 1,
+  });
+  const { data: waitlistedCount } = useInnerCircle({
+    status: "waitlisted",
+    page: 1,
+    pageSize: 1,
+  });
+  const { updateStatus } = useInnerCircleMutations();
+
+  const members = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+
+  const counts = {
+    all: allCount?.total ?? 0,
+    pending: pendingCount?.total ?? 0,
+    approved: approvedCount?.total ?? 0,
+    rejected: rejectedCount?.total ?? 0,
+    waitlisted: waitlistedCount?.total ?? 0,
+  };
 
   return (
     <div className="space-y-6">
@@ -106,7 +143,16 @@ export default function InnerCirclePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8 text-zinc-500"
+                      >
+                        Loading applications...
+                      </TableCell>
+                    </TableRow>
+                  ) : members.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={6}
@@ -116,7 +162,7 @@ export default function InnerCirclePage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filtered.map((m) => (
+                    members.map((m) => (
                       <TableRow key={m.id}>
                         <TableCell>
                           <div className="font-medium text-zinc-900">
@@ -184,6 +230,12 @@ export default function InnerCirclePage() {
                   )}
                 </TableBody>
               </Table>
+              <ListPagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                onPageChange={setPage}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -219,12 +271,24 @@ export default function InnerCirclePage() {
               Cancel
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 if (!acting) return;
-                updateStatus(acting.member.id, acting.status, note);
-                toast.success(`Marked ${acting.status}.`);
-                setActing(null);
-                setNote("");
+                try {
+                  await updateStatus.mutateAsync({
+                    id: acting.member.id,
+                    status: acting.status,
+                    note: note || undefined,
+                  });
+                  toast.success(`Marked ${acting.status}.`);
+                  setActing(null);
+                  setNote("");
+                } catch (e) {
+                  toast.error(
+                    e instanceof Error
+                      ? e.message
+                      : "Failed to update status.",
+                  );
+                }
               }}
             >
               Confirm

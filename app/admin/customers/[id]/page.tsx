@@ -4,14 +4,28 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Crown, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowLeft, Crown, Mail, Phone, MapPin, X, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useAdminStore } from "@/lib/store";
+import {
+  useCustomer,
+  useCustomerMutations,
+  useCustomerOrders,
+} from "@/lib/hooks/useCustomers";
+import { useProducts } from "@/lib/hooks/useProducts";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -26,27 +40,41 @@ import {
   OrderStatusBadge,
 } from "@/components/shared/status-badge";
 import { fmtDate, formatMoney } from "@/lib/format";
+import type { Customer } from "@/types";
 
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { can } = useAuth();
-  const customers = useAdminStore((s) => s.customers);
-  const allOrders = useAdminStore((s) => s.orders);
-  const products = useAdminStore((s) => s.products);
-  const updateCustomer = useAdminStore((s) => s.updateCustomer);
+  const { data: customer, isLoading, isError } = useCustomer(params.id);
+  const { data: orders = [], isLoading: ordersLoading } = useCustomerOrders(
+    params.id,
+  );
+  const { data: productsPage } = useProducts();
+  const { update } = useCustomerMutations();
 
-  const customer = customers.find((c) => c.id === params.id);
-  const orders = allOrders.filter((o) => o.customerId === params.id);
+  const products = productsPage?.data ?? [];
 
-  const [notesDraft, setNotesDraft] = React.useState(customer?.notes ?? "");
-  const [prevCustomerId, setPrevCustomerId] = React.useState(customer?.id);
-  if (customer && prevCustomerId !== customer.id) {
-    setPrevCustomerId(customer.id);
-    setNotesDraft(customer.notes);
+  const [notesDraft, setNotesDraft] = React.useState("");
+  const [tagsDraft, setTagsDraft] = React.useState<string[]>([]);
+  const [tagInput, setTagInput] = React.useState("");
+
+  React.useEffect(() => {
+    if (customer) {
+      setNotesDraft(customer.notes);
+      setTagsDraft(customer.tags);
+    }
+  }, [customer]);
+
+  if (isLoading) {
+    return (
+      <div className="py-12 text-center text-sm text-zinc-500">
+        Loading customer...
+      </div>
+    );
   }
 
-  if (!customer) {
+  if (isError || !customer) {
     return (
       <div className="space-y-4">
         <Button variant="ghost" onClick={() => router.push("/admin/customers")}>
@@ -62,11 +90,39 @@ export default function CustomerDetailPage() {
   }
 
   const aov =
-    customer.totalOrders === 0 ? 0 : customer.totalSpend / customer.totalOrders;
+    customer.totalOrders === 0
+      ? 0
+      : customer.totalSpend / customer.totalOrders;
 
   const wishlistProducts = customer.wishlist
-    .map((pid) => products.find((p) => p.id === pid))
+    .map((pid) => products.find((p) => p.id === pid || p.slug === pid))
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
+
+  const savePatch = async (patch: Partial<Customer>) => {
+    try {
+      await update.mutateAsync({ id: customer.id, patch });
+      toast.success("Customer updated.");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to update customer.",
+      );
+    }
+  };
+
+  const addTag = () => {
+    const tag = tagInput.trim();
+    if (!tag || tagsDraft.includes(tag)) return;
+    const next = [...tagsDraft, tag];
+    setTagsDraft(next);
+    setTagInput("");
+    if (can("edit")) savePatch({ tags: next });
+  };
+
+  const removeTag = (tag: string) => {
+    const next = tagsDraft.filter((t) => t !== tag);
+    setTagsDraft(next);
+    if (can("edit")) savePatch({ tags: next });
+  };
 
   return (
     <div className="space-y-6">
@@ -89,7 +145,7 @@ export default function CustomerDetailPage() {
                 {customer.lastName[0]}
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-xl font-semibold text-zinc-900">
                     {customer.firstName} {customer.lastName}
                   </h1>
@@ -115,13 +171,28 @@ export default function CustomerDetailPage() {
                     {customer.city}, {customer.region}, {customer.country}
                   </div>
                 </div>
-                {customer.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {customer.tags.map((t) => (
-                      <Badge key={t} variant="outline">
-                        {t}
-                      </Badge>
-                    ))}
+                {can("edit") && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <Label className="text-xs text-zinc-500 shrink-0">
+                      Status
+                    </Label>
+                    <Select
+                      value={customer.status}
+                      onValueChange={(v) =>
+                        savePatch({
+                          status: v as Customer["status"],
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-40 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="unverified">Unverified</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
               </div>
@@ -131,9 +202,9 @@ export default function CustomerDetailPage() {
               <Stat label="Orders" value={customer.totalOrders.toString()} />
               <Stat
                 label="Lifetime spend"
-                value={formatMoney(customer.totalSpend, customer.currency)}
+                value={formatMoney(customer.totalSpend)}
               />
-              <Stat label="AOV" value={formatMoney(aov, customer.currency)} />
+              <Stat label="AOV" value={formatMoney(aov)} />
             </div>
           </div>
         </CardContent>
@@ -178,6 +249,61 @@ export default function CustomerDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base font-semibold text-zinc-900">
+                  Tags
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {tagsDraft.length === 0 ? (
+                    <span className="text-sm text-zinc-500">No tags yet.</span>
+                  ) : (
+                    tagsDraft.map((t) => (
+                      <Badge key={t} variant="outline" className="gap-1">
+                        {t}
+                        {can("edit") && (
+                          <button
+                            type="button"
+                            onClick={() => removeTag(t)}
+                            className="hover:text-rose-600"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+                {can("edit") && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="Add tag (e.g. VIP)"
+                      className="h-8 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={addTag}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold text-zinc-900">
                   Internal notes
                 </CardTitle>
               </CardHeader>
@@ -187,11 +313,22 @@ export default function CustomerDetailPage() {
                   readOnly={!can("edit")}
                   value={notesDraft}
                   onChange={(e) => setNotesDraft(e.target.value)}
-                  onBlur={() => {
+                  onBlur={async () => {
                     if (!can("edit")) return;
                     if (notesDraft !== customer.notes) {
-                      updateCustomer(customer.id, { notes: notesDraft });
-                      toast.success("Notes saved.");
+                      try {
+                        await update.mutateAsync({
+                          id: customer.id,
+                          patch: { notes: notesDraft },
+                        });
+                        toast.success("Notes saved.");
+                      } catch (e) {
+                        toast.error(
+                          e instanceof Error
+                            ? e.message
+                            : "Failed to save notes.",
+                        );
+                      }
                     }
                   }}
                   placeholder={
@@ -219,7 +356,16 @@ export default function CustomerDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.length === 0 ? (
+                  {ordersLoading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-8 text-zinc-500"
+                      >
+                        Loading orders...
+                      </TableCell>
+                    </TableRow>
+                  ) : orders.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}
@@ -246,7 +392,7 @@ export default function CustomerDetailPage() {
                           {o.items.reduce((s, i) => s + i.quantity, 0)}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {formatMoney(o.total, o.currency)}
+                          {formatMoney(o.total)}
                         </TableCell>
                         <TableCell>
                           <OrderStatusBadge status={o.status} />
@@ -327,7 +473,7 @@ export default function CustomerDetailPage() {
                     {p.name}
                   </div>
                   <div className="text-xs text-zinc-500">
-                    {formatMoney(p.price, customer.currency)}
+                    {formatMoney(p.price)}
                   </div>
                 </Link>
               ))

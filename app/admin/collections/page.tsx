@@ -5,7 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useAdminStore } from "@/lib/store";
+import {
+  useCollectionMutations,
+  useCollections,
+} from "@/lib/hooks/useCollections";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +34,7 @@ const emptyCollection = (): Collection => ({
   tagline: "",
   featured: "",
   href: "",
-  isVisible: true,
+  isActive: true,
   sortOrder: 0,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -39,27 +42,38 @@ const emptyCollection = (): Collection => ({
 
 export default function CollectionsPage() {
   const { can } = useAuth();
-  const collections = useAdminStore((s) => s.collections);
-  const products = useAdminStore((s) => s.products);
-  const upsert = useAdminStore((s) => s.upsertCollection);
-  const remove = useAdminStore((s) => s.deleteCollection);
-  const reorder = useAdminStore((s) => s.reorderCollections);
+  const { data: collections = [], isLoading } = useCollections();
+  const { upsert, remove, reorder } = useCollectionMutations();
 
   const [editing, setEditing] = React.useState<Collection | null>(null);
   const [toDelete, setToDelete] = React.useState<string | null>(null);
 
   const sorted = [...collections].sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const move = (idx: number, dir: -1 | 1) => {
+  const move = async (idx: number, dir: -1 | 1) => {
     const next = [...sorted];
     const target = idx + dir;
     if (target < 0 || target >= next.length) return;
     [next[idx], next[target]] = [next[target], next[idx]];
-    reorder(next.map((c) => c.id));
+    try {
+      await reorder.mutateAsync(next.map((c) => c.id));
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to reorder collections.",
+      );
+    }
   };
 
   const productCount = (id: string) =>
-    products.filter((p) => p.collectionId === id).length;
+    collections.find((c) => c.id === id)?.productCount ?? 0;
+
+  if (isLoading) {
+    return (
+      <div className="py-12 text-center text-sm text-zinc-500">
+        Loading collections...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -132,9 +146,9 @@ export default function CollectionsPage() {
                   {productCount(c.id)} products
                 </span>
                 <span
-                  className={c.isVisible ? "text-emerald-600" : "text-zinc-400"}
+                  className={c.isActive ? "text-emerald-600" : "text-zinc-400"}
                 >
-                  {c.isVisible ? "Visible" : "Hidden"}
+                  {c.isActive ? "Active" : "Hidden"}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-2">
@@ -177,21 +191,27 @@ export default function CollectionsPage() {
         <CollectionEditor
           collection={editing}
           onClose={() => setEditing(null)}
-          onSave={(c) => {
+          onSave={async (c) => {
             const id = c.id || c.subtitle.toLowerCase().replace(/\s+/g, "-");
             const sortOrder =
               c.sortOrder ||
               (collections.length === 0
                 ? 1
                 : Math.max(...collections.map((x) => x.sortOrder)) + 1);
-            upsert({
-              ...c,
-              id,
-              href: c.href || `/collections/${id}`,
-              sortOrder,
-            });
-            toast.success("Collection saved.");
-            setEditing(null);
+            try {
+              await upsert.mutateAsync({
+                ...c,
+                id,
+                href: c.href || `/collections/${id}`,
+                sortOrder,
+              });
+              toast.success("Collection saved.");
+              setEditing(null);
+            } catch (e) {
+              toast.error(
+                e instanceof Error ? e.message : "Failed to save collection.",
+              );
+            }
           }}
         />
       )}
@@ -203,11 +223,16 @@ export default function CollectionsPage() {
         description="Products in this collection will be left unassigned."
         destructive
         confirmText="Delete collection"
-        onConfirm={() => {
-          if (toDelete) {
-            remove(toDelete);
+        onConfirm={async () => {
+          if (!toDelete) return;
+          try {
+            await remove.mutateAsync(toDelete);
             toast.success("Collection deleted.");
             setToDelete(null);
+          } catch (e) {
+            toast.error(
+              e instanceof Error ? e.message : "Failed to delete collection.",
+            );
           }
         }}
       />
@@ -289,11 +314,11 @@ function CollectionEditor({
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="visible">Visible on storefront</Label>
+            <Label htmlFor="active">Active on storefront</Label>
             <Switch
-              id="visible"
-              checked={draft.isVisible}
-              onCheckedChange={(v) => u("isVisible", v)}
+              id="active"
+              checked={draft.isActive}
+              onCheckedChange={(v) => u("isActive", v)}
             />
           </div>
         </div>
