@@ -39,6 +39,9 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { fmtDate } from "@/lib/format";
+import { useMockApi } from "@/lib/api/client";
+import { resetMockStore } from "@/lib/mock/data-store";
+import { useQueryClient } from "@tanstack/react-query";
 import type { AdminRole, StoreSettings } from "@/types";
 
 export default function SettingsPage() {
@@ -47,6 +50,8 @@ export default function SettingsPage() {
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const { data: admins = [], isLoading: adminsLoading } = useAdminUsers();
   const { update, invite, removeAdmin } = useSettingsMutations();
+  const qc = useQueryClient();
+  const mockApi = useMockApi();
 
   const [prevAuth, setPrevAuth] = React.useState(isSuperAdmin);
   if (prevAuth !== isSuperAdmin) {
@@ -276,6 +281,32 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {mockApi && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">
+              Demo data
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-zinc-600 max-w-lg">
+              Changes are saved in your browser (localStorage) while the backend
+              is offline. Reset to restore the original seed data.
+            </p>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                resetMockStore();
+                await qc.invalidateQueries();
+                toast.success("Demo data reset to defaults.");
+              }}
+            >
+              Reset demo data
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <ConfirmDialog
         open={!!toRemove}

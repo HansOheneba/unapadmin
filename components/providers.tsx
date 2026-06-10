@@ -3,6 +3,7 @@
 import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { MockStoreHydrator } from "@/components/layout/mock-store-hydrator";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -28,6 +29,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <MockStoreHydrator />
       {children}
       <Toaster position="top-right" richColors closeButton />
     </QueryClientProvider>

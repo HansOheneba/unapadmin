@@ -18,36 +18,16 @@ import type {
   StoreSettings,
 } from "@/types";
 import {
-  seedAdmins,
-  seedBannerConfig,
-  seedBannerMessages,
-  seedCollections,
-  seedCustomers,
-  seedDeliveryEvents,
-  seedInnerCircle,
-  seedOrders,
-  seedProducts,
-  seedReviews,
-  seedRiders,
-  seedSettings,
-} from "@/lib/data/seed";
+  createSeedStore,
+  getPersistedStore,
+  resetPersistedStore,
+  setPersistedStore,
+  type MockStoreData,
+} from "./persisted-store";
 
 const now = () => new Date().toISOString();
 
-type Store = {
-  collections: Collection[];
-  products: Product[];
-  customers: Customer[];
-  orders: Order[];
-  deliveryEvents: DeliveryEvent[];
-  reviews: Review[];
-  bannerConfig: BannerConfig;
-  bannerMessages: BannerMessage[];
-  innerCircle: InnerCircleMember[];
-  riders: Rider[];
-  settings: StoreSettings;
-  admins: AdminUser[];
-};
+type Store = MockStoreData;
 
 const ACTIVE_ORDER_STATUSES: OrderStatus[] = [
   "ready_for_pickup",
@@ -55,48 +35,32 @@ const ACTIVE_ORDER_STATUSES: OrderStatus[] = [
   "in_transit",
 ];
 
-function syncRiderDeliveryCounts(): void {
-  store.riders = store.riders.map((r) => ({
-    ...r,
-    activeDeliveries: store.orders.filter(
-      (o) => o.riderId === r.id && ACTIVE_ORDER_STATUSES.includes(o.status),
-    ).length,
-  }));
+function getStore(): Store {
+  return getPersistedStore();
 }
 
-let store: Store = {
-  collections: [...seedCollections],
-  products: [...seedProducts],
-  customers: [...seedCustomers],
-  orders: [...seedOrders],
-  deliveryEvents: [...seedDeliveryEvents],
-  reviews: [...seedReviews],
-  bannerConfig: { ...seedBannerConfig },
-  bannerMessages: [...seedBannerMessages],
-  innerCircle: [...seedInnerCircle],
-  riders: [...seedRiders],
-  settings: { ...seedSettings },
-  admins: [...seedAdmins],
-};
+function withRiderCounts(s: Store): Store {
+  return {
+    ...s,
+    riders: s.riders.map((r) => ({
+      ...r,
+      activeDeliveries: s.orders.filter(
+        (o) => o.riderId === r.id && ACTIVE_ORDER_STATUSES.includes(o.status),
+      ).length,
+    })),
+  };
+}
 
-syncRiderDeliveryCounts();
+function commitStore(next: Store): void {
+  setPersistedStore(withRiderCounts(next));
+}
+
+function patchStore(patch: Partial<Store>): void {
+  commitStore({ ...getStore(), ...patch });
+}
 
 export function resetMockStore(): void {
-  store = {
-    collections: [...seedCollections],
-    products: [...seedProducts],
-    customers: [...seedCustomers],
-    orders: [...seedOrders],
-    deliveryEvents: [...seedDeliveryEvents],
-    reviews: [...seedReviews],
-    bannerConfig: { ...seedBannerConfig },
-    bannerMessages: [...seedBannerMessages],
-    innerCircle: [...seedInnerCircle],
-    riders: [...seedRiders],
-    settings: { ...seedSettings },
-    admins: [...seedAdmins],
-  };
-  syncRiderDeliveryCounts();
+  resetPersistedStore();
 }
 
 const recomputeTotalStock = (p: Product): Product => ({
@@ -134,7 +98,7 @@ export function mockVerifyOtp(
   email: string,
   otp: string,
 ): { token: string; user: AdminUser } | null {
-  const found = store.admins.find(
+  const found = getStore().admins.find(
     (a) => a.email.toLowerCase() === email.trim().toLowerCase(),
   );
   if (!found || otp.length !== 6) return null;
@@ -147,27 +111,27 @@ export function mockVerifyOtp(
 export function mockGetMe(token: string | null): AdminUser | null {
   if (!token?.startsWith("mock-jwt-")) return null;
   const id = token.replace("mock-jwt-", "");
-  return store.admins.find((a) => a.id === id) ?? null;
+  return getStore().admins.find((a) => a.id === id) ?? null;
 }
 
 // ─── Collections ────────────────────────────────────────────────────────────
 
 export function mockGetCollections(): CollectionWithCount[] {
-  return [...store.collections]
+  return [...getStore().collections]
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((c) => ({
       ...c,
-      productCount: store.products.filter((p) => p.collectionId === c.id).length,
+      productCount: getStore().products.filter((p) => p.collectionId === c.id).length,
     }));
 }
 
 export function mockUpsertCollection(c: Collection): Collection {
-  const exists = store.collections.find((x) => x.id === c.id);
+  const exists = getStore().collections.find((x) => x.id === c.id);
   const updated: Collection = { ...c, updatedAt: now() };
   if (exists) {
-    store.collections = store.collections.map((x) =>
+    patchStore({ collections: getStore().collections.map((x) =>
       x.id === c.id ? updated : x,
-    );
+    ) });
   } else {
     const id =
       c.id ||
@@ -176,26 +140,28 @@ export function mockUpsertCollection(c: Collection): Collection {
       ...updated,
       id,
       href: c.href || `/collections/${id}`,
-      sortOrder: c.sortOrder || store.collections.length + 1,
+      sortOrder: c.sortOrder || getStore().collections.length + 1,
       createdAt: now(),
     };
-    store.collections.push(created);
+    patchStore({ collections: [...getStore().collections, created] });
     return created;
   }
   return updated;
 }
 
 export function mockDeleteCollection(id: string): void {
-  store.collections = store.collections.filter((x) => x.id !== id);
+  patchStore({ collections: getStore().collections.filter((x) => x.id !== id) });
 }
 
 export function mockReorderCollections(ids: string[]): void {
-  store.collections = store.collections
-    .map((c) => {
-      const i = ids.indexOf(c.id);
-      return i === -1 ? c : { ...c, sortOrder: i + 1 };
-    })
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  patchStore({
+    collections: getStore()
+      .collections.map((c) => {
+        const i = ids.indexOf(c.id);
+        return i === -1 ? c : { ...c, sortOrder: i + 1 };
+      })
+      .sort((a, b) => a.sortOrder - b.sortOrder),
+  });
 }
 
 // ─── Products ───────────────────────────────────────────────────────────────
@@ -208,8 +174,8 @@ export function mockGetProducts(params: {
   page?: number;
   pageSize?: number;
 }): Paginated<Product> {
-  const threshold = store.settings.lowStockThreshold;
-  let items = [...store.products];
+  const threshold = getStore().settings.lowStockThreshold;
+  let items = [...getStore().products];
   if (params.collectionId)
     items = items.filter((p) => p.collectionId === params.collectionId);
   if (params.visibility === "visible")
@@ -235,44 +201,44 @@ export function mockGetProducts(params: {
 }
 
 export function mockGetProduct(id: string): Product | null {
-  return store.products.find((p) => p.id === id) ?? null;
+  return getStore().products.find((p) => p.id === id) ?? null;
 }
 
 export function mockUpsertProduct(p: Product): Product {
   const computed = recomputeTotalStock({ ...p, updatedAt: now() });
-  const exists = store.products.find((x) => x.id === p.id);
+  const exists = getStore().products.find((x) => x.id === p.id);
   if (exists) {
-    store.products = store.products.map((x) =>
+    patchStore({ products: getStore().products.map((x) =>
       x.id === p.id ? computed : x,
-    );
+    ) });
   } else {
     const created = { ...computed, createdAt: now() };
-    store.products.push(created);
+    patchStore({ products: [...getStore().products, created] });
     return created;
   }
   return computed;
 }
 
 export function mockDeleteProduct(id: string): void {
-  store.products = store.products.filter((x) => x.id !== id);
+  patchStore({ products: getStore().products.filter((x) => x.id !== id) });
 }
 
 export function mockToggleProductVisibility(
   id: string,
 ): { id: string; isActive: boolean } | null {
-  const p = store.products.find((x) => x.id === id);
+  const p = getStore().products.find((x) => x.id === id);
   if (!p) return null;
   const isActive = !p.isActive;
-  store.products = store.products.map((x) =>
+  patchStore({ products: getStore().products.map((x) =>
     x.id === id ? { ...x, isActive, updatedAt: now() } : x,
-  );
+  ) });
   return { id, isActive };
 }
 
 export function mockDuplicateProduct(
   id: string,
 ): { id: string; product: Product } | null {
-  const original = store.products.find((p) => p.id === id);
+  const original = getStore().products.find((p) => p.id === id);
   if (!original) return null;
   const newId = `${original.id}-copy-${Date.now().toString(36)}`;
   const copy: Product = {
@@ -285,7 +251,7 @@ export function mockDuplicateProduct(
     createdAt: now(),
     updatedAt: now(),
   };
-  store.products.push(copy);
+  patchStore({ products: [...getStore().products, copy] });
   return { id: newId, product: copy };
 }
 
@@ -302,7 +268,7 @@ export function mockGetOrders(params: {
   page?: number;
   pageSize?: number;
 }): Paginated<Order> {
-  let items = [...store.orders].sort(
+  let items = [...getStore().orders].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
   if (params.status) items = items.filter((o) => o.status === params.status);
@@ -337,7 +303,7 @@ export function mockGetOrders(params: {
 }
 
 export function mockGetOrder(id: string): Order | null {
-  return store.orders.find((o) => o.id === id) ?? null;
+  return getStore().orders.find((o) => o.id === id) ?? null;
 }
 
 export function mockUpdateOrderStatus(
@@ -345,7 +311,7 @@ export function mockUpdateOrderStatus(
   status: OrderStatus,
   extras?: { note?: string; carrier?: string; trackingNumber?: string },
 ): Order | null {
-  const o = store.orders.find((x) => x.id === id);
+  const o = getStore().orders.find((x) => x.id === id);
   if (!o) return null;
   const updates: Partial<Order> = { status, updatedAt: now() };
   if (extras?.carrier) updates.carrier = extras.carrier;
@@ -359,20 +325,20 @@ export function mockUpdateOrderStatus(
       ? `${o.notes}\n[${new Date().toLocaleString()}] ${extras.note}`
       : extras.note;
   const updated = { ...o, ...updates };
-  store.orders = store.orders.map((x) => (x.id === id ? updated : x));
+  patchStore({ orders: getStore().orders.map((x) => (x.id === id ? updated : x)) });
   return updated;
 }
 
 export function mockUpdateOrderNotes(id: string, notes: string): Order | null {
-  const o = store.orders.find((x) => x.id === id);
+  const o = getStore().orders.find((x) => x.id === id);
   if (!o) return null;
   const updated = { ...o, notes, updatedAt: now() };
-  store.orders = store.orders.map((x) => (x.id === id ? updated : x));
+  patchStore({ orders: getStore().orders.map((x) => (x.id === id ? updated : x)) });
   return updated;
 }
 
 export function mockGetDeliveryEvents(orderId: string): DeliveryEvent[] {
-  return store.deliveryEvents
+  return getStore().deliveryEvents
     .filter((e) => e.orderId === orderId)
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
@@ -382,14 +348,14 @@ export function mockAssignRider(
   riderId: string | null,
   riderNote?: string,
 ): Order | null {
-  const o = store.orders.find((x) => x.id === orderId);
+  const o = getStore().orders.find((x) => x.id === orderId);
   if (!o) return null;
   if (o.deliveryType !== "accra_inhouse") {
     throw new Error("Riders can only be assigned to Accra in-house orders.");
   }
 
   const prevRiderId = o.riderId;
-  const rider = riderId ? store.riders.find((r) => r.id === riderId) : null;
+  const rider = riderId ? getStore().riders.find((r) => r.id === riderId) : null;
   if (riderId && !rider) throw new Error("Rider not found.");
 
   const retryAfterReturn =
@@ -408,23 +374,27 @@ export function mockAssignRider(
       : {}),
     updatedAt: now(),
   };
-  store.orders = store.orders.map((x) => (x.id === orderId ? updated : x));
+  const event =
+    riderId && riderId !== prevRiderId && rider
+      ? {
+          id: `dev_${Date.now().toString(36)}`,
+          orderId,
+          riderId,
+          riderName: `${rider.firstName} ${rider.lastName}`,
+          type: "assigned" as const,
+          note: retryAfterReturn
+            ? `Reassigned for attempt ${o.deliveryAttempts + 1}`
+            : null,
+          at: now(),
+        }
+      : null;
 
-  if (riderId && riderId !== prevRiderId && rider) {
-    store.deliveryEvents.push({
-      id: `dev_${Date.now().toString(36)}`,
-      orderId,
-      riderId,
-      riderName: `${rider.firstName} ${rider.lastName}`,
-      type: "assigned",
-      note: retryAfterReturn
-        ? `Reassigned for attempt ${o.deliveryAttempts + 1}`
-        : null,
-      at: now(),
-    });
-  }
-
-  syncRiderDeliveryCounts();
+  patchStore({
+    orders: getStore().orders.map((x) => (x.id === orderId ? updated : x)),
+    ...(event
+      ? { deliveryEvents: [...getStore().deliveryEvents, event] }
+      : {}),
+  });
   return updated;
 }
 
@@ -432,15 +402,15 @@ export function mockUpdateRiderNote(
   orderId: string,
   riderNote: string,
 ): Order | null {
-  const o = store.orders.find((x) => x.id === orderId);
+  const o = getStore().orders.find((x) => x.id === orderId);
   if (!o) return null;
   const updated = { ...o, riderNote, updatedAt: now() };
-  store.orders = store.orders.map((x) => (x.id === orderId ? updated : x));
+  patchStore({ orders: getStore().orders.map((x) => (x.id === orderId ? updated : x)) });
   return updated;
 }
 
 export function mockConfirmReturnVerified(orderId: string): Order | null {
-  const o = store.orders.find((x) => x.id === orderId);
+  const o = getStore().orders.find((x) => x.id === orderId);
   if (!o) return null;
   if (o.status !== "returned") {
     throw new Error("Only returned orders can be verified.");
@@ -453,7 +423,7 @@ export function mockConfirmReturnVerified(orderId: string): Order | null {
       : "Return verified at warehouse",
     updatedAt: now(),
   };
-  store.orders = store.orders.map((x) => (x.id === orderId ? updated : x));
+  patchStore({ orders: getStore().orders.map((x) => (x.id === orderId ? updated : x)) });
   return updated;
 }
 
@@ -462,7 +432,7 @@ export function mockRefundOrder(
   amount: number,
   reason: string,
 ): Order | null {
-  const o = store.orders.find((x) => x.id === id);
+  const o = getStore().orders.find((x) => x.id === id);
   if (!o) return null;
   const updated: Order = {
     ...o,
@@ -473,7 +443,7 @@ export function mockRefundOrder(
       : `[REFUND ${amount}] ${reason}`,
     updatedAt: now(),
   };
-  store.orders = store.orders.map((x) => (x.id === id ? updated : x));
+  patchStore({ orders: getStore().orders.map((x) => (x.id === id ? updated : x)) });
   return updated;
 }
 
@@ -487,7 +457,7 @@ export function mockGetCustomers(params: {
   page?: number;
   pageSize?: number;
 }): Paginated<Customer> {
-  let items = [...store.customers].sort(
+  let items = [...getStore().customers].sort(
     (a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
@@ -511,11 +481,11 @@ export function mockGetCustomers(params: {
 }
 
 export function mockGetCustomer(id: string): Customer | null {
-  return store.customers.find((c) => c.id === id) ?? null;
+  return getStore().customers.find((c) => c.id === id) ?? null;
 }
 
 export function mockGetCustomerOrders(id: string): Order[] {
-  return store.orders
+  return getStore().orders
     .filter((o) => o.customerId === id)
     .sort(
       (a, b) =>
@@ -527,10 +497,10 @@ export function mockUpdateCustomer(
   id: string,
   patch: Partial<Customer>,
 ): Customer | null {
-  const c = store.customers.find((x) => x.id === id);
+  const c = getStore().customers.find((x) => x.id === id);
   if (!c) return null;
   const updated = { ...c, ...patch, updatedAt: now() };
-  store.customers = store.customers.map((x) => (x.id === id ? updated : x));
+  patchStore({ customers: getStore().customers.map((x) => (x.id === id ? updated : x)) });
   return updated;
 }
 
@@ -542,7 +512,7 @@ export function mockGetReviews(params: {
   page?: number;
   pageSize?: number;
 }): Paginated<Review> {
-  let items = [...store.reviews].sort(
+  let items = [...getStore().reviews].sort(
     (a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
@@ -558,7 +528,7 @@ export function mockUpdateReviewStatus(
   status: Review["status"],
   adminNote?: string,
 ): Review | null {
-  const r = store.reviews.find((x) => x.id === id);
+  const r = getStore().reviews.find((x) => x.id === id);
   if (!r) return null;
   const updated = {
     ...r,
@@ -566,57 +536,59 @@ export function mockUpdateReviewStatus(
     adminNote: adminNote ?? r.adminNote,
     updatedAt: now(),
   };
-  store.reviews = store.reviews.map((x) => (x.id === id ? updated : x));
+  patchStore({ reviews: getStore().reviews.map((x) => (x.id === id ? updated : x)) });
   return updated;
 }
 
 export function mockDeleteReview(id: string): void {
-  store.reviews = store.reviews.filter((r) => r.id !== id);
+  patchStore({ reviews: getStore().reviews.filter((r) => r.id !== id) });
 }
 
 // ─── Announcements ──────────────────────────────────────────────────────────
 
 export function mockGetBannerConfig(): BannerConfig {
-  return { ...store.bannerConfig };
+  return { ...getStore().bannerConfig };
 }
 
 export function mockUpdateBannerConfig(
   patch: Partial<BannerConfig>,
 ): BannerConfig {
-  store.bannerConfig = { ...store.bannerConfig, ...patch };
-  return store.bannerConfig;
+  patchStore({ bannerConfig: { ...getStore().bannerConfig, ...patch } });
+  return getStore().bannerConfig;
 }
 
 export function mockGetBannerMessages(): BannerMessage[] {
-  return [...store.bannerMessages].sort((a, b) => a.sortOrder - b.sortOrder);
+  return [...getStore().bannerMessages].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export function mockUpsertBannerMessage(m: BannerMessage): BannerMessage {
-  const exists = store.bannerMessages.find((x) => x.id === m.id);
+  const exists = getStore().bannerMessages.find((x) => x.id === m.id);
   const updated = { ...m, updatedAt: now() };
   if (exists) {
-    store.bannerMessages = store.bannerMessages.map((x) =>
+    patchStore({ bannerMessages: getStore().bannerMessages.map((x) =>
       x.id === m.id ? updated : x,
-    );
+    ) });
   } else {
     const created = { ...updated, id: m.id || `bnr_${Date.now()}`, createdAt: now() };
-    store.bannerMessages.push(created);
+    patchStore({ bannerMessages: [...getStore().bannerMessages, created] });
     return created;
   }
   return updated;
 }
 
 export function mockDeleteBannerMessage(id: string): void {
-  store.bannerMessages = store.bannerMessages.filter((x) => x.id !== id);
+  patchStore({ bannerMessages: getStore().bannerMessages.filter((x) => x.id !== id) });
 }
 
 export function mockReorderBannerMessages(ids: string[]): void {
-  store.bannerMessages = store.bannerMessages
-    .map((m) => {
-      const i = ids.indexOf(m.id);
-      return i === -1 ? m : { ...m, sortOrder: i + 1 };
-    })
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  patchStore({
+    bannerMessages: getStore()
+      .bannerMessages.map((m) => {
+        const i = ids.indexOf(m.id);
+        return i === -1 ? m : { ...m, sortOrder: i + 1 };
+      })
+      .sort((a, b) => a.sortOrder - b.sortOrder),
+  });
 }
 
 // ─── Inner Circle ───────────────────────────────────────────────────────────
@@ -626,7 +598,7 @@ export function mockGetInnerCircle(params: {
   page?: number;
   pageSize?: number;
 }): Paginated<InnerCircleMember> {
-  let items = [...store.innerCircle].sort(
+  let items = [...getStore().innerCircle].sort(
     (a, b) =>
       new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime(),
   );
@@ -640,14 +612,14 @@ export function mockUpdateInnerCircleStatus(
   status: InnerCircleMember["status"],
   note?: string,
 ): InnerCircleMember | null {
-  const member = store.innerCircle.find((m) => m.id === id);
+  const member = getStore().innerCircle.find((m) => m.id === id);
   if (!member) return null;
   if (status === "approved") {
-    const linked = store.customers.find((c) => c.email === member.email);
+    const linked = getStore().customers.find((c) => c.email === member.email);
     if (linked) {
-      store.customers = store.customers.map((c) =>
+      patchStore({ customers: getStore().customers.map((c) =>
         c.id === linked.id ? { ...c, innerCircle: true } : c,
-      );
+      ) });
     }
   }
   const updated: InnerCircleMember = {
@@ -656,27 +628,27 @@ export function mockUpdateInnerCircleStatus(
     notes: note ?? member.notes,
     approvedAt: status === "approved" ? now() : member.approvedAt,
   };
-  store.innerCircle = store.innerCircle.map((m) =>
+  patchStore({ innerCircle: getStore().innerCircle.map((m) =>
     m.id === id ? updated : m,
-  );
+  ) });
   return updated;
 }
 
 // ─── Settings ───────────────────────────────────────────────────────────────
 
 export function mockGetSettings(): StoreSettings {
-  return { ...store.settings };
+  return { ...getStore().settings };
 }
 
 export function mockUpdateSettings(
   patch: Partial<StoreSettings>,
 ): StoreSettings {
-  store.settings = { ...store.settings, ...patch };
-  return store.settings;
+  patchStore({ settings: { ...getStore().settings, ...patch } });
+  return getStore().settings;
 }
 
 export function mockGetAdmins(): AdminUser[] {
-  return [...store.admins];
+  return [...getStore().admins];
 }
 
 export function mockInviteAdmin(
@@ -691,18 +663,18 @@ export function mockInviteAdmin(
     role,
     createdAt: now(),
   };
-  store.admins.push(admin);
+  patchStore({ admins: [...getStore().admins, admin] });
   return admin;
 }
 
 export function mockRemoveAdmin(id: string): void {
-  store.admins = store.admins.filter((a) => a.id !== id);
+  patchStore({ admins: getStore().admins.filter((a) => a.id !== id) });
 }
 
 // ─── Dashboard & Analytics ─────────────────────────────────────────────────
 
 function getStoreSnapshot() {
-  return store;
+  return getStore();
 }
 
 export function mockGetDashboardStats(): DashboardStats {
@@ -1001,7 +973,7 @@ export function mockGetRiders(params: {
   page?: number;
   pageSize?: number;
 }): Paginated<Rider> {
-  let items = [...store.riders].sort(
+  let items = [...getStore().riders].sort(
     (a, b) =>
       new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime(),
   );
@@ -1023,14 +995,14 @@ export function mockGetRiders(params: {
 }
 
 export function mockGetRider(id: string): Rider | null {
-  return store.riders.find((r) => r.id === id) ?? null;
+  return getStore().riders.find((r) => r.id === id) ?? null;
 }
 
 export function mockUpsertRider(r: Rider): Rider {
-  const exists = store.riders.find((x) => x.id === r.id);
+  const exists = getStore().riders.find((x) => x.id === r.id);
   const updated: Rider = { ...r, updatedAt: now() };
   if (exists) {
-    store.riders = store.riders.map((x) => (x.id === r.id ? updated : x));
+    patchStore({ riders: getStore().riders.map((x) => (x.id === r.id ? updated : x)) });
   } else {
     const created: Rider = {
       ...updated,
@@ -1040,14 +1012,14 @@ export function mockUpsertRider(r: Rider): Rider {
       joinedAt: r.joinedAt || now(),
       createdAt: now(),
     };
-    store.riders.push(created);
+    patchStore({ riders: [...getStore().riders, created] });
     return created;
   }
   return updated;
 }
 
 export function mockDeleteRider(id: string): void {
-  store.riders = store.riders.filter((x) => x.id !== id);
+  patchStore({ riders: getStore().riders.filter((x) => x.id !== id) });
 }
 
 // Search helpers for topbar
@@ -1060,7 +1032,7 @@ export function mockSearch(q: string): {
   if (needle.length < 2)
     return { orders: [], customers: [], products: [] };
   return {
-    orders: store.orders
+    orders: getStore().orders
       .filter(
         (o) =>
           o.id.toLowerCase().includes(needle) ||
@@ -1069,14 +1041,14 @@ export function mockSearch(q: string): {
           o.trackingNumber.toLowerCase().includes(needle),
       )
       .slice(0, 4),
-    customers: store.customers
+    customers: getStore().customers
       .filter((c) => {
         const hay =
           `${c.firstName} ${c.lastName} ${c.email} ${c.phone}`.toLowerCase();
         return hay.includes(needle);
       })
       .slice(0, 4),
-    products: store.products
+    products: getStore().products
       .filter(
         (p) =>
           p.name.toLowerCase().includes(needle) ||
@@ -1092,9 +1064,9 @@ export function mockGetBadgeCounts(): {
   pendingReviews: number;
   innerCirclePending: number;
 } {
-  const threshold = store.settings.lowStockThreshold;
+  const threshold = getStore().settings.lowStockThreshold;
   return {
-    pendingOrders: store.orders.filter(
+    pendingOrders: getStore().orders.filter(
       (o) =>
         o.status === "processing" ||
         o.status === "ready_for_pickup" ||
@@ -1102,7 +1074,7 @@ export function mockGetBadgeCounts(): {
         o.status === "in_transit" ||
         (o.status === "returned" && !o.returnVerifiedAt),
     ).length,
-    lowStock: store.products.reduce(
+    lowStock: getStore().products.reduce(
       (n, p) =>
         n +
         (p.variants.some((v) =>
@@ -1112,8 +1084,8 @@ export function mockGetBadgeCounts(): {
           : 0),
       0,
     ),
-    pendingReviews: store.reviews.filter((r) => r.status === "pending").length,
-    innerCirclePending: store.innerCircle.filter((m) => m.status === "pending")
+    pendingReviews: getStore().reviews.filter((r) => r.status === "pending").length,
+    innerCirclePending: getStore().innerCircle.filter((m) => m.status === "pending")
       .length,
   };
 }

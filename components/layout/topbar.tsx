@@ -120,9 +120,7 @@ export function Topbar() {
   return (
     <>
       <header className="bg-white border-b border-zinc-100 h-14 flex items-center px-6 gap-4 sticky top-0 z-30">
-        <span className="text-sm font-semibold text-zinc-900 shrink-0">
-          Unapologetic Admin
-        </span>
+       
 
         <div className="flex-1 max-w-md" ref={containerRef}>
           <div className="relative">
