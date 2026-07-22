@@ -9,6 +9,7 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: queryKeys.dashboard,
     queryFn: getDashboardStats,
+    staleTime: 60_000,
   });
 }
 
@@ -16,6 +17,6 @@ export function useBadgeCounts() {
   return useQuery({
     queryKey: queryKeys.badges,
     queryFn: () => Promise.resolve(mockGetBadgeCounts()),
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 }

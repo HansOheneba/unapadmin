@@ -6,6 +6,7 @@ import {
   getSettings,
   inviteAdminUser,
   removeAdminUser,
+  updateAdminUserRole,
   updateSettings,
 } from "@/lib/api/settings";
 import type { AdminUser, StoreSettings } from "@/types";
@@ -15,6 +16,7 @@ export function useSettings() {
   return useQuery({
     queryKey: queryKeys.settings,
     queryFn: getSettings,
+    staleTime: 60_000,
   });
 }
 
@@ -22,6 +24,7 @@ export function useAdminUsers() {
   return useQuery({
     queryKey: queryKeys.adminUsers,
     queryFn: getAdminUsers,
+    staleTime: 60_000,
   });
 }
 
@@ -56,5 +59,11 @@ export function useSettingsMutations() {
     onSuccess: invalidateAdmins,
   });
 
-  return { update, invite, removeAdmin };
+  const updateRole = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: AdminUser["role"] }) =>
+      updateAdminUserRole(id, role),
+    onSuccess: invalidateAdmins,
+  });
+
+  return { update, invite, removeAdmin, updateRole };
 }

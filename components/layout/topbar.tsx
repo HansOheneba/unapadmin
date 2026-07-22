@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Search, LogOut, ShoppingBag, User, Package } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth-store";
 import { logout as apiLogout } from "@/lib/api/auth";
@@ -18,6 +18,7 @@ type SearchResult =
 
 export function Topbar() {
   const router = useRouter();
+  const qc = useQueryClient();
   const currentUser = useAuthStore((s) => s.currentUser);
   const logout = useAuthStore((s) => s.logout);
 
@@ -31,6 +32,7 @@ export function Topbar() {
     queryKey: queryKeys.search(q),
     queryFn: () => globalSearch(q),
     enabled: q.trim().length >= 2,
+    staleTime: 30_000,
   });
 
   const initials = currentUser
@@ -106,6 +108,7 @@ export function Topbar() {
     } catch {
       // proceed with local logout
     }
+    qc.removeQueries({ queryKey: queryKeys.me });
     logout();
     toast.success("Signed out.");
     router.push("/login");

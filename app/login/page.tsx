@@ -20,15 +20,14 @@ type Step = "email" | "otp";
 export default function LoginPage() {
   const router = useRouter();
   const hydrated = useAuthStore((s) => s.hydrated);
-  const token = useAuthStore((s) => s.token);
   const currentUser = useAuthStore((s) => s.currentUser);
-  const setSession = useAuthStore((s) => s.setSession);
+  const setUser = useAuthStore((s) => s.setUser);
 
   React.useEffect(() => {
-    if (hydrated && token && currentUser) {
+    if (hydrated && currentUser) {
       router.replace("/admin");
     }
-  }, [hydrated, token, currentUser, router]);
+  }, [hydrated, currentUser, router]);
 
   const [step, setStep] = React.useState<Step>("email");
   const [email, setEmail] = React.useState("");
@@ -46,8 +45,11 @@ export default function LoginPage() {
       await sendOtp(email.trim());
       toast.success("Check your inbox for a verification code.");
       setStep("otp");
-    } catch {
-      toast.error("Could not send code. Try again.");
+    } catch (err) {
+      console.error("[login] sendOtp failed", err);
+      toast.error(
+        err instanceof Error ? err.message : "Could not send code. Try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -57,12 +59,15 @@ export default function LoginPage() {
     if (value.length < 6) return;
     setLoading(true);
     try {
-      const { token, user } = await verifyOtp(email.trim(), value);
-      setSession(token, user);
+      const user = await verifyOtp(email.trim(), value);
+      setUser(user);
       toast.success("Signed in.");
       router.push("/admin");
-    } catch {
-      toast.error("Invalid or expired code.");
+    } catch (err) {
+      console.error("[login] verifyOtp failed", err);
+      toast.error(
+        err instanceof Error ? err.message : "Invalid or expired code.",
+      );
       setOtp("");
     } finally {
       setLoading(false);

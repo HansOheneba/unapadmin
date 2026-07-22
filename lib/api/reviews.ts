@@ -1,5 +1,5 @@
 import type { Paginated, Review } from "@/types";
-import { apiFetchOrMock } from "./client";
+import { executeOrMock, executePaginatedOrMock } from "./client";
 import {
   mockDeleteReview,
   mockGetReviews,
@@ -13,21 +13,13 @@ export type ReviewListParams = {
   pageSize?: number;
 };
 
-function toQuery(params: Record<string, string | number | undefined>): string {
-  const sp = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== "") sp.set(k, String(v));
-  });
-  const qs = sp.toString();
-  return qs ? `?${qs}` : "";
-}
-
 export async function getReviews(
   params: ReviewListParams = {},
 ): Promise<Paginated<Review>> {
-  return apiFetchOrMock(
-    `/reviews${toQuery(params)}`,
+  return executePaginatedOrMock(
+    "review.list",
     () => mockGetReviews(params),
+    { method: "GET", query: params },
   );
 }
 
@@ -36,21 +28,21 @@ export async function updateReviewStatus(
   status: Review["status"],
   adminNote?: string,
 ): Promise<Review> {
-  return apiFetchOrMock(
-    `/reviews/${id}/status`,
+  return executeOrMock(
+    "review.update-status",
     () => {
       const r = mockUpdateReviewStatus(id, status, adminNote);
       if (!r) throw new Error("Review not found");
       return r;
     },
-    { method: "PATCH", body: JSON.stringify({ status, adminNote }) },
+    { method: "PATCH", body: { id, status, adminNote } },
   );
 }
 
 export async function deleteReview(id: string): Promise<void> {
-  return apiFetchOrMock(
-    `/reviews/${id}`,
+  return executeOrMock(
+    "review.delete",
     () => mockDeleteReview(id),
-    { method: "DELETE" },
+    { method: "DELETE", body: { id } },
   );
 }

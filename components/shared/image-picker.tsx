@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { ImagePlus, Link as LinkIcon } from "lucide-react";
+import { ImagePlus, Link as LinkIcon, Loader2, Upload } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PUBLIC_IMAGES } from "@/lib/data/public-images";
+import { uploadImage } from "@/lib/api/media";
 
 export function ImagePicker({
   onSelect,
@@ -25,12 +27,26 @@ export function ImagePicker({
 }) {
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState("");
+  const [uploading, setUploading] = React.useState(false);
 
   const pick = (u: string) => {
     if (!u) return;
     onSelect(u);
     setOpen(false);
     setUrl("");
+  };
+
+  const handleUpload = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { url: uploadedUrl } = await uploadImage(file);
+      pick(uploadedUrl);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to upload image.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -55,6 +71,7 @@ export function ImagePicker({
         >
           <TabsList className="self-start">
             <TabsTrigger value="library">From library</TabsTrigger>
+            <TabsTrigger value="upload">Upload</TabsTrigger>
             <TabsTrigger value="url">Paste URL</TabsTrigger>
           </TabsList>
 
@@ -87,6 +104,30 @@ export function ImagePicker({
                 </div>
               </div>
             ))}
+          </TabsContent>
+
+          <TabsContent value="upload" className="mt-4 space-y-3">
+            <label
+              className={`flex flex-col items-center justify-center gap-2 h-40 rounded border border-dashed border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-500 cursor-pointer ${
+                uploading ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
+              {uploading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <Upload className="h-6 w-6" />
+              )}
+              <span className="text-sm">
+                {uploading ? "Uploading..." : "Click to upload an image"}
+              </span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) => handleUpload(e.target.files?.[0])}
+              />
+            </label>
           </TabsContent>
 
           <TabsContent value="url" className="mt-4 space-y-3">

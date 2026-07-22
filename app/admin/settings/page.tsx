@@ -8,13 +8,13 @@ import {
   useSettings,
   useSettingsMutations,
 } from "@/lib/hooks/useSettings";
+import { EMPTY_SETTINGS, normalizeSettings } from "@/lib/api/settings";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -46,10 +46,22 @@ import type { AdminRole, StoreSettings } from "@/types";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isSuperAdmin } = useAuth();
-  const { data: settings, isLoading: settingsLoading } = useSettings();
-  const { data: admins = [], isLoading: adminsLoading } = useAdminUsers();
-  const { update, invite, removeAdmin } = useSettingsMutations();
+  const { isSuperAdmin, currentUser } = useAuth();
+  const {
+    data: settings,
+    isLoading: settingsLoading,
+    isError: settingsError,
+    error: settingsErrorObj,
+    refetch: refetchSettings,
+  } = useSettings();
+  const {
+    data: admins = [],
+    isLoading: adminsLoading,
+    isError: adminsError,
+    error: adminsErrorObj,
+    refetch: refetchAdmins,
+  } = useAdminUsers();
+  const { update, invite, removeAdmin, updateRole } = useSettingsMutations();
   const qc = useQueryClient();
   const mockApi = useMockApi();
 
@@ -59,22 +71,45 @@ export default function SettingsPage() {
     if (!isSuperAdmin) router.replace("/admin");
   }
 
-  const [draft, setDraft] = React.useState<StoreSettings | null>(null);
+  // Always controlled — never mount inputs against null/undefined field values.
+  const [draft, setDraft] = React.useState<StoreSettings>(EMPTY_SETTINGS);
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const [inviteName, setInviteName] = React.useState("");
   const [inviteEmail, setInviteEmail] = React.useState("");
   const [inviteRole, setInviteRole] = React.useState<AdminRole>("admin");
   const [toRemove, setToRemove] = React.useState<string | null>(null);
 
-  const [prevSettings, setPrevSettings] = React.useState(settings);
-  if (settings && prevSettings !== settings) {
-    setPrevSettings(settings);
-    setDraft(settings);
-  }
+  React.useEffect(() => {
+    if (settings) setDraft(normalizeSettings(settings));
+  }, [settings]);
 
   if (!isSuperAdmin) return null;
 
-  if (settingsLoading || adminsLoading || !settings || !draft) {
+  const loadFailed =
+    settingsError || adminsError || (!settingsLoading && !settings);
+
+  if (loadFailed) {
+    const message =
+      (settingsErrorObj instanceof Error && settingsErrorObj.message) ||
+      (adminsErrorObj instanceof Error && adminsErrorObj.message) ||
+      "Failed to load settings.";
+    return (
+      <div className="py-12 text-center space-y-3">
+        <p className="text-sm text-rose-600">{message}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            refetchSettings();
+            refetchAdmins();
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (settingsLoading || adminsLoading || !settings) {
     return (
       <div className="py-12 text-center text-sm text-zinc-500">
         Loading settings...
@@ -94,7 +129,14 @@ export default function SettingsPage() {
   };
 
   const u = <K extends keyof StoreSettings>(k: K, v: StoreSettings[K]) =>
-    setDraft((d) => (d ? { ...d, [k]: v } : d));
+    setDraft((d) => ({ ...d, [k]: v }));
+
+  const orderEmail = draft.adminEmailForOrders ?? "";
+  const lowStockEmail = draft.adminEmailForLowStock ?? "";
+  const threshold =
+    draft.lowStockThreshold == null || Number.isNaN(draft.lowStockThreshold)
+      ? ""
+      : String(draft.lowStockThreshold);
 
   return (
     <div className="space-y-6">
@@ -120,14 +162,14 @@ export default function SettingsPage() {
           <div>
             <Label>Order notifications email</Label>
             <Input
-              value={draft.adminEmailForOrders}
+              value={orderEmail}
               onChange={(e) => u("adminEmailForOrders", e.target.value)}
             />
           </div>
           <div>
             <Label>Low stock alerts email</Label>
             <Input
-              value={draft.adminEmailForLowStock}
+              value={lowStockEmail}
               onChange={(e) => u("adminEmailForLowStock", e.target.value)}
             />
           </div>
@@ -135,8 +177,14 @@ export default function SettingsPage() {
             <Label>Low stock threshold</Label>
             <Input
               type="number"
-              value={draft.lowStockThreshold}
-              onChange={(e) => u("lowStockThreshold", Number(e.target.value))}
+              value={threshold}
+              onChange={(e) => {
+                const next = e.target.value;
+                u(
+                  "lowStockThreshold",
+                  next === "" ? 0 : Number(next),
+                );
+              }}
             />
             <p className="text-xs text-zinc-500 mt-1">
               Alert when a size variant stock falls at or below this number.
@@ -167,44 +215,77 @@ export default function SettingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {admins.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium text-zinc-900">
-                    {a.name}
-                  </TableCell>
-                  <TableCell className="text-sm text-zinc-700">
-                    {a.email}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        a.role === "super_admin"
-                          ? "violet"
-                          : a.role === "admin"
-                            ? "blue"
-                            : "zinc"
-                      }
-                    >
-                      {a.role.replace("_", " ")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-zinc-500">
-                    {fmtDate(a.createdAt)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {a.role !== "super_admin" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-rose-600"
-                        onClick={() => setToRemove(a.id)}
+              {admins.map((a) => {
+                const isSelf = a.id === currentUser?.id;
+                const otherSuperAdmins = admins.filter(
+                  (x) => x.role === "super_admin" && x.id !== a.id,
+                ).length;
+                const isLastSuperAdmin =
+                  a.role === "super_admin" && otherSuperAdmins === 0;
+
+                return (
+                  <TableRow key={a.id}>
+                    <TableCell className="font-medium text-zinc-900">
+                      {a.name}
+                      {isSelf && (
+                        <span className="ml-1.5 text-xs text-zinc-400">
+                          (you)
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-zinc-700">
+                      {a.email}
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={a.role ?? "viewer"}
+                        disabled={isLastSuperAdmin || updateRole.isPending}
+                        onValueChange={async (v) => {
+                          try {
+                            await updateRole.mutateAsync({
+                              id: a.id,
+                              role: v as AdminRole,
+                            });
+                            toast.success("Role updated.");
+                          } catch (e) {
+                            toast.error(
+                              e instanceof Error
+                                ? e.message
+                                : "Failed to update role.",
+                            );
+                          }
+                        }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                        <SelectTrigger className="h-8 w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="super_admin">
+                            Super admin
+                          </SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="viewer">Viewer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-xs text-zinc-500">
+                      {fmtDate(a.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!isSelf && !isLastSuperAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-rose-600"
+                          onClick={() => setToRemove(a.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -219,7 +300,7 @@ export default function SettingsPage() {
             <div>
               <Label>Full name</Label>
               <Input
-                value={inviteName}
+                value={inviteName ?? ""}
                 onChange={(e) => setInviteName(e.target.value)}
               />
             </div>
@@ -227,7 +308,7 @@ export default function SettingsPage() {
               <Label>Email</Label>
               <Input
                 type="email"
-                value={inviteEmail}
+                value={inviteEmail ?? ""}
                 onChange={(e) => setInviteEmail(e.target.value)}
               />
             </div>

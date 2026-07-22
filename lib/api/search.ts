@@ -1,6 +1,8 @@
 import type { Customer, Order, Product } from "@/types";
-import { apiFetchOrMock } from "./client";
+import { restOrMock } from "./client";
 import { mockSearch } from "@/lib/mock/data-store";
+
+// Global search is a REST path under Admin v2 additions.
 
 export type SearchResults = {
   orders: Order[];
@@ -9,7 +11,8 @@ export type SearchResults = {
 };
 
 export async function globalSearch(q: string): Promise<SearchResults> {
-  return apiFetchOrMock(`/search?q=${encodeURIComponent(q)}`, () =>
-    mockSearch(q),
-  );
+  return restOrMock("/search", () => mockSearch(q), {
+    method: "GET",
+    query: { q },
+  });
 }

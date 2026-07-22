@@ -3,14 +3,14 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { AdminUser } from "@/types";
-import { clearToken, setToken } from "@/lib/api/token";
 
+// The admin JWT itself lives only in an httpOnly session cookie managed by
+// the BFF routes (see lib/api/session.ts) — this store only ever holds the
+// non-sensitive user profile, so reload/rehydrate can't leak or lose a token.
 type AuthState = {
   currentUser: AdminUser | null;
-  token: string | null;
   hydrated: boolean;
-  setSession: (token: string, user: AdminUser) => void;
-  setUser: (user: AdminUser) => void;
+  setUser: (user: AdminUser | null) => void;
   setHydrated: (v: boolean) => void;
   logout: () => void;
 };
@@ -19,32 +19,19 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       currentUser: null,
-      token: null,
       hydrated: false,
-
-      setSession: (token, user) => {
-        setToken(token);
-        set({ token, currentUser: user });
-      },
 
       setUser: (user) => set({ currentUser: user }),
 
       setHydrated: (v) => set({ hydrated: v }),
 
-      logout: () => {
-        clearToken();
-        set({ currentUser: null, token: null });
-      },
+      logout: () => set({ currentUser: null }),
     }),
     {
       name: "unap-auth",
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({
-        currentUser: s.currentUser,
-        token: s.token,
-      }),
+      partialize: (s) => ({ currentUser: s.currentUser }),
       onRehydrateStorage: () => (state) => {
-        if (state?.token) setToken(state.token);
         state?.setHydrated(true);
       },
     },

@@ -1,11 +1,13 @@
 import type { Paginated, Rider } from "@/types";
-import { apiFetchOrMock } from "./client";
+import { restOrMock, restPaginatedOrMock } from "./client";
 import {
   mockDeleteRider,
   mockGetRider,
   mockGetRiders,
   mockUpsertRider,
 } from "@/lib/mock/data-store";
+
+// Riders are REST paths under Admin v2 additions (not workflow usecases yet).
 
 export type RiderListParams = {
   status?: string;
@@ -15,26 +17,17 @@ export type RiderListParams = {
   pageSize?: number;
 };
 
-function toQuery(params: Record<string, string | number | undefined>): string {
-  const sp = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== "") sp.set(k, String(v));
-  });
-  const qs = sp.toString();
-  return qs ? `?${qs}` : "";
-}
-
 export async function getRiders(
   params: RiderListParams = {},
 ): Promise<Paginated<Rider>> {
-  return apiFetchOrMock(
-    `/riders${toQuery(params)}`,
-    () => mockGetRiders(params),
-  );
+  return restPaginatedOrMock("/riders", () => mockGetRiders(params), {
+    method: "GET",
+    query: params,
+  });
 }
 
 export async function getRider(id: string): Promise<Rider> {
-  return apiFetchOrMock(`/riders/${id}`, () => {
+  return restOrMock(`/riders/${id}`, () => {
     const r = mockGetRider(id);
     if (!r) throw new Error("Rider not found");
     return r;
@@ -47,7 +40,7 @@ export async function createRider(
     "id" | "activeDeliveries" | "totalDeliveries" | "createdAt" | "updatedAt"
   >,
 ): Promise<Rider> {
-  return apiFetchOrMock(
+  return restOrMock(
     "/riders",
     () =>
       mockUpsertRider({
@@ -58,7 +51,7 @@ export async function createRider(
         createdAt: "",
         updatedAt: "",
       }),
-    { method: "POST", body: JSON.stringify(body) },
+    { method: "POST", body },
   );
 }
 
@@ -66,21 +59,19 @@ export async function updateRider(
   id: string,
   body: Partial<Rider>,
 ): Promise<Rider> {
-  return apiFetchOrMock(
+  return restOrMock(
     `/riders/${id}`,
     () => {
       const existing = mockGetRider(id);
       if (!existing) throw new Error("Rider not found");
       return mockUpsertRider({ ...existing, ...body });
     },
-    { method: "PATCH", body: JSON.stringify(body) },
+    { method: "PATCH", body },
   );
 }
 
 export async function deleteRider(id: string): Promise<void> {
-  return apiFetchOrMock(
-    `/riders/${id}`,
-    () => mockDeleteRider(id),
-    { method: "DELETE" },
-  );
+  return restOrMock(`/riders/${id}`, () => mockDeleteRider(id), {
+    method: "DELETE",
+  });
 }

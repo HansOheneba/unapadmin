@@ -1,4 +1,5 @@
 export const queryKeys = {
+  me: ["auth", "me"] as const,
   dashboard: ["dashboard"] as const,
   analytics: (from: string, to: string) => ["analytics", from, to] as const,
   collections: ["collections"] as const,

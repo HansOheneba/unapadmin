@@ -1,0 +1,58 @@
+import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE } from "@/lib/api/session";
+
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
+
+/**
+ * BFF proxy: the browser only ever talks to same-origin `/api/backend/*`.
+ * This forwards to the real API, attaching the admin JWT from the httpOnly
+ * session cookie as `Authorization: Bearer`. Keeps the token off the client
+ * entirely and avoids CORS since the browser never calls the API directly.
+ */
+async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const url = `${API_ORIGIN}/${path.join("/")}${req.nextUrl.search}`;
+  const contentType = req.headers.get("content-type");
+  const hasBody = req.method !== "GET" && req.method !== "HEAD";
+
+  const upstream = await fetch(url, {
+    method: req.method,
+    headers: {
+      ...(contentType ? { "content-type": contentType } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: hasBody ? await req.arrayBuffer() : undefined,
+  });
+
+  const responseBody = await upstream.arrayBuffer();
+  const res = new NextResponse(responseBody, {
+    status: upstream.status,
+    headers: {
+      "content-type": upstream.headers.get("content-type") ?? "application/json",
+    },
+  });
+
+  if (upstream.status === 401) {
+    res.cookies.delete(SESSION_COOKIE);
+  }
+
+  return res;
+}
+
+type RouteParams = { params: Promise<{ path: string[] }> };
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  return proxy(req, (await params).path);
+}
+
+export async function POST(req: NextRequest, { params }: RouteParams) {
+  return proxy(req, (await params).path);
+}
+
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
+  return proxy(req, (await params).path);
+}
+
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  return proxy(req, (await params).path);
+}

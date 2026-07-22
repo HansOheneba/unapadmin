@@ -1,5 +1,5 @@
 import type { Paginated, Product } from "@/types";
-import { apiFetchOrMock } from "./client";
+import { executeOrMock, executePaginatedOrMock } from "./client";
 import {
   mockDeleteProduct,
   mockDuplicateProduct,
@@ -18,40 +18,69 @@ export type ProductListParams = {
   pageSize?: number;
 };
 
-function toQuery(params: Record<string, string | number | undefined>): string {
-  const sp = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== "") sp.set(k, String(v));
-  });
-  const qs = sp.toString();
-  return qs ? `?${qs}` : "";
+// Backend models visibility as `isVisible`. Gender is storefront-catalog-only
+// (per AGENTS.md) — kept locally for size-guide UI, not sent to the API.
+type ApiProduct = Omit<Product, "isActive" | "gender"> & {
+  isVisible: boolean;
+  gender?: Product["gender"];
+};
+
+function fromApi(p: ApiProduct, fallbackGender: Product["gender"]): Product {
+  if ("isActive" in p) return p as unknown as Product;
+  const { isVisible, gender, ...rest } = p;
+  return { ...rest, isActive: isVisible, gender: gender ?? fallbackGender };
+}
+
+function toApi(p: Partial<Product>): Partial<ApiProduct> {
+  const { isActive, gender: _gender, ...rest } = p;
+  void _gender;
+  return {
+    ...rest,
+    ...(isActive !== undefined ? { isVisible: isActive } : {}),
+  };
 }
 
 export async function getProducts(
   params: ProductListParams = {},
 ): Promise<Paginated<Product>> {
-  return apiFetchOrMock(
-    `/products${toQuery(params)}`,
+  const result = await executePaginatedOrMock(
+    "product.list",
     () => mockGetProducts(params),
+    { method: "GET", query: params },
   );
+  return {
+    ...result,
+    data: result.data.map((p) => fromApi(p as unknown as ApiProduct, "male")),
+  };
 }
 
 export async function getProduct(id: string): Promise<Product> {
-  return apiFetchOrMock(`/products/${id}`, () => {
-    const p = mockGetProduct(id);
-    if (!p) throw new Error("Product not found");
-    return p;
-  });
+  const p = await executeOrMock(
+    "product.get",
+    () => {
+      const found = mockGetProduct(id);
+      if (!found) throw new Error("Product not found");
+      return found;
+    },
+    { method: "GET", query: { id } },
+  );
+  return fromApi(p as unknown as ApiProduct, "male");
 }
 
 export async function createProduct(
   body: Omit<
     Product,
-    "id" | "totalStock" | "totalSold" | "averageRating" | "reviewCount" | "createdAt" | "updatedAt"
+    | "id"
+    | "totalStock"
+    | "totalSold"
+    | "averageRating"
+    | "reviewCount"
+    | "createdAt"
+    | "updatedAt"
   > & { id?: string },
 ): Promise<Product> {
-  return apiFetchOrMock(
-    "/products",
+  const p = await executeOrMock(
+    "product.create",
     () =>
       mockUpsertProduct({
         ...body,
@@ -63,57 +92,69 @@ export async function createProduct(
         createdAt: "",
         updatedAt: "",
       }),
-    { method: "POST", body: JSON.stringify(body) },
+    { method: "POST", body: toApi(body) },
   );
+  return fromApi(p as unknown as ApiProduct, body.gender);
 }
 
 export async function updateProduct(
   id: string,
   body: Partial<Product>,
 ): Promise<Product> {
-  return apiFetchOrMock(
-    `/products/${id}`,
+  const p = await executeOrMock(
+    "product.update",
     () => {
       const existing = mockGetProduct(id);
       if (!existing) throw new Error("Product not found");
       return mockUpsertProduct({ ...existing, ...body });
     },
-    { method: "PATCH", body: JSON.stringify(body) },
+    { method: "PATCH", body: { id, ...toApi(body) } },
   );
+  return fromApi(p as unknown as ApiProduct, body.gender ?? "male");
 }
 
 export async function deleteProduct(id: string): Promise<void> {
-  return apiFetchOrMock(
-    `/products/${id}`,
+  return executeOrMock(
+    "product.delete",
     () => mockDeleteProduct(id),
-    { method: "DELETE" },
+    { method: "DELETE", body: { id } },
   );
 }
 
 export async function toggleProductVisibility(
   id: string,
 ): Promise<{ id: string; isActive: boolean }> {
-  return apiFetchOrMock(
-    `/products/${id}/visibility`,
+  const r = await executeOrMock(
+    "product.toggle-visibility",
     () => {
-      const r = mockToggleProductVisibility(id);
-      if (!r) throw new Error("Product not found");
-      return r;
+      const result = mockToggleProductVisibility(id);
+      if (!result) throw new Error("Product not found");
+      return result;
     },
-    { method: "PATCH" },
+    { method: "PATCH", body: { id } },
   );
+  const { isVisible, isActive } = r as {
+    isVisible?: boolean;
+    isActive?: boolean;
+    id: string;
+  };
+  return { id: r.id, isActive: isVisible ?? isActive ?? false };
 }
 
 export async function duplicateProduct(
   id: string,
 ): Promise<{ id: string; product: Product }> {
-  return apiFetchOrMock(
-    `/products/${id}/duplicate`,
+  const r = await executeOrMock(
+    "product.duplicate",
     () => {
-      const r = mockDuplicateProduct(id);
-      if (!r) throw new Error("Product not found");
-      return r;
+      const result = mockDuplicateProduct(id);
+      if (!result) throw new Error("Product not found");
+      return result;
     },
-    { method: "POST" },
+    { method: "POST", body: { id } },
   );
+  return {
+    id: r.id,
+    product: fromApi(r.product as unknown as ApiProduct, "male"),
+  };
 }

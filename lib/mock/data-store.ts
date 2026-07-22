@@ -667,8 +667,39 @@ export function mockInviteAdmin(
   return admin;
 }
 
+export function mockUpdateAdminRole(
+  id: string,
+  role: AdminUser["role"],
+): AdminUser {
+  const admins = getStore().admins;
+  const target = admins.find((a) => a.id === id);
+  if (!target) throw new Error("Admin not found");
+
+  const remainingSuperAdmins = admins.filter(
+    (a) => a.role === "super_admin" && a.id !== id,
+  ).length;
+  if (target.role === "super_admin" && role !== "super_admin" && remainingSuperAdmins === 0) {
+    throw new Error("Cannot demote the last super admin.");
+  }
+
+  const updated = { ...target, role };
+  patchStore({ admins: admins.map((a) => (a.id === id ? updated : a)) });
+  return updated;
+}
+
 export function mockRemoveAdmin(id: string): void {
-  patchStore({ admins: getStore().admins.filter((a) => a.id !== id) });
+  const admins = getStore().admins;
+  const target = admins.find((a) => a.id === id);
+  if (!target) throw new Error("Admin not found");
+
+  const remainingSuperAdmins = admins.filter(
+    (a) => a.role === "super_admin" && a.id !== id,
+  ).length;
+  if (target.role === "super_admin" && remainingSuperAdmins === 0) {
+    throw new Error("Cannot delete the last super admin.");
+  }
+
+  patchStore({ admins: admins.filter((a) => a.id !== id) });
 }
 
 // ─── Dashboard & Analytics ─────────────────────────────────────────────────
