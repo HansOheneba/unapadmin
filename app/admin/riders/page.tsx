@@ -98,7 +98,7 @@ export default function RidersPage() {
     [tab, q, page],
   );
 
-  const { data, isLoading } = useRiders(listParams);
+  const { data, isLoading, isError, error, refetch } = useRiders(listParams);
   const { data: allCount } = useRiders({ page: 1, pageSize: 1 });
   const { data: activeCount } = useRiders({
     status: "active",
@@ -127,8 +127,8 @@ export default function RidersPage() {
     try {
       await upsert.mutateAsync({ ...rider, status: next });
       toast.success(next === "active" ? "Rider activated." : "Rider deactivated.");
-    } catch {
-      toast.error("Could not update rider status.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update rider status.");
     }
   };
 
@@ -154,8 +154,8 @@ export default function RidersPage() {
       });
       toast.success(editing.id ? "Rider updated." : "Rider added.");
       setEditing(null);
-    } catch {
-      toast.error("Could not save rider.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save rider.");
     }
   };
 
@@ -165,10 +165,23 @@ export default function RidersPage() {
       await remove.mutateAsync(toDelete);
       toast.success("Rider removed.");
       setToDelete(null);
-    } catch {
-      toast.error("Could not remove rider.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove rider.");
     }
   };
+
+  if (isError) {
+    return (
+      <div className="py-12 text-center space-y-3">
+        <p className="text-sm text-rose-600">
+          {error instanceof Error ? error.message : "Failed to load riders."}
+        </p>
+        <Button variant="outline" onClick={() => refetch()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
