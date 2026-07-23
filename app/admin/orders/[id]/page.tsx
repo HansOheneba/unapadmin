@@ -51,12 +51,14 @@ import {
   adminFulfillmentActions,
   isAccraInhouse,
 } from "@/lib/delivery";
+import { DetailPageSkeleton } from "@/components/shared/page-skeletons";
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
+  const orderId = decodeURIComponent(params.id ?? "");
   const router = useRouter();
   const { can } = useAuth();
-  const { data: order, isLoading, isError } = useOrder(params.id);
+  const { data: order, isLoading, isError, error } = useOrder(orderId);
   const { updateStatus, updateNotes, refund, verifyReturn } =
     useOrderMutations();
 
@@ -73,11 +75,7 @@ export default function OrderDetailPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="py-12 text-center text-sm text-zinc-500">
-        Loading order...
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (isError || !order) {
@@ -89,7 +87,7 @@ export default function OrderDetailPage() {
         </Button>
         <Card>
           <CardContent className="p-12 text-center text-zinc-500">
-            Order not found.
+            {error instanceof Error ? error.message : "Order not found."}
           </CardContent>
         </Card>
       </div>

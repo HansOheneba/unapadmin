@@ -47,6 +47,7 @@ export function useOrderMutations() {
     qc.invalidateQueries({ queryKey: queryKeys.badges });
     qc.invalidateQueries({ queryKey: ["riders"] });
     if (orderId) {
+      qc.invalidateQueries({ queryKey: queryKeys.order(orderId) });
       qc.invalidateQueries({ queryKey: queryKeys.deliveryEvents(orderId) });
     }
   };

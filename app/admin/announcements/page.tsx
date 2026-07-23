@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import type { BannerMessage } from "@/types";
+import { EMPTY_BANNER_CONFIG } from "@/lib/api/announcements";
+import { AnnouncementsSkeleton } from "@/components/shared/page-skeletons";
 
 const empty = (): BannerMessage => ({
   id: "",
@@ -47,9 +49,14 @@ const empty = (): BannerMessage => ({
 
 export default function AnnouncementsPage() {
   const { can } = useAuth();
-  const { data: config, isLoading: configLoading } = useBannerConfig();
-  const { data: messages = [], isLoading: messagesLoading } =
-    useBannerMessages();
+  const { data: config, refetch: refetchConfig } = useBannerConfig();
+  const {
+    data: messages = [],
+    isLoading: messagesLoading,
+    isError: messagesError,
+    error: messagesErrorObj,
+    refetch: refetchMessages,
+  } = useBannerMessages();
   const { updateConfig, upsertMessage, removeMessage, reorderMessages } =
     useAnnouncementMutations();
 
@@ -57,16 +64,22 @@ export default function AnnouncementsPage() {
   const [toDelete, setToDelete] = React.useState<string | null>(null);
   const [activeIndex, setActiveIndex] = React.useState(0);
 
+  const bannerConfig = config ?? EMPTY_BANNER_CONFIG;
+
   const sorted = [...messages].sort((a, b) => a.sortOrder - b.sortOrder);
   const activeMessages = sorted.filter((m) => m.isActive);
 
   React.useEffect(() => {
-    if (!config?.isEnabled || activeMessages.length <= 1) return;
+    if (!bannerConfig.isEnabled || activeMessages.length <= 1) return;
     const t = setInterval(() => {
       setActiveIndex((i) => (i + 1) % activeMessages.length);
-    }, config.rotationIntervalMs);
+    }, bannerConfig.rotationIntervalMs);
     return () => clearInterval(t);
-  }, [config?.isEnabled, config?.rotationIntervalMs, activeMessages.length]);
+  }, [
+    bannerConfig.isEnabled,
+    bannerConfig.rotationIntervalMs,
+    activeMessages.length,
+  ]);
 
   const move = async (idx: number, dir: -1 | 1) => {
     const next = [...sorted];
@@ -82,12 +95,30 @@ export default function AnnouncementsPage() {
     }
   };
 
-  if (configLoading || messagesLoading || !config) {
+  // Messages are the source of truth (announcement.get-messages).
+  // Config is optional — get-config can fail when no row exists.
+  if (messagesError) {
+    const message =
+      (messagesErrorObj instanceof Error && messagesErrorObj.message) ||
+      "Failed to load banner messages.";
     return (
-      <div className="py-12 text-center text-sm text-zinc-500">
-        Loading announcements...
+      <div className="py-12 text-center space-y-3">
+        <p className="text-sm text-rose-600">{message}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            refetchConfig();
+            refetchMessages();
+          }}
+        >
+          Retry
+        </Button>
       </div>
     );
+  }
+
+  if (messagesLoading) {
+    return <AnnouncementsSkeleton />;
   }
 
   return (
@@ -115,9 +146,9 @@ export default function AnnouncementsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!config.isEnabled || activeMessages.length === 0 ? (
+          {!bannerConfig.isEnabled || activeMessages.length === 0 ? (
             <div className="rounded border border-dashed border-zinc-200 p-6 text-center text-sm text-zinc-500">
-              {!config.isEnabled
+              {!bannerConfig.isEnabled
                 ? "Banner is disabled."
                 : "No active messages."}
             </div>
@@ -125,16 +156,16 @@ export default function AnnouncementsPage() {
             <div
               className="rounded text-center py-3 px-4 text-sm font-medium transition-colors"
               style={{
-                background: config.backgroundColor,
-                color: config.textColor,
+                background: bannerConfig.backgroundColor,
+                color: bannerConfig.textColor,
               }}
             >
               {activeMessages[activeIndex % activeMessages.length].text}
             </div>
           )}
           <p className="mt-2 text-[11px] text-zinc-400">
-            Rotates every {(config.rotationIntervalMs / 1000).toFixed(1)}s ·{" "}
-            {activeMessages.length} active message(s)
+            Rotates every {(bannerConfig.rotationIntervalMs / 1000).toFixed(1)}s
+            · {activeMessages.length} active message(s)
           </p>
         </CardContent>
       </Card>
@@ -151,12 +182,15 @@ export default function AnnouncementsPage() {
               <Label htmlFor="enabled">Enabled</Label>
               <Switch
                 id="enabled"
-                checked={config.isEnabled}
+                checked={bannerConfig.isEnabled}
                 disabled={!can("edit")}
                 onCheckedChange={async (v) => {
                   if (!can("edit")) return;
                   try {
-                    await updateConfig.mutateAsync({ isEnabled: v });
+                    await updateConfig.mutateAsync({
+                      ...bannerConfig,
+                      isEnabled: v,
+                    });
                   } catch (e) {
                     toast.error(
                       e instanceof Error
@@ -172,10 +206,11 @@ export default function AnnouncementsPage() {
               <Input
                 type="number"
                 step="0.5"
-                value={config.rotationIntervalMs / 1000}
+                value={bannerConfig.rotationIntervalMs / 1000}
                 onChange={async (e) => {
                   try {
                     await updateConfig.mutateAsync({
+                      ...bannerConfig,
                       rotationIntervalMs:
                         Math.max(1, Number(e.target.value)) * 1000,
                     });
@@ -194,10 +229,11 @@ export default function AnnouncementsPage() {
                 <Label>Background</Label>
                 <Input
                   type="color"
-                  value={config.backgroundColor}
+                  value={bannerConfig.backgroundColor}
                   onChange={async (e) => {
                     try {
                       await updateConfig.mutateAsync({
+                        ...bannerConfig,
                         backgroundColor: e.target.value,
                       });
                     } catch (err) {
@@ -215,10 +251,11 @@ export default function AnnouncementsPage() {
                 <Label>Text</Label>
                 <Input
                   type="color"
-                  value={config.textColor}
+                  value={bannerConfig.textColor}
                   onChange={async (e) => {
                     try {
                       await updateConfig.mutateAsync({
+                        ...bannerConfig,
                         textColor: e.target.value,
                       });
                     } catch (err) {
@@ -332,14 +369,14 @@ export default function AnnouncementsPage() {
           message={editing}
           onClose={() => setEditing(null)}
           onSave={async (m) => {
-            const id = m.id || `bm_${Date.now().toString(36)}`;
             const sortOrder =
-              m.sortOrder ||
-              (messages.length === 0
-                ? 1
-                : Math.max(...messages.map((x) => x.sortOrder)) + 1);
+              m.id && m.sortOrder
+                ? m.sortOrder
+                : messages.length === 0
+                  ? 1
+                  : Math.max(...messages.map((x) => x.sortOrder)) + 1;
             try {
-              await upsertMessage.mutateAsync({ ...m, id, sortOrder });
+              await upsertMessage.mutateAsync({ ...m, sortOrder });
               toast.success("Message saved.");
               setEditing(null);
             } catch (e) {

@@ -32,6 +32,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PAGE_SIZE } from "@/lib/constants/pagination";
 import { formatMoney } from "@/lib/format";
+import { TableBodySkeleton } from "@/components/shared/page-skeletons";
 
 export default function ProductsPage() {
   const { can } = useAuth();
@@ -155,14 +156,7 @@ export default function ProductsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-center py-12 text-zinc-500"
-                  >
-                    Loading products...
-                  </TableCell>
-                </TableRow>
+                <TableBodySkeleton columns={8} />
               ) : products.length === 0 ? (
                 <TableRow>
                   <TableCell

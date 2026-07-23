@@ -2,8 +2,9 @@ import { format, formatDistanceToNow } from "date-fns";
 import type { OrderStatus, PaymentStatus } from "@/types";
 
 /** All order amounts are stored and displayed in Ghana cedis (Paystack handles FX). */
-export function formatMoney(amount: number) {
-  return `₵${amount.toLocaleString("en-GH", {
+export function formatMoney(amount: number | null | undefined) {
+  const value = typeof amount === "number" && Number.isFinite(amount) ? amount : 0;
+  return `₵${value.toLocaleString("en-GH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

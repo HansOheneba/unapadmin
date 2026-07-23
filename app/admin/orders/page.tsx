@@ -18,6 +18,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { TableBodySkeleton } from "@/components/shared/page-skeletons";
 import {
   Select,
   SelectContent,
@@ -256,14 +257,7 @@ export default function OrdersPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="text-center py-12 text-zinc-500"
-                  >
-                    Loading orders...
-                  </TableCell>
-                </TableRow>
+                <TableBodySkeleton columns={9} />
               ) : orders.length === 0 ? (
                 <TableRow>
                   <TableCell

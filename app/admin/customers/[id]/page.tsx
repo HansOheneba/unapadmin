@@ -41,14 +41,24 @@ import {
 } from "@/components/shared/status-badge";
 import { fmtDate, formatMoney } from "@/lib/format";
 import type { Customer } from "@/types";
+import {
+  DetailPageSkeleton,
+  TableBodySkeleton,
+} from "@/components/shared/page-skeletons";
 
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
+  const customerId = decodeURIComponent(params.id ?? "");
   const router = useRouter();
   const { can } = useAuth();
-  const { data: customer, isLoading, isError } = useCustomer(params.id);
+  const {
+    data: customer,
+    isLoading,
+    isError,
+    error,
+  } = useCustomer(customerId);
   const { data: orders = [], isLoading: ordersLoading } = useCustomerOrders(
-    params.id,
+    customerId,
   );
   const { data: productsPage } = useProducts();
   const { update } = useCustomerMutations();
@@ -67,11 +77,7 @@ export default function CustomerDetailPage() {
   }, [customer]);
 
   if (isLoading) {
-    return (
-      <div className="py-12 text-center text-sm text-zinc-500">
-        Loading customer...
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (isError || !customer) {
@@ -82,7 +88,7 @@ export default function CustomerDetailPage() {
         </Button>
         <Card>
           <CardContent className="p-12 text-center text-zinc-500">
-            Customer not found.
+            {error instanceof Error ? error.message : "Customer not found."}
           </CardContent>
         </Card>
       </div>
@@ -357,14 +363,7 @@ export default function CustomerDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {ordersLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center py-8 text-zinc-500"
-                      >
-                        Loading orders...
-                      </TableCell>
-                    </TableRow>
+                    <TableBodySkeleton columns={5} rows={4} />
                   ) : orders.length === 0 ? (
                     <TableRow>
                       <TableCell

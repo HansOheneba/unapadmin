@@ -26,6 +26,7 @@ import { CustomerStatusBadge } from "@/components/shared/status-badge";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PAGE_SIZE } from "@/lib/constants/pagination";
 import { fmtDate, formatMoney, relative } from "@/lib/format";
+import { TableBodySkeleton } from "@/components/shared/page-skeletons";
 
 export default function CustomersPage() {
   const [status, setStatus] = React.useState<
@@ -156,14 +157,7 @@ export default function CustomersPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center py-12 text-zinc-500"
-                  >
-                    Loading customers...
-                  </TableCell>
-                </TableRow>
+                <TableBodySkeleton columns={7} />
               ) : customers.length === 0 ? (
                 <TableRow>
                   <TableCell

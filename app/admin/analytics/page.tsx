@@ -28,6 +28,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { downloadCsv, fmtDate, formatMoney } from "@/lib/format";
+import { AnalyticsSkeleton } from "@/components/shared/page-skeletons";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import type { Currency } from "@/types";
@@ -83,11 +84,7 @@ export default function AnalyticsPage() {
   };
 
   if (isLoading || !report) {
-    return (
-      <div className="py-12 text-center text-sm text-zinc-500">
-        Loading analytics...
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   const {

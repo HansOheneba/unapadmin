@@ -1,8 +1,12 @@
 import type { DeliveryEvent, Order, OrderStatus, Paginated } from "@/types";
 import {
+  ApiError,
+  execute,
   executeOrMock,
+  executePaginated,
   executePaginatedOrMock,
   restOrMock,
+  useMockApi,
 } from "./client";
 import {
   mockAssignRider,
@@ -38,16 +42,60 @@ export async function getOrders(
   );
 }
 
+function asOrder(raw: unknown, fallbackId: string): Order | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+
+  if (obj.order && typeof obj.order === "object") {
+    return asOrder(obj.order, fallbackId);
+  }
+
+  const id =
+    typeof obj.id === "string"
+      ? obj.id
+      : typeof obj.orderId === "string"
+        ? obj.orderId
+        : fallbackId;
+
+  // Require at least one order-identifying field so we don't treat an empty
+  // envelope residual as a real order.
+  const looksLikeOrder =
+    typeof obj.id === "string" ||
+    typeof obj.orderId === "string" ||
+    typeof obj.trackingNumber === "string" ||
+    typeof obj.customerEmail === "string" ||
+    Array.isArray(obj.items);
+
+  if (!looksLikeOrder) return null;
+  return { ...(obj as unknown as Order), id };
+}
+
 export async function getOrder(id: string): Promise<Order> {
-  return executeOrMock(
-    "order.get",
-    () => {
-      const o = mockGetOrder(id);
-      if (!o) throw new Error("Order not found");
-      return o;
-    },
-    { method: "GET", query: { id } },
-  );
+  if (useMockApi()) {
+    const o = mockGetOrder(id);
+    if (!o) throw new Error("Order not found");
+    return o;
+  }
+
+  const raw = await execute<unknown>("order.get", {
+    method: "GET",
+    query: { id },
+  });
+  const direct = asOrder(raw, id);
+  if (direct) return direct;
+
+  // Some backends accept human-readable ids on list/search but return an empty
+  // envelope from order.get — recover via filtered list.
+  const listed = await executePaginated<Order>("order.list", {
+    method: "GET",
+    query: { q: id, page: 1, pageSize: 20 },
+  });
+  const found =
+    listed.data.find((o) => o.id === id) ??
+    listed.data.find((o) => o.trackingNumber === id);
+  if (found) return found;
+
+  throw new ApiError("Order not found", 404);
 }
 
 export async function updateOrderStatus(

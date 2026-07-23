@@ -30,6 +30,7 @@ import { ReviewStatusBadge } from "@/components/shared/status-badge";
 import { PAGE_SIZE } from "@/lib/constants/pagination";
 import { fmtDate } from "@/lib/format";
 import type { Review } from "@/types";
+import { TableBodySkeleton } from "@/components/shared/page-skeletons";
 
 type Filter = "all" | Review["status"];
 
@@ -131,14 +132,7 @@ export default function ReviewsPage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="text-center py-8 text-zinc-500"
-                      >
-                        Loading reviews...
-                      </TableCell>
-                    </TableRow>
+                    <TableBodySkeleton columns={7} />
                   ) : reviews.length === 0 ? (
                     <TableRow>
                       <TableCell

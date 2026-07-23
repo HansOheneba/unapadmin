@@ -75,7 +75,12 @@ function unwrap(payload: unknown): unknown {
       status,
     );
   }
-  return payload.data;
+  let data = payload.data;
+  // Some workflow handlers double-wrap: { success, data: { success, data } }
+  if (isEnvelope(data) && data.success !== false) {
+    data = data.data;
+  }
+  return data;
 }
 
 function errorMessage(err: unknown, status: number): string {
@@ -92,6 +97,13 @@ async function request(
 ): Promise<unknown> {
   const url = `${apiBase()}${path}${toQueryString(query)}`;
 
+  console.log("[api] request", {
+    method,
+    endpoint: url,
+    query: query ?? null,
+    payload: body ?? null,
+  });
+
   let res: Response;
   try {
     res = await fetch(url, {
@@ -101,18 +113,42 @@ async function request(
       credentials: "same-origin",
     });
   } catch (err) {
-    console.error("[api] network error", method, url, body ?? null, err);
+    console.error("[api] network error", {
+      method,
+      endpoint: url,
+      query: query ?? null,
+      payload: body ?? null,
+      err,
+    });
     throw err;
   }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    console.error("[api] error", method, url, res.status, err);
+    console.error("[api] error", {
+      method,
+      endpoint: url,
+      status: res.status,
+      query: query ?? null,
+      payload: body ?? null,
+      response: err,
+    });
     throw new ApiError(errorMessage(err, res.status), res.status);
   }
 
-  if (res.status === 204) return undefined;
-  return unwrap(await res.json());
+  if (res.status === 204) {
+    console.log("[api] response", { method, endpoint: url, status: 204, data: null });
+    return undefined;
+  }
+
+  const json = await res.json();
+  console.log("[api] response", {
+    method,
+    endpoint: url,
+    status: res.status,
+    data: json,
+  });
+  return unwrap(json);
 }
 
 /** Admin usecases go through POST/GET `/workflow/execute/:usecase`. */
@@ -270,6 +306,12 @@ export async function uploadFile(
   form.append("file", file);
   const url = `${apiBase()}/media/upload`;
 
+  console.log("[api] request", {
+    method: "POST",
+    endpoint: url,
+    payload: { file: file.name, size: file.size, type: file.type },
+  });
+
   const res = await fetch(url, {
     method: "POST",
     body: form,
@@ -278,9 +320,21 @@ export async function uploadFile(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    console.error("[api] error", "POST", url, res.status, err);
+    console.error("[api] error", {
+      method: "POST",
+      endpoint: url,
+      status: res.status,
+      response: err,
+    });
     throw new ApiError(errorMessage(err, res.status), res.status);
   }
 
-  return unwrap(await res.json()) as { url: string; key?: string };
+  const json = await res.json();
+  console.log("[api] response", {
+    method: "POST",
+    endpoint: url,
+    status: res.status,
+    data: json,
+  });
+  return unwrap(json) as { url: string; key?: string };
 }

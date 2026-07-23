@@ -43,6 +43,7 @@ import { useMockApi } from "@/lib/api/client";
 import { resetMockStore } from "@/lib/mock/data-store";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AdminRole, StoreSettings } from "@/types";
+import { SettingsSkeleton } from "@/components/shared/page-skeletons";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -110,11 +111,7 @@ export default function SettingsPage() {
   }
 
   if (settingsLoading || adminsLoading || !settings) {
-    return (
-      <div className="py-12 text-center text-sm text-zinc-500">
-        Loading settings...
-      </div>
-    );
+    return <SettingsSkeleton />;
   }
 
   const save = async () => {

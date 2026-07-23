@@ -35,20 +35,30 @@ export function useAnnouncementMutations() {
   };
 
   const updateConfig = useMutation({
-    mutationFn: (patch: Partial<BannerConfig>) => updateBannerConfig(patch),
+    mutationFn: (config: BannerConfig) => updateBannerConfig(config),
     onSuccess: invalidate,
   });
 
   const upsertMessage = useMutation({
     mutationFn: async (m: BannerMessage) => {
-      if (m.id && (await getBannerMessages()).some((x) => x.id === m.id)) {
-        return updateBannerMessage(m.id, m);
+      if (m.id) {
+        return updateBannerMessage(m.id, {
+          text: m.text,
+          href: m.href,
+          isActive: m.isActive,
+          startsAt: m.startsAt,
+          endsAt: m.endsAt,
+          sortOrder: m.sortOrder,
+        });
       }
-      const { id: _id, createdAt: _c, updatedAt: _u, ...body } = m;
-      void _id;
-      void _c;
-      void _u;
-      return createBannerMessage(body);
+      return createBannerMessage({
+        text: m.text,
+        href: m.href,
+        isActive: m.isActive,
+        startsAt: m.startsAt,
+        endsAt: m.endsAt,
+        sortOrder: m.sortOrder,
+      });
     },
     onSuccess: invalidate,
   });

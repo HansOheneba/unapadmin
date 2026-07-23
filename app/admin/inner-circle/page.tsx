@@ -32,6 +32,7 @@ import { ListPagination } from "@/components/shared/list-pagination";
 import { PAGE_SIZE } from "@/lib/constants/pagination";
 import { fmtDate } from "@/lib/format";
 import type { InnerCircleMember } from "@/types";
+import { TableBodySkeleton } from "@/components/shared/page-skeletons";
 
 type Filter = "all" | InnerCircleMember["status"];
 
@@ -144,14 +145,7 @@ export default function InnerCirclePage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-8 text-zinc-500"
-                      >
-                        Loading applications...
-                      </TableCell>
-                    </TableRow>
+                    <TableBodySkeleton columns={6} />
                   ) : members.length === 0 ? (
                     <TableRow>
                       <TableCell

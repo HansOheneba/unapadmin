@@ -26,6 +26,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ImagePicker } from "@/components/shared/image-picker";
 import type { Collection } from "@/types";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { CollectionsSkeleton } from "@/components/shared/page-skeletons";
 
 const emptyCollection = (): Collection => ({
   id: "",
@@ -68,11 +69,7 @@ export default function CollectionsPage() {
     collections.find((c) => c.id === id)?.productCount ?? 0;
 
   if (isLoading) {
-    return (
-      <div className="py-12 text-center text-sm text-zinc-500">
-        Loading collections...
-      </div>
-    );
+    return <CollectionsSkeleton />;
   }
 
   return (

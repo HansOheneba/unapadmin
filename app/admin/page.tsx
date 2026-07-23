@@ -44,6 +44,7 @@ import {
   relative,
   statusLabel,
 } from "@/lib/format";
+import { DashboardSkeleton } from "@/components/shared/page-skeletons";
 
 const STATUS_COLORS: Record<string, string> = {
   processing: "#3b82f6",
@@ -82,11 +83,7 @@ export default function DashboardPage() {
   }, [lowStockPage?.data, lowStockThreshold]);
 
   if (isLoading || !stats) {
-    return (
-      <div className="py-12 text-center text-sm text-zinc-500">
-        Loading dashboard...
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const pctChange = (cur: number, prev: number) =>

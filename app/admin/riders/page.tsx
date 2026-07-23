@@ -38,6 +38,7 @@ import { ListPagination } from "@/components/shared/list-pagination";
 import { RiderStatusBadge } from "@/components/shared/status-badge";
 import { PAGE_SIZE } from "@/lib/constants/pagination";
 import { fmtDate } from "@/lib/format";
+import { TableBodySkeleton } from "@/components/shared/page-skeletons";
 import type { Rider, RiderStatus, VehicleType } from "@/types";
 
 type StatusFilter = "all" | RiderStatus;
@@ -230,14 +231,7 @@ export default function RidersPage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-10 text-sm text-zinc-500"
-                      >
-                        Loading riders...
-                      </TableCell>
-                    </TableRow>
+                    <TableBodySkeleton columns={6} />
                   ) : riders.length === 0 ? (
                     <TableRow>
                       <TableCell

@@ -6,6 +6,7 @@ import { useProduct } from "@/lib/hooks/useProducts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductForm } from "@/components/products/product-form";
+import { FormPageSkeleton } from "@/components/shared/page-skeletons";
 
 export default function EditProductPage() {
   const params = useParams<{ id: string }>();
@@ -13,11 +14,7 @@ export default function EditProductPage() {
   const { data: product, isLoading, isError } = useProduct(params.id);
 
   if (isLoading) {
-    return (
-      <div className="py-12 text-center text-sm text-zinc-500">
-        Loading product...
-      </div>
-    );
+    return <FormPageSkeleton />;
   }
 
   if (isError || !product) {
