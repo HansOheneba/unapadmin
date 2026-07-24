@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
 
   if (token) {
-    await fetch(`${API_ORIGIN}/workflow/execute/auth.logout`, {
+    await fetch(`${API_ORIGIN}/auth/logout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -17,7 +17,10 @@ export async function POST(req: NextRequest) {
     }).catch(() => undefined);
   }
 
-  const res = NextResponse.json({ success: true, data: { message: "Signed out." } });
+  const res = NextResponse.json({
+    success: true,
+    data: { message: "Signed out." },
+  });
   res.cookies.delete(SESSION_COOKIE);
   return res;
 }

@@ -24,7 +24,6 @@ export function useCollectionMutations() {
     qc.invalidateQueries({ queryKey: queryKeys.collections });
     qc.invalidateQueries({ queryKey: queryKeys.products() });
     qc.invalidateQueries({ queryKey: queryKeys.dashboard });
-    qc.invalidateQueries({ queryKey: queryKeys.badges });
   };
 
   const upsert = useMutation({

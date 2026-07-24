@@ -14,7 +14,7 @@ import {
   YAxis,
 } from "recharts";
 import { useAnalytics } from "@/lib/hooks/useAnalytics";
-import { getOrders } from "@/lib/api/orders";
+import { exportAnalyticsCsv } from "@/lib/api/analytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { downloadCsv, fmtDate, formatMoney } from "@/lib/format";
+import { fmtDate, formatMoney } from "@/lib/format";
 import { AnalyticsSkeleton } from "@/components/shared/page-skeletons";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
@@ -60,22 +60,7 @@ export default function AnalyticsPage() {
 
   const exportReport = async () => {
     try {
-      const { data: orders } = await getOrders({ from, to });
-      downloadCsv(
-        `analytics-${from}-to-${to}.csv`,
-        orders.map((o) => ({
-          order_id: o.id,
-          date: o.createdAt,
-          customer: o.customerName,
-          country: o.currency === "GHS" ? "Ghana" : "Nigeria",
-          total: o.total,
-          currency: o.currency,
-          payment_method: o.paymentMethod,
-          payment_status: o.paymentStatus,
-          status: o.status,
-          items: o.items.reduce((s, i) => s + i.quantity, 0),
-        })),
-      );
+      await exportAnalyticsCsv(from, to);
     } catch (e) {
       toast.error(
         e instanceof Error ? e.message : "Failed to export report.",

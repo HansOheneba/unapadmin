@@ -21,7 +21,6 @@ export function useReviewMutations() {
   const qc = useQueryClient();
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["reviews"] });
-    qc.invalidateQueries({ queryKey: queryKeys.badges });
   };
 
   const updateStatus = useMutation({

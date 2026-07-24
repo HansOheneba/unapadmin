@@ -88,39 +88,36 @@ export default function RidersPage() {
     setPage(1);
   }, [tab, q]);
 
-  const listParams = React.useMemo(
-    () => ({
-      ...(tab !== "all" ? { status: tab } : {}),
-      ...(q ? { q } : {}),
-      page,
-      pageSize: PAGE_SIZE,
-    }),
-    [tab, q, page],
-  );
-
-  const { data, isLoading, isError, error, refetch } = useRiders(listParams);
-  const { data: allCount } = useRiders({ page: 1, pageSize: 1 });
-  const { data: activeCount } = useRiders({
-    status: "active",
+  // One list request; tab counts + filtering are client-side (small rider roster).
+  const { data, isLoading, isError, error, refetch } = useRiders({
+    ...(q ? { q } : {}),
     page: 1,
-    pageSize: 1,
-  });
-  const { data: inactiveCount } = useRiders({
-    status: "inactive",
-    page: 1,
-    pageSize: 1,
+    pageSize: 100,
   });
   const { upsert, remove } = useRiderMutations();
 
-  const riders = data?.data ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = data?.totalPages ?? 1;
+  const allRiders = data?.data ?? [];
+  const counts = React.useMemo(
+    () => ({
+      all: allRiders.length,
+      active: allRiders.filter((r) => r.status === "active").length,
+      inactive: allRiders.filter((r) => r.status === "inactive").length,
+    }),
+    [allRiders],
+  );
 
-  const counts = {
-    all: allCount?.total ?? 0,
-    active: activeCount?.total ?? 0,
-    inactive: inactiveCount?.total ?? 0,
-  };
+  const filtered = React.useMemo(
+    () =>
+      tab === "all" ? allRiders : allRiders.filter((r) => r.status === tab),
+    [allRiders, tab],
+  );
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const riders = filtered.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
 
   const toggleStatus = async (rider: Rider) => {
     const next = rider.status === "active" ? "inactive" : "active";
@@ -356,7 +353,7 @@ export default function RidersPage() {
                 </TableBody>
               </Table>
               <ListPagination
-                page={page}
+                page={safePage}
                 totalPages={totalPages}
                 total={total}
                 onPageChange={setPage}

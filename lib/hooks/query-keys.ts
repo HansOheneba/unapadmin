@@ -18,7 +18,6 @@ export const queryKeys = {
   innerCircle: (params?: object) => ["inner-circle", params] as const,
   settings: ["settings"] as const,
   adminUsers: ["admin-users"] as const,
-  badges: ["badges"] as const,
   search: (q: string) => ["search", q] as const,
   riders: (params?: object) => ["riders", params] as const,
   rider: (id: string) => ["riders", id] as const,

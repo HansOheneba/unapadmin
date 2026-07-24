@@ -44,7 +44,6 @@ export function useOrderMutations() {
   const invalidate = (orderId?: string) => {
     qc.invalidateQueries({ queryKey: ["orders"] });
     qc.invalidateQueries({ queryKey: queryKeys.dashboard });
-    qc.invalidateQueries({ queryKey: queryKeys.badges });
     qc.invalidateQueries({ queryKey: ["riders"] });
     if (orderId) {
       qc.invalidateQueries({ queryKey: queryKeys.order(orderId) });
@@ -56,13 +55,23 @@ export function useOrderMutations() {
     mutationFn: ({
       id,
       status,
-      extras,
+      note,
+      carrier,
+      trackingNumber,
     }: {
       id: string;
       status: OrderStatus;
-      extras?: { note?: string; carrier?: string; trackingNumber?: string };
-    }) => updateOrderStatus(id, { status, ...extras }),
-    onSuccess: (_, vars) => invalidate(vars.id),
+      note?: string;
+      carrier?: string;
+      trackingNumber?: string;
+    }) => updateOrderStatus(id, { status, note, carrier, trackingNumber }),
+    onSuccess: (order, vars) => {
+      qc.setQueryData(queryKeys.order(vars.id), order);
+      if (order.id !== vars.id) {
+        qc.setQueryData(queryKeys.order(order.id), order);
+      }
+      invalidate(vars.id);
+    },
   });
 
   const updateNotes = useMutation({

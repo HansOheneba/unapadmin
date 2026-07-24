@@ -56,34 +56,14 @@ export default function ReviewsPage() {
   );
 
   const { data, isLoading } = useReviews(listParams);
-  const { data: allCount } = useReviews({ page: 1, pageSize: 1 });
-  const { data: pendingCount } = useReviews({
-    status: "pending",
-    page: 1,
-    pageSize: 1,
-  });
-  const { data: approvedCount } = useReviews({
-    status: "approved",
-    page: 1,
-    pageSize: 1,
-  });
-  const { data: rejectedCount } = useReviews({
-    status: "rejected",
-    page: 1,
-    pageSize: 1,
-  });
   const { updateStatus, remove } = useReviewMutations();
 
   const reviews = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
 
-  const counts = {
-    all: allCount?.total ?? 0,
-    pending: pendingCount?.total ?? 0,
-    approved: approvedCount?.total ?? 0,
-    rejected: rejectedCount?.total ?? 0,
-  };
+  const tabCount = (value: Filter) =>
+    tab === value ? ` (${total})` : "";
 
   return (
     <div className="space-y-6">
@@ -105,13 +85,13 @@ export default function ReviewsPage() {
         }}
       >
         <TabsList>
-          <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({counts.pending})</TabsTrigger>
+          <TabsTrigger value="all">All{tabCount("all")}</TabsTrigger>
+          <TabsTrigger value="pending">Pending{tabCount("pending")}</TabsTrigger>
           <TabsTrigger value="approved">
-            Approved ({counts.approved})
+            Approved{tabCount("approved")}
           </TabsTrigger>
           <TabsTrigger value="rejected">
-            Rejected ({counts.rejected})
+            Rejected{tabCount("rejected")}
           </TabsTrigger>
         </TabsList>
 

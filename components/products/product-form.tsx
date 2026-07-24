@@ -160,6 +160,10 @@ export function ProductForm({ initial }: { initial?: Product }) {
       toast.error("Name and slug are required.");
       return;
     }
+    if (!draft.price || draft.price <= 0) {
+      toast.error("Enter a price greater than 0.");
+      return;
+    }
     if (slugConflict) {
       toast.error("Slug is already used by another product.");
       return;
@@ -292,8 +296,20 @@ export function ProductForm({ initial }: { initial?: Product }) {
                 <Label>Price (GHS)</Label>
                 <Input
                   type="number"
-                  value={draft.price}
-                  onChange={(e) => update("price", Number(e.target.value))}
+                  inputMode="numeric"
+                  min={1}
+                  step={1}
+                  placeholder="e.g. 120"
+                  value={draft.price > 0 ? draft.price : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      update("price", 0);
+                      return;
+                    }
+                    const next = Number(raw);
+                    if (Number.isFinite(next)) update("price", next);
+                  }}
                   className="max-w-xs"
                 />
               </div>

@@ -28,7 +28,7 @@ export function ConfirmDialog({
   confirmText?: string;
   cancelText?: string;
   destructive?: boolean;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,8 +43,8 @@ export function ConfirmDialog({
           </Button>
           <Button
             variant={destructive ? "destructive" : "default"}
-            onClick={() => {
-              onConfirm();
+            onClick={async () => {
+              await onConfirm();
               onOpenChange(false);
             }}
           >

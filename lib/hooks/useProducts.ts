@@ -34,7 +34,7 @@ export function useProductMutations() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: queryKeys.dashboard });
-    qc.invalidateQueries({ queryKey: queryKeys.badges });
+    qc.invalidateQueries({ queryKey: queryKeys.dashboard });
   };
 
   const upsert = useMutation({

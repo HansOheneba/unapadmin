@@ -21,14 +21,54 @@ export type ProductListParams = {
 // Backend models visibility as `isVisible`. Gender is storefront-catalog-only
 // (per AGENTS.md) — kept locally for size-guide UI, not sent to the API.
 type ApiProduct = Omit<Product, "isActive" | "gender"> & {
-  isVisible: boolean;
+  isVisible?: boolean;
   gender?: Product["gender"];
+  productId?: string;
+  _id?: string;
+  product?: ApiProduct;
 };
 
+function resolveProductId(raw: Record<string, unknown>): string {
+  for (const key of ["id", "productId", "_id"] as const) {
+    const value = raw[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
 function fromApi(p: ApiProduct, fallbackGender: Product["gender"]): Product {
-  if ("isActive" in p) return p as unknown as Product;
-  const { isVisible, gender, ...rest } = p;
-  return { ...rest, isActive: isVisible, gender: gender ?? fallbackGender };
+  const raw = p as ApiProduct & Record<string, unknown>;
+  const nested =
+    raw.product && typeof raw.product === "object"
+      ? (raw.product as ApiProduct & Record<string, unknown>)
+      : raw;
+
+  const {
+    isVisible,
+    isActive,
+    gender,
+    productId: _productId,
+    _id,
+    product: _product,
+    ...rest
+  } = nested;
+  void _productId;
+  void _id;
+  void _product;
+
+  const id = resolveProductId(nested) || resolveProductId(raw);
+
+  return {
+    ...(rest as unknown as Omit<Product, "id" | "isActive" | "gender">),
+    id,
+    isActive:
+      typeof isActive === "boolean"
+        ? isActive
+        : typeof isVisible === "boolean"
+          ? isVisible
+          : true,
+    gender: gender ?? fallbackGender,
+  };
 }
 
 function toApi(p: Partial<Product>): Partial<ApiProduct> {
@@ -114,10 +154,17 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<void> {
+  const productId = id?.trim();
+  if (!productId) {
+    throw new Error("Product id is missing — cannot delete.");
+  }
+
+  // Send id in both query and body. Some gateways drop DELETE bodies; the
+  // workflow DTO still needs a non-empty string id either way.
   return executeOrMock(
     "product.delete",
-    () => mockDeleteProduct(id),
-    { method: "DELETE", body: { id } },
+    () => mockDeleteProduct(productId),
+    { method: "DELETE", query: { id: productId }, body: { id: productId } },
   );
 }
 

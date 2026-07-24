@@ -315,9 +315,10 @@ export default function ProductsPage() {
         destructive
         confirmText="Delete product"
         onConfirm={async () => {
-          if (!toDelete) return;
+          const id = toDelete;
+          if (!id) return;
           try {
-            await remove.mutateAsync(toDelete);
+            await remove.mutateAsync(id);
             toast.success("Product deleted.");
             setToDelete(null);
           } catch (e) {

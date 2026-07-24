@@ -66,12 +66,12 @@ export default function OrderDetailPage() {
   const [refundOpen, setRefundOpen] = React.useState(false);
   const [refundAmount, setRefundAmount] = React.useState("");
   const [refundReason, setRefundReason] = React.useState("");
-  const [notesDraft, setNotesDraft] = React.useState(order?.notes ?? "");
+  const [notesDraft, setNotesDraft] = React.useState(order?.notes || "");
 
   const [prevOrderId, setPrevOrderId] = React.useState(order?.id);
   if (order && prevOrderId !== order.id) {
     setPrevOrderId(order.id);
-    setNotesDraft(order.notes);
+    setNotesDraft(order.notes ?? "");
   }
 
   if (isLoading) {
@@ -104,7 +104,7 @@ export default function OrderDetailPage() {
       await updateStatus.mutateAsync({
         id: order.id,
         status: "ready_for_pickup",
-        extras: { note: "Ready for rider pickup" },
+        note: "Ready for rider pickup",
       });
       toast.success("Order marked ready for pickup.");
     } catch (e) {
@@ -130,7 +130,7 @@ export default function OrderDetailPage() {
       await updateStatus.mutateAsync({
         id: order.id,
         status: "cancelled",
-        extras: { note: "Cancelled by admin" },
+        note: "Cancelled by admin",
       });
       toast.success("Order cancelled.");
       setCancelOpen(false);
@@ -290,13 +290,15 @@ export default function OrderDetailPage() {
                           className="flex items-center gap-3 hover:underline"
                         >
                           <div className="relative h-12 w-12 rounded overflow-hidden bg-zinc-100">
-                            <Image
-                              src={it.imageUrl}
-                              alt=""
-                              fill
-                              className="object-cover"
-                              sizes="48px"
-                            />
+                            {it.imageUrl ? (
+                              <Image
+                                src={it.imageUrl}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                sizes="48px"
+                              />
+                            ) : null}
                           </div>
                           <span className="text-sm font-medium text-zinc-900">
                             {it.productName}

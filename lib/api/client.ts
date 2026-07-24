@@ -58,9 +58,21 @@ function toQueryString(query?: Record<string, QueryValue>): string {
 }
 
 function isEnvelope(payload: unknown): payload is Envelope {
-  if (!payload || typeof payload !== "object") return false;
-  const obj = payload as Envelope;
-  return "success" in obj || ("data" in obj && ("message" in obj || "errors" in obj));
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return false;
+  }
+  const obj = payload as Envelope & Record<string, unknown>;
+  if ("success" in obj) return true;
+  // Bare `{ data: T }` REST wrappers (no success/message) — but not if this
+  // already looks like a domain entity (orders/products have their own fields).
+  if (!("data" in obj) || obj.data === undefined) return false;
+  const looksLikeEntity =
+    typeof obj.id === "string" ||
+    typeof obj.slug === "string" ||
+    typeof obj.email === "string" ||
+    Array.isArray(obj.items) ||
+    Array.isArray(obj.variants);
+  return !looksLikeEntity;
 }
 
 function unwrap(payload: unknown): unknown {
@@ -141,7 +153,26 @@ async function request(
     return undefined;
   }
 
-  const json = await res.json();
+  // Some endpoints return 200 with an empty body — don't throw on JSON parse.
+  const text = await res.text();
+  if (!text.trim()) {
+    console.log("[api] response", { method, endpoint: url, status: res.status, data: null });
+    return undefined;
+  }
+
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    console.error("[api] error", {
+      method,
+      endpoint: url,
+      status: res.status,
+      response: text.slice(0, 200),
+    });
+    throw new ApiError("Invalid JSON response from API", res.status);
+  }
+
   console.log("[api] response", {
     method,
     endpoint: url,
@@ -296,6 +327,51 @@ export async function restPaginatedOrMock<T>(
 ): Promise<Paginated<T>> {
   if (useMockApi()) return mockFn();
   return restPaginated<T>(path, options);
+}
+
+/**
+ * Downloads a file response (CSV, etc.) through the BFF proxy and triggers
+ * a browser save. Used for workflow export usecases that return raw text.
+ */
+export async function downloadApiFile(
+  path: string,
+  filename: string,
+  query?: Record<string, QueryValue>,
+): Promise<void> {
+  const url = `${apiBase()}${path}${toQueryString(query)}`;
+
+  console.log("[api] request", {
+    method: "GET",
+    endpoint: url,
+    query: query ?? null,
+    payload: null,
+  });
+
+  const res = await fetch(url, {
+    method: "GET",
+    credentials: "same-origin",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.error("[api] error", {
+      method: "GET",
+      endpoint: url,
+      status: res.status,
+      response: err,
+    });
+    throw new ApiError(errorMessage(err, res.status), res.status);
+  }
+
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(objectUrl);
 }
 
 /** Uploads a file via multipart/form-data to POST /media/upload. */

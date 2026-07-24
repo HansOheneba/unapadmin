@@ -1,6 +1,7 @@
 import type { DeliveryEvent, Order, OrderStatus, Paginated } from "@/types";
 import {
   ApiError,
+  downloadApiFile,
   execute,
   executeOrMock,
   executePaginated,
@@ -8,6 +9,7 @@ import {
   restOrMock,
   useMockApi,
 } from "./client";
+import { downloadCsv } from "@/lib/format";
 import {
   mockAssignRider,
   mockConfirmReturnVerified,
@@ -50,6 +52,12 @@ function asOrder(raw: unknown, fallbackId: string): Order | null {
     return asOrder(obj.order, fallbackId);
   }
 
+  // REST wrappers often return `{ data: Order }` without a success flag.
+  if (obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)) {
+    const nested = asOrder(obj.data, fallbackId);
+    if (nested) return nested;
+  }
+
   const id =
     typeof obj.id === "string"
       ? obj.id
@@ -67,7 +75,15 @@ function asOrder(raw: unknown, fallbackId: string): Order | null {
     Array.isArray(obj.items);
 
   if (!looksLikeOrder) return null;
-  return { ...(obj as unknown as Order), id };
+
+  const order = { ...(obj as unknown as Order), id };
+  // API may return null for optional strings — keep React inputs controlled.
+  return {
+    ...order,
+    notes: order.notes ?? "",
+    customerNote: order.customerNote ?? "",
+    riderNote: order.riderNote ?? "",
+  };
 }
 
 export async function getOrder(id: string): Promise<Order> {
@@ -102,20 +118,39 @@ export async function updateOrderStatus(
   id: string,
   body: {
     status: OrderStatus;
+    note?: string;
     carrier?: string;
     trackingNumber?: string;
-    note?: string;
   },
 ): Promise<Order> {
-  return executeOrMock(
-    "order.update-status",
-    () => {
-      const o = mockUpdateOrderStatus(id, body.status, body);
-      if (!o) throw new Error("Order not found");
-      return o;
-    },
-    { method: "PATCH", body: { id, ...body } },
-  );
+  if (useMockApi()) {
+    const o = mockUpdateOrderStatus(id, body.status, body);
+    if (!o) throw new Error("Order not found");
+    return o;
+  }
+
+  // Workflow contract: PATCH /workflow/execute/order.update-status
+  // body: { id, status, note?, carrier?, trackingNumber? }
+  const payload = {
+    id,
+    status: body.status,
+    ...(body.note !== undefined ? { note: body.note } : {}),
+    ...(body.carrier !== undefined ? { carrier: body.carrier } : {}),
+    ...(body.trackingNumber !== undefined
+      ? { trackingNumber: body.trackingNumber }
+      : {}),
+  };
+
+  const raw = await execute<unknown>("order.update-status", {
+    method: "PATCH",
+    body: payload,
+  });
+
+  const updated = asOrder(raw, id);
+  if (updated) return updated;
+
+  // Some handlers return 200 with a thin/empty body — confirm via get.
+  return getOrder(id);
 }
 
 export async function updateOrderNotes(
@@ -213,4 +248,44 @@ export async function confirmReturnVerified(orderId: string): Promise<Order> {
     },
     { method: "POST", body: {} },
   );
+}
+
+export async function exportOrdersCsv(params: {
+  from?: string;
+  to?: string;
+}): Promise<void> {
+  const from = params.from ?? "2020-01-01";
+  const to = params.to ?? new Date().toISOString().slice(0, 10);
+  const filename = `orders-${from}-to-${to}.csv`;
+
+  if (useMockApi()) {
+    const { data: orders } = await getOrders({
+      from,
+      to,
+      page: 1,
+      pageSize: 500,
+    });
+    downloadCsv(
+      filename,
+      orders.map((o) => ({
+        order_id: o.id,
+        tracking: o.trackingNumber,
+        customer: o.customerName,
+        email: o.customerEmail,
+        country: o.shippingAddress.country,
+        items: o.items.reduce((s, i) => s + i.quantity, 0),
+        total: o.total,
+        currency: o.currency,
+        status: o.status,
+        payment: o.paymentStatus,
+        created_at: o.createdAt,
+      })),
+    );
+    return;
+  }
+
+  await downloadApiFile("/workflow/execute/order.export-csv", filename, {
+    from,
+    to,
+  });
 }

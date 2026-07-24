@@ -6,10 +6,11 @@ import { Download, Search, X } from "lucide-react";
 import { useOrders } from "@/lib/hooks/useOrders";
 import { useRiders } from "@/lib/hooks/useRiders";
 import { isAccraInhouse } from "@/lib/delivery";
+import { toast } from "sonner";
+import { exportOrdersCsv } from "@/lib/api/orders";
 import {
   ORDER_STATUSES,
   PAYMENT_STATUSES,
-  downloadCsv,
   fmtDate,
   formatMoney,
   relative,
@@ -100,23 +101,20 @@ export default function OrdersPage() {
     setPage(1);
   };
 
-  const exportCsv = () => {
-    downloadCsv(
-      `orders-${new Date().toISOString().slice(0, 10)}.csv`,
-      orders.map((o) => ({
-        order_id: o.id,
-        tracking: o.trackingNumber,
-        customer: o.customerName,
-        email: o.customerEmail,
-        country: o.shippingAddress.country,
-        items: o.items.reduce((s, i) => s + i.quantity, 0),
-        total: o.total,
-        currency: "GHS",
-        status: o.status,
-        payment: o.paymentStatus,
-        created_at: o.createdAt,
-      })),
-    );
+  const [exporting, setExporting] = React.useState(false);
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      await exportOrdersCsv({
+        from: from || undefined,
+        to: to || undefined,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to export orders.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const hasFilters =
@@ -140,10 +138,10 @@ export default function OrdersPage() {
         <Button
           variant="outline"
           onClick={exportCsv}
-          disabled={orders.length === 0}
+          disabled={exporting}
         >
           <Download className="h-4 w-4" />
-          Export CSV
+          {exporting ? "Exporting…" : "Export CSV"}
         </Button>
       </div>
 

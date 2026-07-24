@@ -1,5 +1,5 @@
 import type { AdminUser, StoreSettings } from "@/types";
-import { executeOrMock } from "./client";
+import { restOrMock } from "./client";
 import {
   mockGetAdmins,
   mockGetSettings,
@@ -35,7 +35,7 @@ export function normalizeSettings(raw: unknown): StoreSettings {
 }
 
 export async function getSettings(): Promise<StoreSettings> {
-  const raw = await executeOrMock("settings.get", mockGetSettings);
+  const raw = await restOrMock("/settings", mockGetSettings);
   if (!raw || typeof raw !== "object") {
     throw new Error("Settings response was empty.");
   }
@@ -45,8 +45,8 @@ export async function getSettings(): Promise<StoreSettings> {
 export async function updateSettings(
   patch: Partial<StoreSettings>,
 ): Promise<StoreSettings> {
-  const raw = await executeOrMock(
-    "settings.update",
+  const raw = await restOrMock(
+    "/settings",
     () => mockUpdateSettings(patch),
     { method: "PATCH", body: patch },
   );
@@ -54,8 +54,8 @@ export async function updateSettings(
 }
 
 export async function getAdminUsers(): Promise<AdminUser[]> {
-  const raw = await executeOrMock<AdminUser[] | { data?: AdminUser[] }>(
-    "admin-user.list",
+  const raw = await restOrMock<AdminUser[] | { data?: AdminUser[] }>(
+    "/admin-users",
     mockGetAdmins,
   );
   if (Array.isArray(raw)) return raw;
@@ -68,8 +68,8 @@ export async function inviteAdminUser(body: {
   email: string;
   role: AdminUser["role"];
 }): Promise<AdminUser> {
-  return executeOrMock(
-    "admin-user.create",
+  return restOrMock(
+    "/admin-users",
     () => mockInviteAdmin(body.name, body.email, body.role),
     { method: "POST", body },
   );
@@ -79,17 +79,15 @@ export async function updateAdminUserRole(
   id: string,
   role: AdminUser["role"],
 ): Promise<AdminUser> {
-  return executeOrMock(
-    "admin-user.update-role",
+  return restOrMock(
+    `/admin-users/${id}/role`,
     () => mockUpdateAdminRole(id, role),
-    { method: "PATCH", body: { id, role } },
+    { method: "PATCH", body: { role } },
   );
 }
 
 export async function removeAdminUser(id: string): Promise<void> {
-  return executeOrMock(
-    "admin-user.delete",
-    () => mockRemoveAdmin(id),
-    { method: "DELETE", body: { id } },
-  );
+  return restOrMock(`/admin-users/${id}`, () => mockRemoveAdmin(id), {
+    method: "DELETE",
+  });
 }

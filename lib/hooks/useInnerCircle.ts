@@ -20,7 +20,6 @@ export function useInnerCircleMutations() {
   const qc = useQueryClient();
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["inner-circle"] });
-    qc.invalidateQueries({ queryKey: queryKeys.badges });
     qc.invalidateQueries({ queryKey: ["customers"] });
   };
 

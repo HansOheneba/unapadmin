@@ -1,5 +1,5 @@
 import type { AdminUser } from "@/types";
-import { ApiError, executeOrMock, useMockApi } from "./client";
+import { ApiError, restOrMock, useMockApi } from "./client";
 import {
   mockGetMe,
   mockSendOtp,
@@ -7,11 +7,17 @@ import {
 } from "@/lib/mock/data-store";
 import { clearToken, getToken, setToken } from "./token";
 
+const ADMIN_OTP_PURPOSE = "admin_login" as const;
+
 export async function sendOtp(email: string): Promise<{ message: string }> {
-  return executeOrMock("auth.send-otp", () => mockSendOtp(email), {
-    method: "POST",
-    body: { email },
-  });
+  return restOrMock(
+    "/auth/otp/send",
+    () => mockSendOtp(email),
+    {
+      method: "POST",
+      body: { email, purpose: ADMIN_OTP_PURPOSE },
+    },
+  );
 }
 
 /**
@@ -33,7 +39,11 @@ export async function verifyOtp(
   const res = await fetch("/api/auth/verify-otp", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, code: otp }),
+    body: JSON.stringify({
+      email,
+      code: otp,
+      purpose: ADMIN_OTP_PURPOSE,
+    }),
     credentials: "same-origin",
   });
   const json = await res.json().catch(() => ({}));
@@ -51,11 +61,25 @@ export async function verifyOtp(
 }
 
 export async function getMe(): Promise<AdminUser> {
-  return executeOrMock("auth.me", () => {
+  if (useMockApi()) {
     const user = mockGetMe(getToken());
     if (!user) throw new Error("Unauthorized");
     return user;
-  });
+  }
+
+  const raw = await restOrMock<AdminUser | { user: AdminUser }>(
+    "/auth/me",
+    () => {
+      const user = mockGetMe(getToken());
+      if (!user) throw new Error("Unauthorized");
+      return user;
+    },
+  );
+
+  if (raw && typeof raw === "object" && "user" in raw && raw.user) {
+    return raw.user;
+  }
+  return raw as AdminUser;
 }
 
 export async function logout(): Promise<void> {

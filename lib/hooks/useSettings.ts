@@ -34,14 +34,11 @@ export function useSettingsMutations() {
     qc.invalidateQueries({ queryKey: queryKeys.settings });
   const invalidateAdmins = () =>
     qc.invalidateQueries({ queryKey: queryKeys.adminUsers });
-  const invalidateBadges = () =>
-    qc.invalidateQueries({ queryKey: queryKeys.badges });
-
   const update = useMutation({
     mutationFn: (patch: Partial<StoreSettings>) => updateSettings(patch),
     onSuccess: () => {
       invalidateSettings();
-      invalidateBadges();
+      qc.invalidateQueries({ queryKey: queryKeys.dashboard });
     },
   });
 
