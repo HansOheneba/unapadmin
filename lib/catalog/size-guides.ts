@@ -26,27 +26,18 @@ export const BOXER_SIZE_GUIDE: SizeGuide = {
   ],
 };
 
-const MENS_APPAREL: SizeGuide = {
-  id: "mens-apparel",
-  label: "Men's apparel",
-  sizes: [
-    { size: "S" },
-    { size: "M" },
-    { size: "L" },
-    { size: "XL" },
-    { size: "XXL" },
-  ],
-};
-
-const WOMENS_APPAREL: SizeGuide = {
-  id: "womens-apparel",
-  label: "Women's apparel",
+/** Combined apparel ladder — API has no gender, so admin does not split M/F. */
+const APPAREL: SizeGuide = {
+  id: "apparel",
+  label: "Apparel",
   sizes: [
     { size: "XS" },
     { size: "S" },
     { size: "M" },
     { size: "L" },
     { size: "XL" },
+    { size: "XXL" },
+    { size: "XXXL" },
   ],
 };
 
@@ -62,22 +53,23 @@ const ACCESSORIES: SizeGuide = {
   sizes: [{ size: "One Size" }, { size: "S/M" }, { size: "L/XL" }],
 };
 
-export function getSizeGuide(
-  collectionId: string,
-  gender: "male" | "female" | "unisex",
-): SizeGuide {
-  if (collectionId === "underwear") return BOXER_SIZE_GUIDE;
-  if (collectionId === "sunglasses") return ONE_SIZE;
-  if (collectionId === "accessories") return ACCESSORIES;
+/**
+ * Size options for the product form. Pass collection **slug** (not UUID).
+ * Gender is not part of the admin API — guides are collection-only.
+ */
+export function getSizeGuide(collectionSlug: string): SizeGuide {
+  if (collectionSlug === "underwear") return BOXER_SIZE_GUIDE;
+  if (collectionSlug === "sunglasses") return ONE_SIZE;
+  if (collectionSlug === "accessories") return ACCESSORIES;
   if (
-    collectionId === "tops" ||
-    collectionId === "bottoms" ||
-    collectionId === "tracksuits" ||
-    collectionId === "active-wear"
+    collectionSlug === "tops" ||
+    collectionSlug === "bottoms" ||
+    collectionSlug === "tracksuits" ||
+    collectionSlug === "active-wear"
   ) {
-    return gender === "female" ? WOMENS_APPAREL : MENS_APPAREL;
+    return APPAREL;
   }
-  return MENS_APPAREL;
+  return APPAREL;
 }
 
 export function sizeGuideSizeLabels(guide: SizeGuide): string[] {

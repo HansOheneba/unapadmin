@@ -84,6 +84,7 @@ export function catalogProductToAdmin(
     name: catalog.name,
     description: catalog.description,
     price: catalog.price,
+    priceNgn: null,
     gender: catalog.gender,
     collectionId: catalog.collectionId,
     variants,

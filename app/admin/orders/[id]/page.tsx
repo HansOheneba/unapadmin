@@ -182,7 +182,7 @@ export default function OrderDetailPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-semibold text-zinc-900">
-                  {order.id}
+                  {order.orderNumber ?? order.id}
                 </h1>
                 <OrderStatusBadge status={order.status} />
                 <PaymentStatusBadge status={order.paymentStatus} />
@@ -267,7 +267,7 @@ export default function OrderDetailPage() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base font-semibold text-zinc-900">
-                Items ({order.items.length})
+                Items ({(order.items ?? []).length})
               </CardTitle>
             </CardHeader>
             <CardContent className="px-0">
@@ -282,7 +282,7 @@ export default function OrderDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {order.items.map((it, i) => (
+                  {(order.items ?? []).map((it, i) => (
                     <TableRow key={`${it.productId}-${it.variantId}-${i}`}>
                       <TableCell>
                         <Link
@@ -348,7 +348,7 @@ export default function OrderDetailPage() {
               <div className="h-px bg-zinc-200 my-2" />
               <Row
                 label="Payment method"
-                value={order.paymentMethod.toUpperCase()}
+                value={(order.paymentMethod ?? "card").toUpperCase()}
               />
               {order.paymentReference && (
                 <Row label="Reference" value={order.paymentReference} mono />

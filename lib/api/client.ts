@@ -11,7 +11,7 @@ const WORKFLOW_PREFIX = "/workflow/execute";
  * call to the API host. Server-side calls (rare in this client-heavy app)
  * hit the API origin directly.
  */
-function apiBase(): string {
+export function apiBase(): string {
   if (typeof window !== "undefined") return "/api/backend";
   return API_ORIGIN;
 }
@@ -93,6 +93,11 @@ function unwrap(payload: unknown): unknown {
     data = data.data;
   }
   return data;
+}
+
+/** Public alias for callers that already have a parsed JSON body. */
+export function unwrapJson(payload: unknown): unknown {
+  return unwrap(payload);
 }
 
 function errorMessage(err: unknown, status: number): string {
@@ -374,43 +379,61 @@ export async function downloadApiFile(
   URL.revokeObjectURL(objectUrl);
 }
 
-/** Uploads a file via multipart/form-data to POST /media/upload. */
-export async function uploadFile(
-  file: File,
-): Promise<{ url: string; key?: string }> {
-  const form = new FormData();
-  form.append("file", file);
-  const url = `${apiBase()}/media/upload`;
+/**
+ * Multipart FormData to a workflow usecase. Caller builds FormData;
+ * Content-Type is left unset so the browser sets the boundary.
+ */
+export async function executeMultipart<T>(
+  usecase: string,
+  form: FormData,
+  method: "POST" | "PATCH" = "POST",
+): Promise<T> {
+  const url = `${apiBase()}${WORKFLOW_PREFIX}/${usecase}`;
+  const fileNames = form
+    .getAll("files")
+    .map((v) => (v instanceof File ? v.name : String(v)));
 
-  console.log("[api] request", {
-    method: "POST",
+  console.log("[api] multipart request", {
+    method,
     endpoint: url,
-    payload: { file: file.name, size: file.size, type: file.type },
+    fields: [...form.keys()],
+    files: fileNames,
   });
 
   const res = await fetch(url, {
-    method: "POST",
+    method,
     body: form,
     credentials: "same-origin",
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    console.error("[api] error", {
-      method: "POST",
-      endpoint: url,
-      status: res.status,
-      response: err,
-    });
-    throw new ApiError(errorMessage(err, res.status), res.status);
+  const text = await res.text();
+  let json: unknown = null;
+  if (text.trim()) {
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = text.slice(0, 500);
+    }
   }
 
-  const json = await res.json();
-  console.log("[api] response", {
-    method: "POST",
+  console.log("[api] multipart response", {
+    method,
     endpoint: url,
     status: res.status,
     data: json,
   });
-  return unwrap(json) as { url: string; key?: string };
+
+  if (!res.ok) {
+    throw new ApiError(errorMessage(json, res.status), res.status);
+  }
+
+  return unwrap(json) as T;
+}
+
+/** @deprecated Prefer `uploadImage` from `lib/api/media` (richer logging + fallbacks). */
+export async function uploadFile(
+  file: File,
+): Promise<{ url: string; key?: string }> {
+  const { uploadImage } = await import("./media");
+  return uploadImage(file);
 }

@@ -7,6 +7,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { getMe } from "@/lib/api/auth";
 import { ApiError, useMockApi } from "@/lib/api/client";
 import { queryKeys } from "@/lib/hooks/query-keys";
+import { PageSpinner } from "@/components/ui/spinner";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -57,11 +58,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [isError, error, qc, logout, router]);
 
   if (!hydrated) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="text-sm text-zinc-500">Loading...</div>
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (!currentUser) return null;
@@ -71,11 +68,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   // a non-auth error like 429 — keep the shell up).
   const waitingOnFirstCheck = isPending && !isFetched;
   if (waitingOnFirstCheck) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="text-sm text-zinc-500">Loading...</div>
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   return <>{children}</>;

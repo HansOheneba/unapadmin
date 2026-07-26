@@ -30,12 +30,9 @@ import type { ColorVariant, Product, SizeStock } from "@/types";
 
 const filterSizesForGuide = (
   sizes: SizeStock[],
-  collectionId: string,
-  gender: Product["gender"],
+  collectionSlug: string,
 ): SizeStock[] => {
-  const allowed = new Set(
-    sizeGuideSizeLabels(getSizeGuide(collectionId, gender)),
-  );
+  const allowed = new Set(sizeGuideSizeLabels(getSizeGuide(collectionSlug)));
   return sizes.filter((s) => allowed.has(s.size));
 };
 
@@ -45,14 +42,15 @@ const toSlug = (name: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const emptyProduct = (): Product => ({
-  id: `prod_${Date.now().toString(36)}`,
+const emptyProduct = (collectionId = ""): Product => ({
+  id: "",
   slug: "",
   name: "",
   description: "",
   price: 0,
+  priceNgn: null,
   gender: "male",
-  collectionId: "underwear",
+  collectionId,
   variants: [],
   details: [""],
   careInstructions: [""],
@@ -72,8 +70,33 @@ export function ProductForm({ initial }: { initial?: Product }) {
   const { upsert, remove } = useProductMutations();
   const products = productsPage?.data ?? [];
 
-  const [draft, setDraft] = React.useState<Product>(initial ?? emptyProduct());
+  const [draft, setDraft] = React.useState<Product>(
+    initial
+      ? { ...initial, priceNgn: initial.priceNgn ?? null }
+      : emptyProduct(),
+  );
   const [slugManuallyEdited, setSlugManuallyEdited] = React.useState(!!initial);
+  // blob: preview URL → File. Uploaded only when the product is saved.
+  const localFilesRef = React.useRef(new Map<string, File>());
+
+  // Once collections load, default a new product to the first real collection id
+  // (UUID from API) — Postman create requires collectionId, not a slug like "underwear".
+  React.useEffect(() => {
+    if (initial) return;
+    if (draft.collectionId) return;
+    if (collections.length === 0) return;
+    setDraft((d) => ({ ...d, collectionId: collections[0].id }));
+  }, [initial, draft.collectionId, collections]);
+
+  React.useEffect(() => {
+    const files = localFilesRef.current;
+    return () => {
+      for (const url of files.keys()) {
+        URL.revokeObjectURL(url);
+      }
+      files.clear();
+    };
+  }, []);
 
   // Reset draft when editing a different product (e.g. navigating between edit pages).
   const [prevId, setPrevId] = React.useState(initial?.id);
@@ -87,28 +110,28 @@ export function ProductForm({ initial }: { initial?: Product }) {
     draft.slug !== "" &&
     products.some((p) => p.slug === draft.slug && p.id !== draft.id);
 
-  const sizeGuide = getSizeGuide(draft.collectionId, draft.gender);
+  const collectionKey = (collectionId: string) => {
+    const collection = collections.find((c) => c.id === collectionId);
+    // Size guides key off storefront slugs (underwear, tops, …). Prefer href
+    // path segment; fall back to id when mocks still use slug-as-id.
+    const fromHref = collection?.href?.split("/").filter(Boolean).at(-1);
+    return fromHref || collectionId;
+  };
+  const sizeGuide = getSizeGuide(collectionKey(draft.collectionId));
 
   const update = <K extends keyof Product>(key: K, value: Product[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  const updateCatalogField = <K extends "collectionId" | "gender">(
-    key: K,
-    value: Product[K],
-  ) => {
-    setDraft((d) => {
-      const next = { ...d, [key]: value };
-      const collectionId =
-        key === "collectionId" ? (value as string) : d.collectionId;
-      const gender = key === "gender" ? (value as Product["gender"]) : d.gender;
-      return {
-        ...next,
-        variants: d.variants.map((v) => ({
-          ...v,
-          sizes: filterSizesForGuide(v.sizes, collectionId, gender),
-        })),
-      };
-    });
+  const updateCollection = (collectionId: string) => {
+    const key = collectionKey(collectionId);
+    setDraft((d) => ({
+      ...d,
+      collectionId,
+      variants: d.variants.map((v) => ({
+        ...v,
+        sizes: filterSizesForGuide(v.sizes, key),
+      })),
+    }));
   };
 
   // Variants
@@ -149,8 +172,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
         colorName,
         sizes: filterSizesForGuide(
           v.sizes.map((s) => ({ ...s, size: s.size.trim() })),
-          draft.collectionId,
-          draft.gender,
+          collectionKey(draft.collectionId),
         ),
       };
     });
@@ -161,11 +183,19 @@ export function ProductForm({ initial }: { initial?: Product }) {
       return;
     }
     if (!draft.price || draft.price <= 0) {
-      toast.error("Enter a price greater than 0.");
+      toast.error("Enter a GHS price greater than 0.");
+      return;
+    }
+    if (!draft.priceNgn || draft.priceNgn <= 0) {
+      toast.error("Enter an NGN price greater than 0.");
       return;
     }
     if (slugConflict) {
       toast.error("Slug is already used by another product.");
+      return;
+    }
+    if (!draft.collectionId) {
+      toast.error("Select a collection.");
       return;
     }
     if (draft.variants.length === 0) {
@@ -183,8 +213,20 @@ export function ProductForm({ initial }: { initial?: Product }) {
         return;
       }
     }
+    const product = { ...draft, variants };
+    const uploads = variants.flatMap((v, variantIndex) =>
+      v.images.flatMap((src, imageIndex) => {
+        const file = localFilesRef.current.get(src);
+        return file ? [{ variantIndex, imageIndex, file }] : [];
+      }),
+    );
+
     try {
-      const saved = await upsert.mutateAsync({ ...draft, variants });
+      const saved = await upsert.mutateAsync({ product, uploads });
+      for (const url of localFilesRef.current.keys()) {
+        URL.revokeObjectURL(url);
+      }
+      localFilesRef.current.clear();
       toast.success(initial ? "Product updated." : "Product created.");
       router.push(`/admin/products/${saved.id}`);
     } catch (e) {
@@ -292,50 +334,58 @@ export function ProductForm({ initial }: { initial?: Product }) {
                   onChange={(e) => update("description", e.target.value)}
                 />
               </div>
-              <div>
-                <Label>Price (GHS)</Label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  step={1}
-                  placeholder="e.g. 120"
-                  value={draft.price > 0 ? draft.price : ""}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === "") {
-                      update("price", 0);
-                      return;
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
+                <div>
+                  <Label>Price (GHS)</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    step={1}
+                    placeholder="e.g. 120"
+                    value={draft.price > 0 ? draft.price : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        update("price", 0);
+                        return;
+                      }
+                      const next = Number(raw);
+                      if (Number.isFinite(next)) update("price", next);
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label>Price (NGN)</Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    step={1}
+                    placeholder="e.g. 8000"
+                    value={
+                      draft.priceNgn != null && draft.priceNgn > 0
+                        ? draft.priceNgn
+                        : ""
                     }
-                    const next = Number(raw);
-                    if (Number.isFinite(next)) update("price", next);
-                  }}
-                  className="max-w-xs"
-                />
-              </div>
-              <div>
-                <Label>Gender</Label>
-                <Select
-                  value={draft.gender}
-                  onValueChange={(v) =>
-                    updateCatalogField("gender", v as Product["gender"])
-                  }
-                >
-                  <SelectTrigger className="max-w-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                  </SelectContent>
-                </Select>
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        update("priceNgn", null);
+                        return;
+                      }
+                      const next = Number(raw);
+                      if (Number.isFinite(next)) update("priceNgn", next);
+                    }}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <Label>Collection</Label>
                   <Select
                     value={draft.collectionId}
-                    onValueChange={(v) => updateCatalogField("collectionId", v)}
+                    onValueChange={updateCollection}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -377,16 +427,9 @@ export function ProductForm({ initial }: { initial?: Product }) {
                       <div className="flex items-center gap-2">
                         <Input
                           value={v.colorName}
-                          onChange={(e) => {
-                            const colorName = e.target.value;
-                            const patch: Partial<ColorVariant> = { colorName };
-                            if (v.id.startsWith("var_") || !v.id) {
-                              patch.id = colorName
-                                ? toSlug(colorName)
-                                : v.id;
-                            }
-                            updateVariant(idx, patch);
-                          }}
+                          onChange={(e) =>
+                            updateVariant(idx, { colorName: e.target.value })
+                          }
                           placeholder="Color name"
                           className="flex-1"
                         />
@@ -419,23 +462,37 @@ export function ProductForm({ initial }: { initial?: Product }) {
                         <div className="flex flex-wrap gap-2 mt-1">
                           {v.images.map((img, i) => (
                             <div
-                              key={i}
+                              key={img}
                               className="relative h-16 w-16 rounded overflow-hidden bg-white border border-zinc-200 group"
                             >
-                              <Image
-                                src={img}
-                                alt=""
-                                fill
-                                sizes="64px"
-                                className="object-cover"
-                              />
+                              {img.startsWith("blob:") ? (
+                                // Local preview until Save — next/image rejects blob: URLs.
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={img}
+                                  alt=""
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                />
+                              ) : (
+                                <Image
+                                  src={img}
+                                  alt=""
+                                  fill
+                                  sizes="64px"
+                                  className="object-cover"
+                                />
+                              )}
                               <button
                                 type="button"
-                                onClick={() =>
+                                onClick={() => {
+                                  if (img.startsWith("blob:")) {
+                                    URL.revokeObjectURL(img);
+                                    localFilesRef.current.delete(img);
+                                  }
                                   updateVariant(idx, {
                                     images: v.images.filter((_, k) => k !== i),
-                                  })
-                                }
+                                  });
+                                }}
                                 className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100"
                               >
                                 <X className="h-3 w-3" />
@@ -443,9 +500,17 @@ export function ProductForm({ initial }: { initial?: Product }) {
                             </div>
                           ))}
                           <ImagePicker
+                            deferUpload
                             onSelect={(url) =>
                               updateVariant(idx, { images: [...v.images, url] })
                             }
+                            onSelectFile={(file) => {
+                              const previewUrl = URL.createObjectURL(file);
+                              localFilesRef.current.set(previewUrl, file);
+                              updateVariant(idx, {
+                                images: [...v.images, previewUrl],
+                              });
+                            }}
                           />
                         </div>
                       </div>

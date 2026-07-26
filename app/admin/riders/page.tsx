@@ -563,8 +563,8 @@ export default function RidersPage() {
             <Button variant="outline" onClick={() => setEditing(null)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={upsert.isPending}>
-              {upsert.isPending ? "Saving..." : "Save"}
+            <Button onClick={handleSave} loading={upsert.isPending}>
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

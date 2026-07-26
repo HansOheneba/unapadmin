@@ -34,12 +34,18 @@ const paymentConfig: Record<PaymentStatus, PaymentVariant> = {
   failed: "red",
 };
 
-export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  return <Badge variant={orderConfig[status]}>{statusLabel(status)}</Badge>;
+export function OrderStatusBadge({ status }: { status: OrderStatus | string }) {
+  const variant = orderConfig[status as OrderStatus] ?? "zinc";
+  return <Badge variant={variant}>{statusLabel(status)}</Badge>;
 }
 
-export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
-  return <Badge variant={paymentConfig[status]}>{statusLabel(status)}</Badge>;
+export function PaymentStatusBadge({
+  status,
+}: {
+  status: PaymentStatus | string;
+}) {
+  const variant = paymentConfig[status as PaymentStatus] ?? "zinc";
+  return <Badge variant={variant}>{statusLabel(status)}</Badge>;
 }
 
 export function CustomerStatusBadge({

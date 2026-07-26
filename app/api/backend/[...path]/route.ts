@@ -14,21 +14,68 @@ async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
   const url = `${API_ORIGIN}/${path.join("/")}${req.nextUrl.search}`;
   const contentType = req.headers.get("content-type");
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
+  const bodyBuffer = hasBody ? await req.arrayBuffer() : undefined;
+  const isMultipart = !!contentType?.includes("multipart/form-data");
+
+  let requestPayload: unknown = null;
+  if (bodyBuffer && bodyBuffer.byteLength > 0) {
+    if (isMultipart) {
+      requestPayload = {
+        kind: "multipart/form-data",
+        bytes: bodyBuffer.byteLength,
+        contentType,
+        hasBoundary: !!contentType?.includes("boundary="),
+      };
+    } else {
+      try {
+        requestPayload = JSON.parse(new TextDecoder().decode(bodyBuffer));
+      } catch {
+        requestPayload = `[non-json body ${bodyBuffer.byteLength} bytes]`;
+      }
+    }
+  }
+
+  console.log("[bff] →", {
+    method: req.method,
+    url,
+    hasAuth: !!token,
+    payload: requestPayload,
+  });
 
   const upstream = await fetch(url, {
     method: req.method,
     headers: {
+      // Preserve multipart boundary; never force application/json on uploads.
       ...(contentType ? { "content-type": contentType } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: hasBody ? await req.arrayBuffer() : undefined,
+    body: bodyBuffer,
   });
 
   const responseBody = await upstream.arrayBuffer();
+
+  let responsePayload: unknown = null;
+  const responseText = new TextDecoder().decode(responseBody);
+  if (responseText.trim()) {
+    try {
+      responsePayload = JSON.parse(responseText);
+    } catch {
+      responsePayload = responseText.slice(0, 500);
+    }
+  }
+
+  console.log("[bff] ←", {
+    method: req.method,
+    url,
+    status: upstream.status,
+    response: responsePayload,
+  });
+
   const res = new NextResponse(responseBody, {
     status: upstream.status,
     headers: {
-      "content-type": upstream.headers.get("content-type") ?? "application/json",
+      "content-type":
+        upstream.headers.get("content-type") ?? "application/json",
     },
   });
 

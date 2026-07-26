@@ -135,13 +135,9 @@ export default function OrdersPage() {
             {total} order{total === 1 ? "" : "s"}
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={exportCsv}
-          disabled={exporting}
-        >
-          <Download className="h-4 w-4" />
-          {exporting ? "Exporting…" : "Export CSV"}
+        <Button variant="outline" onClick={exportCsv} loading={exporting}>
+          {!exporting ? <Download className="h-4 w-4" /> : null}
+          Export CSV
         </Button>
       </div>
 
@@ -267,8 +263,10 @@ export default function OrdersPage() {
                 </TableRow>
               ) : (
                 orders.map((o) => {
-                  const firstItem = o.items[0];
-                  const more = o.items.length - 1;
+                  const items = o.items ?? [];
+                  const firstItem = items[0];
+                  const more = Math.max(0, items.length - 1);
+                  const qty = items.reduce((s, i) => s + (i.quantity || 0), 0);
                   return (
                     <TableRow key={o.id}>
                       <TableCell>
@@ -276,7 +274,7 @@ export default function OrdersPage() {
                           href={`/admin/orders/${o.id}`}
                           className="font-medium text-zinc-900 hover:underline"
                         >
-                          {o.id}
+                          {o.orderNumber ?? o.id}
                         </Link>
                         <div className="text-xs text-zinc-400">
                           {o.trackingNumber}
@@ -291,11 +289,9 @@ export default function OrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm text-zinc-900">
-                          {o.items.reduce((s, i) => s + i.quantity, 0)}
-                        </div>
+                        <div className="text-sm text-zinc-900">{qty}</div>
                         <div className="text-xs text-zinc-500 line-clamp-1">
-                          {firstItem.productName}
+                          {firstItem?.productName ?? "No items"}
                           {more > 0 ? ` +${more} more` : ""}
                         </div>
                       </TableCell>

@@ -62,10 +62,11 @@ const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {
 };
 
 export function statusLabel(s: string) {
+  if (!s) return "Unknown";
   if (s in STATUS_LABELS) return STATUS_LABELS[s as OrderStatus]!;
   return s
     .split("_")
-    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
     .join(" ");
 }
 

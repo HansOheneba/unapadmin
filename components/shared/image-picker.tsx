@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { ImagePlus, Link as LinkIcon, Loader2, Upload } from "lucide-react";
+import { ImagePlus, Link as LinkIcon, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -16,37 +16,66 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PUBLIC_IMAGES } from "@/lib/data/public-images";
-import { uploadImage } from "@/lib/api/media";
 
 export function ImagePicker({
   onSelect,
+  onSelectFile,
+  /**
+   * When true (product form), picking a file only returns the File to the
+   * parent — it is inlined into product.create JSON on Save. When false
+   * (e.g. collections), callers handle upload/URL themselves.
+   */
+  deferUpload = false,
   trigger,
 }: {
   onSelect: (url: string) => void;
+  onSelectFile?: (file: File) => void;
+  deferUpload?: boolean;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState("");
-  const [uploading, setUploading] = React.useState(false);
 
-  const pick = (u: string) => {
+  const pickUrl = (u: string) => {
     if (!u) return;
     onSelect(u);
     setOpen(false);
     setUrl("");
   };
 
-  const handleUpload = async (file: File | undefined) => {
+  const handleFile = (file: File | undefined) => {
     if (!file) return;
-    setUploading(true);
-    try {
-      const { url: uploadedUrl } = await uploadImage(file);
-      pick(uploadedUrl);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to upload image.");
-    } finally {
-      setUploading(false);
+    console.log("[image-picker] file selected (local only)", {
+      name: file.name,
+      size: file.size,
+      type: file.type || "(empty)",
+      deferUpload,
+    });
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file.");
+      return;
     }
+
+    if (deferUpload) {
+      if (!onSelectFile) {
+        toast.error("File selection is not wired for this form.");
+        return;
+      }
+      onSelectFile(file);
+      setOpen(false);
+      return;
+    }
+
+    // Non-deferred callers: expose a local object URL (they own upload timing).
+    if (onSelectFile) {
+      onSelectFile(file);
+      setOpen(false);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    pickUrl(objectUrl);
   };
 
   return (
@@ -89,7 +118,7 @@ export function ImagePicker({
                     <button
                       type="button"
                       key={src}
-                      onClick={() => pick(src)}
+                      onClick={() => pickUrl(src)}
                       className="relative aspect-square rounded overflow-hidden bg-zinc-100 hover:ring-2 hover:ring-zinc-900 transition"
                     >
                       <Image
@@ -107,25 +136,21 @@ export function ImagePicker({
           </TabsContent>
 
           <TabsContent value="upload" className="mt-4 space-y-3">
-            <label
-              className={`flex flex-col items-center justify-center gap-2 h-40 rounded border border-dashed border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-500 cursor-pointer ${
-                uploading ? "pointer-events-none opacity-60" : ""
-              }`}
-            >
-              {uploading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <Upload className="h-6 w-6" />
-              )}
-              <span className="text-sm">
-                {uploading ? "Uploading..." : "Click to upload an image"}
+            <label className="flex flex-col items-center justify-center gap-2 h-40 rounded border border-dashed border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-500 cursor-pointer">
+              <Upload className="h-6 w-6" />
+              <span className="text-sm text-center px-4">
+                {deferUpload
+                  ? "Select an image — it is sent when you save the product"
+                  : "Click to select an image"}
               </span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 className="hidden"
-                disabled={uploading}
-                onChange={(e) => handleUpload(e.target.files?.[0])}
+                onChange={(e) => {
+                  handleFile(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
               />
             </label>
           </TabsContent>
@@ -145,7 +170,7 @@ export function ImagePicker({
               </div>
             )}
             <DialogFooter>
-              <Button onClick={() => pick(url)}>Use this URL</Button>
+              <Button onClick={() => pickUrl(url)}>Use this URL</Button>
             </DialogFooter>
           </TabsContent>
         </Tabs>

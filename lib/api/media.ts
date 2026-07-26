@@ -1,4 +1,7 @@
-import { uploadFile, useMockApi } from "./client";
+import { ApiError, apiBase, unwrapJson, useMockApi } from "./client";
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 /** Reads a file as a base64 data URL, used as the mock-mode "upload". */
 function readAsDataUrl(file: File): Promise<string> {
@@ -10,10 +13,137 @@ function readAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export async function uploadImage(file: File): Promise<{ url: string }> {
+function extractUploadResult(raw: unknown): { url: string; key?: string } {
+  if (!raw || typeof raw !== "object") {
+    throw new ApiError("Upload response was empty.", 502);
+  }
+
+  const obj = raw as Record<string, unknown>;
+  const nested =
+    obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)
+      ? (obj.data as Record<string, unknown>)
+      : obj;
+
+  const urlCandidates = [nested.url, nested.fileUrl, nested.src, nested.location];
+  const url = urlCandidates.find(
+    (v): v is string => typeof v === "string" && v.trim().length > 0,
+  );
+  if (!url) {
+    throw new ApiError(
+      "Upload succeeded but response had no image url.",
+      502,
+    );
+  }
+
+  const key =
+    typeof nested.key === "string"
+      ? nested.key
+      : typeof nested.path === "string"
+        ? nested.path
+        : undefined;
+
+  return { url, key };
+}
+
+async function postMultipart(
+  path: string,
+  file: File,
+): Promise<{ url: string; key?: string }> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+
+  const endpoint = `${apiBase()}${path}`;
+  console.log("[media] → multipart upload", {
+    endpoint,
+    field: "file",
+    name: file.name,
+    size: file.size,
+    type: file.type || "(empty)",
+  });
+
+  // Do not set Content-Type manually — the browser must add the multipart boundary.
+  const res = await fetch(endpoint, {
+    method: "POST",
+    body: form,
+    credentials: "same-origin",
+  });
+
+  const text = await res.text();
+  let json: unknown = null;
+  if (text.trim()) {
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = text.slice(0, 500);
+    }
+  }
+
+  console.log("[media] ← multipart upload", {
+    endpoint,
+    httpStatus: res.status,
+    ok: res.ok,
+    response: json,
+  });
+
+  if (!res.ok) {
+    const message =
+      json && typeof json === "object"
+        ? ((json as { message?: string; error?: string }).message ??
+          (json as { error?: string }).error)
+        : undefined;
+    throw new ApiError(
+      message ?? `Upload failed (HTTP ${res.status})`,
+      res.status,
+    );
+  }
+
+  const unwrapped = unwrapJson(json);
+  return extractUploadResult(unwrapped);
+}
+
+export async function uploadImage(file: File): Promise<{ url: string; key?: string }> {
+  console.log("[media] uploadImage called", {
+    name: file.name,
+    size: file.size,
+    type: file.type || "(empty)",
+    mock: useMockApi(),
+  });
+
+  if (!file.size) {
+    throw new Error("Selected file is empty.");
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error("Image must be 10MB or smaller.");
+  }
+  if (file.type && !ALLOWED_TYPES.has(file.type)) {
+    throw new Error("Use a JPEG, PNG, or WebP image.");
+  }
+
   if (useMockApi()) {
     const url = await readAsDataUrl(file);
+    console.log("[media] mock upload ok", { dataUrlLength: url.length });
     return { url };
   }
-  return uploadFile(file);
+
+  try {
+    return await postMultipart("/media/upload", file);
+  } catch (restErr) {
+    console.warn("[media] REST /media/upload failed, trying workflow", {
+      message: restErr instanceof Error ? restErr.message : String(restErr),
+      status: restErr instanceof ApiError ? restErr.status : undefined,
+    });
+    try {
+      return await postMultipart("/workflow/execute/media.upload", file);
+    } catch (workflowErr) {
+      console.warn("[media] workflow media.upload also failed", {
+        message:
+          workflowErr instanceof Error
+            ? workflowErr.message
+            : String(workflowErr),
+        status:
+          workflowErr instanceof ApiError ? workflowErr.status : undefined,
+      });
+      throw workflowErr;
+    }
+  }
 }

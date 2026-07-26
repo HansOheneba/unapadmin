@@ -115,7 +115,10 @@ export type AssignmentStatus =
   | "failed";
 
 export type Order = {
+  /** Backend primary key (UUID). Use this for all write APIs. */
   id: string;
+  /** Human-readable code (e.g. ORD-2026-0001). Display only. */
+  orderNumber?: string;
   trackingNumber: string;
   customerId: string;
   customerName: string;
@@ -126,7 +129,7 @@ export type Order = {
   items: OrderItem[];
   status: OrderStatus;
   paymentStatus: PaymentStatus;
-  paymentMethod: "momo" | "card" | "cash";
+  paymentMethod: "momo" | "card" | "cash" | "paystack";
   paymentReference: string | null;
   subtotal: number;
   shippingFee: number;
@@ -173,7 +176,10 @@ export type Product = {
   slug: string;
   name: string;
   description: string;
+  /** GHS storefront price (integer cedis). */
   price: number;
+  /** NGN storefront price for Nigeria. Null when unset. */
+  priceNgn: number | null;
   gender: Gender;
   collectionId: string;
   variants: ColorVariant[];

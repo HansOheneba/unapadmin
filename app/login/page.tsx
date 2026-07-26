@@ -14,6 +14,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { PageSpinner } from "@/components/ui/spinner";
 
 type Step = "email" | "otp";
 
@@ -75,11 +76,7 @@ export default function LoginPage() {
   };
 
   if (!hydrated) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="text-sm text-zinc-500">Loading...</div>
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   return (
@@ -120,8 +117,8 @@ export default function LoginPage() {
                   disabled={loading}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending..." : "Continue"}
+              <Button type="submit" className="w-full" loading={loading}>
+                Continue
               </Button>
             </form>
           ) : (
@@ -150,10 +147,11 @@ export default function LoginPage() {
               </div>
               <Button
                 className="w-full"
-                disabled={otp.length < 6 || loading}
+                disabled={otp.length < 6}
+                loading={loading}
                 onClick={() => handleOtpComplete(otp)}
               >
-                {loading ? "Verifying..." : "Sign in"}
+                Sign in
               </Button>
               <button
                 type="button"

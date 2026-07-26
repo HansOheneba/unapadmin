@@ -9,10 +9,16 @@ import {
   getProducts,
   toggleProductVisibility,
   updateProduct,
+  type ProductImageUpload,
   type ProductListParams,
 } from "@/lib/api/products";
 import type { Product } from "@/types";
 import { queryKeys } from "./query-keys";
+
+export type ProductUpsertInput = {
+  product: Product;
+  uploads?: ProductImageUpload[];
+};
 
 export function useProducts(params: ProductListParams = {}) {
   return useQuery({
@@ -34,20 +40,15 @@ export function useProductMutations() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["products"] });
     qc.invalidateQueries({ queryKey: queryKeys.dashboard });
-    qc.invalidateQueries({ queryKey: queryKeys.dashboard });
   };
 
   const upsert = useMutation({
-    mutationFn: async (p: Product) => {
-      if (p.id) {
-        try {
-          await getProduct(p.id);
-          return updateProduct(p.id, p);
-        } catch {
-          return createProduct(p);
-        }
+    mutationFn: async ({ product, uploads = [] }: ProductUpsertInput) => {
+      // New products have an empty id. Never send client temp ids like prod_*.
+      if (!product.id?.trim()) {
+        return createProduct(product, uploads);
       }
-      return createProduct(p);
+      return updateProduct(product.id, product, uploads);
     },
     onSuccess: invalidate,
   });
