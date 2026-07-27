@@ -16,7 +16,7 @@ import {
   executePaginated,
   executePaginatedOrMock,
   restOrMock,
-  useMockApi,
+  useMockApi as isMockApi,
 } from "./client";
 import { downloadCsv } from "@/lib/format";
 import {
@@ -267,7 +267,7 @@ function asOrder(raw: unknown, fallbackId: string): Order | null {
 }
 
 export async function getOrder(id: string): Promise<Order> {
-  if (useMockApi()) {
+  if (isMockApi()) {
     const o = mockGetOrder(id);
     if (!o) throw new Error("Order not found");
     return o;
@@ -304,7 +304,7 @@ export async function updateOrderStatus(
     trackingNumber?: string;
   },
 ): Promise<Order> {
-  if (useMockApi()) {
+  if (isMockApi()) {
     const o = mockUpdateOrderStatus(id, body.status, body);
     if (!o) throw new Error("Order not found");
     return o;
@@ -331,8 +331,17 @@ export async function updateOrderStatus(
     const updated = asOrder(raw, id);
     if (updated) return updated;
 
-    // Some handlers return 200 with a thin/empty body — confirm via get.
-    return getOrder(id);
+    // Thin/empty success body — return a patch only. Caller merges into cache.
+    // Do NOT call getOrder here (doubles traffic / worsens 429s).
+    return {
+      id,
+      status: body.status,
+      ...(body.note !== undefined ? { notes: body.note } : {}),
+      ...(body.carrier !== undefined ? { carrier: body.carrier } : {}),
+      ...(body.trackingNumber !== undefined
+        ? { trackingNumber: body.trackingNumber }
+        : {}),
+    } as Order;
   } catch (err) {
     // Live API: order.get returns id like ORD-… (no UUID in payload), but
     // order.update-status 404s on that same id. Surface that clearly.
@@ -451,7 +460,7 @@ export async function exportOrdersCsv(params: {
   const to = params.to ?? new Date().toISOString().slice(0, 10);
   const filename = `orders-${from}-to-${to}.csv`;
 
-  if (useMockApi()) {
+  if (isMockApi()) {
     const { data: orders } = await getOrders({
       from,
       to,

@@ -38,6 +38,9 @@ export function useRiders(params: RiderListParams = {}) {
   return useQuery({
     queryKey: queryKeys.riders(params),
     queryFn: () => getRiders(params),
+    staleTime: 60_000,
+    retry: false,
+    retryOnMount: false,
   });
 }
 
@@ -46,6 +49,9 @@ export function useRider(id: string) {
     queryKey: queryKeys.rider(id),
     queryFn: () => getRider(id),
     enabled: !!id,
+    staleTime: 60_000,
+    retry: false,
+    retryOnMount: false,
   });
 }
 

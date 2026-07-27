@@ -121,12 +121,19 @@ export function VariantSizePicker({ guide, sizes, onChange }: Props) {
               <Input
                 type="number"
                 min={0}
+                inputMode="numeric"
                 disabled={!isOn}
-                value={isOn ? stock : ""}
-                placeholder="—"
-                onChange={(e) =>
-                  setStock(entry.size, Number(e.target.value) || 0)
-                }
+                value={isOn && stock > 0 ? stock : ""}
+                placeholder="0"
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setStock(entry.size, 0);
+                    return;
+                  }
+                  const next = Number(raw);
+                  if (Number.isFinite(next)) setStock(entry.size, next);
+                }}
                 className="h-8 w-20 text-xs text-right"
               />
             </div>

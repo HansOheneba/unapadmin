@@ -20,6 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ImagePicker } from "@/components/shared/image-picker";
 import { VariantSizePicker } from "@/components/products/variant-size-picker";
 import {
@@ -76,6 +84,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
       : emptyProduct(),
   );
   const [slugManuallyEdited, setSlugManuallyEdited] = React.useState(!!initial);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
   // blob: preview URL → File. Uploaded only when the product is saved.
   const localFilesRef = React.useRef(new Map<string, File>());
 
@@ -177,42 +186,54 @@ export function ProductForm({ initial }: { initial?: Product }) {
       };
     });
 
-  const handleSave = async () => {
+  const validateDraft = (): ColorVariant[] | null => {
     if (!draft.name || !draft.slug) {
       toast.error("Name and slug are required.");
-      return;
+      return null;
     }
     if (!draft.price || draft.price <= 0) {
       toast.error("Enter a GHS price greater than 0.");
-      return;
+      return null;
     }
-    if (!draft.priceNgn || draft.priceNgn <= 0) {
-      toast.error("Enter an NGN price greater than 0.");
-      return;
+    if (draft.priceNgn != null && draft.priceNgn <= 0) {
+      toast.error("NGN price must be greater than 0.");
+      return null;
     }
     if (slugConflict) {
       toast.error("Slug is already used by another product.");
-      return;
+      return null;
     }
     if (!draft.collectionId) {
       toast.error("Select a collection.");
-      return;
+      return null;
     }
     if (draft.variants.length === 0) {
       toast.error("Add at least one color variant.");
-      return;
+      return null;
     }
     const variants = normalizeVariants(draft.variants);
     for (const v of variants) {
       if (!v.colorName) {
         toast.error("Every variant needs a color name.");
-        return;
+        return null;
       }
       if (v.sizes.length === 0) {
         toast.error(`${v.colorName} needs at least one size.`);
-        return;
+        return null;
       }
     }
+    return variants;
+  };
+
+  const requestSave = () => {
+    if (!validateDraft()) return;
+    setConfirmOpen(true);
+  };
+
+  const handleSave = async () => {
+    const variants = validateDraft();
+    if (!variants) return;
+
     const product = { ...draft, variants };
     const uploads = variants.flatMap((v, variantIndex) =>
       v.images.flatMap((src, imageIndex) => {
@@ -227,6 +248,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
         URL.revokeObjectURL(url);
       }
       localFilesRef.current.clear();
+      setConfirmOpen(false);
       toast.success(initial ? "Product updated." : "Product created.");
       router.push(`/admin/products/${saved.id}`);
     } catch (e) {
@@ -235,6 +257,16 @@ export function ProductForm({ initial }: { initial?: Product }) {
       );
     }
   };
+
+  const collectionLabel =
+    collections.find((c) => c.id === draft.collectionId)?.subtitle ??
+    draft.collectionId;
+  const confirmVariants = normalizeVariants(draft.variants);
+  const confirmTotalStock = confirmVariants.reduce(
+    (sum, v) => sum + v.sizes.reduce((s, size) => s + size.stock, 0),
+    0,
+  );
+  const saveLabel = initial ? "Save product" : "Create product";
 
   const handleDelete = async () => {
     if (!initial) return;
@@ -252,33 +284,13 @@ export function ProductForm({ initial }: { initial?: Product }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">
-            {initial ? "Edit product" : "New product"}
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            {initial ? draft.name : "Create a new product for the catalog."}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/admin/products")}
-          >
-            Cancel
-          </Button>
-          {initial && (
-            <Button
-              variant="outline"
-              onClick={handleDelete}
-              className="text-rose-600"
-            >
-              Delete
-            </Button>
-          )}
-          <Button onClick={handleSave}>Save product</Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold text-zinc-900">
+          {initial ? "Edit product" : "New product"}
+        </h1>
+        <p className="text-sm text-zinc-500 mt-1">
+          {initial ? draft.name : "Create a new product for the catalog."}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -356,13 +368,13 @@ export function ProductForm({ initial }: { initial?: Product }) {
                   />
                 </div>
                 <div>
-                  <Label>Price (NGN)</Label>
+                  <Label className="text-zinc-500">NGN</Label>
                   <Input
                     type="number"
                     inputMode="numeric"
                     min={1}
                     step={1}
-                    placeholder="e.g. 8000"
+                    placeholder="—"
                     value={
                       draft.priceNgn != null && draft.priceNgn > 0
                         ? draft.priceNgn
@@ -587,6 +599,111 @@ export function ProductForm({ initial }: { initial?: Product }) {
           </Card>
         </div>
       </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-6">
+        <div>
+          {initial && (
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              className="text-rose-600"
+              disabled={upsert.isPending || remove.isPending}
+            >
+              Delete
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/admin/products")}
+            disabled={upsert.isPending}
+          >
+            Cancel
+          </Button>
+          <Button onClick={requestSave} disabled={upsert.isPending}>
+            {saveLabel}
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {initial ? "Confirm update" : "Confirm create"}
+            </DialogTitle>
+            <DialogDescription>
+              Quick check before {initial ? "saving changes" : "creating this product"}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <SummaryRow label="Name" value={draft.name || "—"} />
+            <SummaryRow label="Slug" value={draft.slug || "—"} />
+            <SummaryRow label="Collection" value={collectionLabel || "—"} />
+            <SummaryRow
+              label="Price"
+              value={
+                draft.priceNgn != null && draft.priceNgn > 0
+                  ? `₵${draft.price} · ₦${draft.priceNgn}`
+                  : `₵${draft.price}`
+              }
+            />
+            <SummaryRow
+              label="Status"
+              value={draft.isActive ? "Active" : "Inactive"}
+            />
+            <SummaryRow
+              label="Stock"
+              value={`${confirmTotalStock} across ${confirmVariants.length} color${confirmVariants.length === 1 ? "" : "s"}`}
+            />
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                Variants
+              </p>
+              {confirmVariants.length === 0 ? (
+                <p className="text-zinc-500">None</p>
+              ) : (
+                confirmVariants.map((v) => (
+                  <div key={v.id} className="flex items-start gap-2">
+                    <span
+                      className="mt-1 h-3 w-3 shrink-0 rounded-full border border-zinc-200"
+                      style={{ backgroundColor: v.colorHex }}
+                      aria-hidden
+                    />
+                    <div className="min-w-0">
+                      <p className="font-medium text-zinc-900">
+                        {v.colorName || "Untitled"}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {v.images.length} image{v.images.length === 1 ? "" : "s"}
+                        {" · "}
+                        {v.sizes.length === 0
+                          ? "No sizes"
+                          : v.sizes
+                              .map((s) => `${s.size}×${s.stock}`)
+                              .join(", ")}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              disabled={upsert.isPending}
+            >
+              Back
+            </Button>
+            <Button onClick={handleSave} loading={upsert.isPending}>
+              {saveLabel}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -643,6 +760,21 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex items-center justify-between">
       <span className="text-zinc-500">{label}</span>
       <span className="text-zinc-900 font-medium">{value}</span>
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-zinc-500 shrink-0">{label}</span>
+      <span className="text-zinc-900 font-medium text-right">{value}</span>
     </div>
   );
 }

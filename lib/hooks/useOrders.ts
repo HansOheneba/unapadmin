@@ -13,13 +13,35 @@ import {
   confirmReturnVerified,
   type OrderListParams,
 } from "@/lib/api/orders";
-import type { OrderStatus } from "@/types";
+import type { Order, OrderStatus } from "@/types";
 import { queryKeys } from "./query-keys";
+
+const ORDER_QUERY_OPTS = {
+  staleTime: 60_000,
+  retry: false as const,
+  retryOnMount: false as const,
+};
+
+function mergeOrderCache(
+  qc: ReturnType<typeof useQueryClient>,
+  id: string,
+  patch: Order,
+) {
+  qc.setQueryData<Order>(queryKeys.order(id), (prev) =>
+    prev ? { ...prev, ...patch, id: patch.id || prev.id } : patch,
+  );
+  if (patch.id && patch.id !== id) {
+    qc.setQueryData<Order>(queryKeys.order(patch.id), (prev) =>
+      prev ? { ...prev, ...patch } : patch,
+    );
+  }
+}
 
 export function useOrders(params: OrderListParams = {}) {
   return useQuery({
     queryKey: queryKeys.orders(params),
     queryFn: () => getOrders(params),
+    ...ORDER_QUERY_OPTS,
   });
 }
 
@@ -28,6 +50,7 @@ export function useOrder(id: string) {
     queryKey: queryKeys.order(id),
     queryFn: () => getOrder(id),
     enabled: !!id,
+    ...ORDER_QUERY_OPTS,
   });
 }
 
@@ -36,19 +59,15 @@ export function useDeliveryEvents(orderId: string) {
     queryKey: queryKeys.deliveryEvents(orderId),
     queryFn: () => getDeliveryEvents(orderId),
     enabled: !!orderId,
+    ...ORDER_QUERY_OPTS,
   });
 }
 
 export function useOrderMutations() {
   const qc = useQueryClient();
-  const invalidate = (orderId?: string) => {
+  const invalidateLists = () => {
     qc.invalidateQueries({ queryKey: ["orders"] });
     qc.invalidateQueries({ queryKey: queryKeys.dashboard });
-    qc.invalidateQueries({ queryKey: ["riders"] });
-    if (orderId) {
-      qc.invalidateQueries({ queryKey: queryKeys.order(orderId) });
-      qc.invalidateQueries({ queryKey: queryKeys.deliveryEvents(orderId) });
-    }
   };
 
   const updateStatus = useMutation({
@@ -66,18 +85,21 @@ export function useOrderMutations() {
       trackingNumber?: string;
     }) => updateOrderStatus(id, { status, note, carrier, trackingNumber }),
     onSuccess: (order, vars) => {
-      qc.setQueryData(queryKeys.order(vars.id), order);
-      if (order.id !== vars.id) {
-        qc.setQueryData(queryKeys.order(order.id), order);
-      }
-      invalidate(vars.id);
+      mergeOrderCache(qc, vars.id, order);
+      // Refresh list/dashboard only — do not invalidate the detail query we
+      // just wrote (avoids an immediate order.get after a mutation).
+      invalidateLists();
+      qc.invalidateQueries({ queryKey: queryKeys.deliveryEvents(vars.id) });
     },
   });
 
   const updateNotes = useMutation({
     mutationFn: ({ id, notes }: { id: string; notes: string }) =>
       updateOrderNotes(id, notes),
-    onSuccess: (_, vars) => invalidate(vars.id),
+    onSuccess: (order, vars) => {
+      if (order) mergeOrderCache(qc, vars.id, order);
+      invalidateLists();
+    },
   });
 
   const assign = useMutation({
@@ -90,13 +112,19 @@ export function useOrderMutations() {
       riderId: string | null;
       riderNote?: string;
     }) => assignRider(id, { riderId, riderNote }),
-    onSuccess: (_, vars) => invalidate(vars.id),
+    onSuccess: (order, vars) => {
+      if (order) mergeOrderCache(qc, vars.id, order);
+      invalidateLists();
+      qc.invalidateQueries({ queryKey: queryKeys.deliveryEvents(vars.id) });
+    },
   });
 
   const saveRiderNote = useMutation({
     mutationFn: ({ id, riderNote }: { id: string; riderNote: string }) =>
       updateRiderNote(id, riderNote),
-    onSuccess: (_, vars) => invalidate(vars.id),
+    onSuccess: (order, vars) => {
+      if (order) mergeOrderCache(qc, vars.id, order);
+    },
   });
 
   const refund = useMutation({
@@ -109,12 +137,19 @@ export function useOrderMutations() {
       amount: number;
       reason: string;
     }) => refundOrder(id, amount, reason),
-    onSuccess: (_, vars) => invalidate(vars.id),
+    onSuccess: (order, vars) => {
+      if (order) mergeOrderCache(qc, vars.id, order);
+      invalidateLists();
+    },
   });
 
   const verifyReturn = useMutation({
     mutationFn: (id: string) => confirmReturnVerified(id),
-    onSuccess: (_, id) => invalidate(id),
+    onSuccess: (order, id) => {
+      if (order) mergeOrderCache(qc, id, order);
+      invalidateLists();
+      qc.invalidateQueries({ queryKey: queryKeys.deliveryEvents(id) });
+    },
   });
 
   return { updateStatus, updateNotes, assign, saveRiderNote, refund, verifyReturn };
