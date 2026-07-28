@@ -108,7 +108,7 @@ export function Topbar() {
     } catch {
       // proceed with local logout
     }
-    qc.removeQueries({ queryKey: queryKeys.me });
+    qc.clear();
     logout();
     toast.success("Signed out.");
     router.push("/login");

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth-store";
 import { sendOtp, verifyOtp } from "@/lib/api/auth";
@@ -20,6 +21,7 @@ type Step = "email" | "otp";
 
 export default function LoginPage() {
   const router = useRouter();
+  const qc = useQueryClient();
   const hydrated = useAuthStore((s) => s.hydrated);
   const currentUser = useAuthStore((s) => s.currentUser);
   const setUser = useAuthStore((s) => s.setUser);
@@ -61,6 +63,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await verifyOtp(email.trim(), value);
+      // Drop caches from a prior session (failed 401s stay stuck with
+      // retryOnMount: false and leave the dashboard on skeletons forever).
+      qc.clear();
       setUser(user);
       toast.success("Signed in.");
       router.push("/admin");

@@ -52,7 +52,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       console.error("[auth-guard] session check failed, keeping session", error);
       return;
     }
-    qc.removeQueries({ queryKey: queryKeys.me });
+    qc.clear();
     logout();
     router.replace("/login");
   }, [isError, error, qc, logout, router]);

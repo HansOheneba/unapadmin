@@ -33,6 +33,7 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { OrderStatusBadge } from "@/components/shared/status-badge";
 import { useDashboardStats } from "@/lib/hooks/useDashboard";
 import { useProducts } from "@/lib/hooks/useProducts";
@@ -58,7 +59,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const { data: stats, isLoading } = useDashboardStats();
+  const {
+    data: stats,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useDashboardStats();
   const { data: settings } = useSettings();
   const { data: lowStockPage } = useProducts({ stock: "low" });
 
@@ -82,8 +89,23 @@ export default function DashboardPage() {
     );
   }, [lowStockPage?.data, lowStockThreshold]);
 
-  if (isLoading || !stats) {
+  if (isLoading) {
     return <DashboardSkeleton />;
+  }
+
+  if (isError || !stats) {
+    return (
+      <div className="py-12 text-center space-y-3">
+        <p className="text-sm text-rose-600">
+          {error instanceof Error
+            ? error.message
+            : "Failed to load dashboard."}
+        </p>
+        <Button variant="outline" onClick={() => refetch()}>
+          Retry
+        </Button>
+      </div>
+    );
   }
 
   const pctChange = (cur: number, prev: number) =>
