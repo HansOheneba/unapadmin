@@ -101,6 +101,8 @@ export default function RidersPage() {
     () => ({
       all: allRiders.length,
       active: allRiders.filter((r) => r.status === "active").length,
+      on_delivery: allRiders.filter((r) => r.status === "on_delivery").length,
+      off_duty: allRiders.filter((r) => r.status === "off_duty").length,
       inactive: allRiders.filter((r) => r.status === "inactive").length,
     }),
     [allRiders],
@@ -120,7 +122,9 @@ export default function RidersPage() {
   );
 
   const toggleStatus = async (rider: Rider) => {
-    const next = rider.status === "active" ? "inactive" : "active";
+    // Admin activate/deactivate is employment status. Duty state
+    // (on_delivery / off_duty) is controlled by the rider app.
+    const next = rider.status === "inactive" ? "active" : "inactive";
     try {
       await upsert.mutateAsync({ ...rider, status: next });
       toast.success(next === "active" ? "Rider activated." : "Rider deactivated.");
@@ -200,9 +204,11 @@ export default function RidersPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-4 max-w-lg">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 max-w-3xl">
         <Stat label="Total" value={counts.all} />
         <Stat label="Active" value={counts.active} tone="emerald" />
+        <Stat label="On delivery" value={counts.on_delivery} tone="emerald" />
+        <Stat label="Off duty" value={counts.off_duty} tone="zinc" />
         <Stat label="Inactive" value={counts.inactive} tone="zinc" />
       </div>
 
@@ -220,6 +226,12 @@ export default function RidersPage() {
         <TabsList>
           <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
           <TabsTrigger value="active">Active ({counts.active})</TabsTrigger>
+          <TabsTrigger value="on_delivery">
+            On delivery ({counts.on_delivery})
+          </TabsTrigger>
+          <TabsTrigger value="off_duty">
+            Off duty ({counts.off_duty})
+          </TabsTrigger>
           <TabsTrigger value="inactive">
             Inactive ({counts.inactive})
           </TabsTrigger>
@@ -324,7 +336,7 @@ export default function RidersPage() {
                                   size="sm"
                                   onClick={() => toggleStatus(r)}
                                 >
-                                  {r.status === "active" ? "Deactivate" : "Activate"}
+                                  {r.status === "inactive" ? "Activate" : "Deactivate"}
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -454,6 +466,8 @@ export default function RidersPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="on_delivery">On delivery</SelectItem>
+                      <SelectItem value="off_duty">Off duty</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>

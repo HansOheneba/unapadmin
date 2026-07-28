@@ -78,13 +78,15 @@ export function InnerCircleStatusBadge({
 export function RiderStatusBadge({
   status,
 }: {
-  status: "active" | "inactive";
+  status: "active" | "on_delivery" | "off_duty" | "inactive" | string;
 }) {
-  const map = {
+  const map: Record<string, "emerald" | "blue" | "amber" | "zinc"> = {
     active: "emerald",
+    on_delivery: "blue",
+    off_duty: "amber",
     inactive: "zinc",
-  } as const;
-  return <Badge variant={map[status]}>{statusLabel(status)}</Badge>;
+  };
+  return <Badge variant={map[status] ?? "zinc"}>{statusLabel(status)}</Badge>;
 }
 
 export function ReviewStatusBadge({

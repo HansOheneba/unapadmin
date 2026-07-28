@@ -266,7 +266,7 @@ export type AdminUser = {
   createdAt: string;
 };
 
-export type RiderStatus = "active" | "inactive";
+export type RiderStatus = "active" | "on_delivery" | "off_duty" | "inactive";
 
 export type VehicleType = "motorcycle" | "bicycle" | "car" | "van";
 

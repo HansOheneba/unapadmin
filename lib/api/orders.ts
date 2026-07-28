@@ -15,6 +15,7 @@ import {
   executeOrMock,
   executePaginated,
   executePaginatedOrMock,
+  rest,
   restOrMock,
   useMockApi as isMockApi,
 } from "./client";
@@ -410,46 +411,81 @@ export async function getDeliveryEvents(
   );
 }
 
+/**
+ * These three writes share a failure mode with `updateOrderStatus`: the
+ * backend sometimes nests the order under `{ order }`/`{ data }` or returns a
+ * thin body instead of the full record. Casting the raw REST response
+ * straight to `Order` (as these used to) silently drops fields like
+ * `riderId` that `mergeOrderCache` then fails to update — the UI looks like
+ * the assignment "didn't take". Route the response through `asOrder()` with
+ * the same manual-patch fallback `updateOrderStatus` uses.
+ */
 export async function assignRider(
   orderId: string,
   body: { riderId: string | null; riderNote?: string },
 ): Promise<Order> {
-  return restOrMock(
-    `/orders/${orderId}/assign-rider`,
-    () => {
-      const o = mockAssignRider(orderId, body.riderId, body.riderNote);
-      if (!o) throw new Error("Order not found");
-      return o;
-    },
-    { method: "PATCH", body },
-  );
+  console.log("[orders] PATCH assign-rider", {
+    orderId,
+    riderId: body.riderId,
+    riderNote: body.riderNote ?? null,
+  });
+
+  if (isMockApi()) {
+    const o = mockAssignRider(orderId, body.riderId, body.riderNote);
+    if (!o) throw new Error("Order not found");
+    return o;
+  }
+
+  const raw = await rest<unknown>(`/orders/${orderId}/assign-rider`, {
+    method: "PATCH",
+    body,
+  });
+  console.log("[orders] PATCH assign-rider response", { orderId, raw });
+  const updated = asOrder(raw, orderId);
+  if (updated) return updated;
+
+  return {
+    id: orderId,
+    riderId: body.riderId,
+    ...(body.riderNote !== undefined ? { riderNote: body.riderNote } : {}),
+  } as Order;
 }
 
 export async function updateRiderNote(
   orderId: string,
   riderNote: string,
 ): Promise<Order> {
-  return restOrMock(
-    `/orders/${orderId}/rider-note`,
-    () => {
-      const o = mockUpdateRiderNote(orderId, riderNote);
-      if (!o) throw new Error("Order not found");
-      return o;
-    },
-    { method: "PATCH", body: { riderNote } },
-  );
+  if (isMockApi()) {
+    const o = mockUpdateRiderNote(orderId, riderNote);
+    if (!o) throw new Error("Order not found");
+    return o;
+  }
+
+  const raw = await rest<unknown>(`/orders/${orderId}/rider-note`, {
+    method: "PATCH",
+    body: { riderNote },
+  });
+  const updated = asOrder(raw, orderId);
+  if (updated) return updated;
+
+  return { id: orderId, riderNote } as Order;
 }
 
 export async function confirmReturnVerified(orderId: string): Promise<Order> {
-  return restOrMock(
-    `/orders/${orderId}/confirm-return`,
-    () => {
-      const o = mockConfirmReturnVerified(orderId);
-      if (!o) throw new Error("Order not found");
-      return o;
-    },
-    { method: "POST", body: {} },
-  );
+  if (isMockApi()) {
+    const o = mockConfirmReturnVerified(orderId);
+    if (!o) throw new Error("Order not found");
+    return o;
+  }
+
+  const raw = await rest<unknown>(`/orders/${orderId}/confirm-return`, {
+    method: "POST",
+    body: {},
+  });
+  const updated = asOrder(raw, orderId);
+  if (updated) return updated;
+
+  return { id: orderId, returnVerifiedAt: new Date().toISOString() } as Order;
 }
 
 export async function exportOrdersCsv(params: {

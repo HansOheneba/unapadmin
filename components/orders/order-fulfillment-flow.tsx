@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Bike, Check, CircleDashed, Package, RotateCcw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useRiders } from "@/lib/hooks/useRiders";
 import { useDeliveryEvents, useOrderMutations } from "@/lib/hooks/useOrders";
+import { isRiderAssignable } from "@/lib/api/riders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -24,6 +26,7 @@ import {
 } from "@/lib/delivery";
 import { FULFILLMENT_STEPS, fmtDateTime, statusLabel } from "@/lib/format";
 import type { Order, Rider } from "@/types";
+import { Spinner } from "@/components/ui/spinner";
 
 /**
  * Single source of truth for order fulfillment: progress, the next admin
@@ -41,12 +44,27 @@ export function OrderFulfillmentFlow({
   const isTerminal =
     order.status === "cancelled" || order.status === "refunded";
   const inhouse = isAccraInhouse(order);
-  const { data: ridersPage } = useRiders({
-    status: "active",
+  // Same list strategy as the Riders page: fetch the roster without a
+  // server-side status filter (that filter has returned empty on live),
+  // then keep active riders client-side. Always keep the currently
+  // assigned rider even if they were marked inactive.
+  const {
+    data: ridersPage,
+    isError: ridersError,
+    isLoading: ridersLoading,
+  } = useRiders({
     page: 1,
-    pageSize: 50,
+    pageSize: 100,
   });
-  const riders = ridersPage?.data ?? [];
+  const riders = React.useMemo(() => {
+    const all = ridersPage?.data ?? [];
+    const assignable = all.filter(
+      (r) => isRiderAssignable(r.status) || r.id === order.riderId,
+    );
+    return [...assignable].sort(
+      (a, b) => a.activeDeliveries - b.activeDeliveries,
+    );
+  }, [ridersPage, order.riderId]);
   const { data: events = [] } = useDeliveryEvents(order.id);
   const { updateStatus, assign, verifyReturn } = useOrderMutations();
 
@@ -116,6 +134,8 @@ export function OrderFulfillmentFlow({
               order={order}
               canEdit={canEdit}
               riders={riders}
+              ridersLoading={ridersLoading}
+              ridersError={ridersError}
               onMarkReady={handleMarkReady}
               markingReady={updateStatus.isPending}
               onConfirmReturn={handleConfirmReturn}
@@ -287,10 +307,29 @@ function assignHelperText(status: Order["status"]): string {
   return "The rider will see this order in their queue once assigned.";
 }
 
+/** Compact load summary shown per rider so admins can spread orders out. */
+function riderWorkloadLabel(r: Rider): string {
+  const statusBit =
+    r.status === "active"
+      ? "on duty"
+      : r.status === "on_delivery"
+        ? "on delivery"
+        : r.status === "off_duty"
+          ? "off duty"
+          : "inactive";
+  const load =
+    r.activeDeliveries > 0
+      ? `${r.activeDeliveries} active`
+      : "idle";
+  return `${statusBit} · ${load} · ${r.totalDeliveries} delivered`;
+}
+
 function ContextualAction({
   order,
   canEdit,
   riders,
+  ridersLoading,
+  ridersError,
   onMarkReady,
   markingReady,
   onConfirmReturn,
@@ -301,6 +340,8 @@ function ContextualAction({
   order: Order;
   canEdit: boolean;
   riders: Rider[];
+  ridersLoading: boolean;
+  ridersError: boolean;
   onMarkReady: () => void;
   markingReady: boolean;
   onConfirmReturn: () => void;
@@ -318,6 +359,7 @@ function ContextualAction({
   if (!showMarkReady && !showConfirmReturn && !showAssign) return null;
 
   const currentRider = order.riderId ?? "none";
+  const selectedRider = riders.find((r) => r.id === order.riderId) ?? null;
 
   return (
     <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 space-y-4">
@@ -370,26 +412,59 @@ function ContextualAction({
               ? "Reassign rider for redelivery"
               : "Assign to rider"}
           </Label>
-          <Select
-            value={currentRider}
-            disabled={!canEdit || assigning}
-            onValueChange={onAssign}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select rider" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Unassigned</SelectItem>
-              {riders.map((r) => (
-                <SelectItem key={r.id} value={r.id}>
-                  {r.firstName} {r.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-zinc-500">
-            {assignHelperText(order.status)}
-          </p>
+          {ridersLoading ? (
+            <div className="flex h-9 items-center">
+              <Spinner className="h-4 w-4" />
+            </div>
+          ) : ridersError ? (
+            <p className="text-xs text-rose-600">
+              Could not load riders. Refresh the page or check{" "}
+              <Link href="/admin/riders" className="underline">
+                Riders
+              </Link>
+              .
+            </p>
+          ) : (
+            <>
+              <Select
+                value={currentRider}
+                disabled={!canEdit || assigning || riders.length === 0}
+                onValueChange={onAssign}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select rider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {riders.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.firstName} {r.lastName} — {riderWorkloadLabel(r)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {riders.length === 0 ? (
+                <p className="text-xs text-amber-700">
+                  No active riders yet.{" "}
+                  <Link href="/admin/riders" className="underline">
+                    Add a rider
+                  </Link>{" "}
+                  before assigning.
+                </p>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  {assignHelperText(order.status)}
+                </p>
+              )}
+              {selectedRider && (
+                <p className="text-xs text-zinc-500 flex items-center gap-1.5">
+                  <Bike className="h-3 w-3" />
+                  {selectedRider.firstName} has{" "}
+                  {riderWorkloadLabel(selectedRider)}
+                </p>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>
