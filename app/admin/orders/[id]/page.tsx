@@ -4,17 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Package,
-  Printer,
-  RotateCcw,
-  XCircle,
-} from "lucide-react";
+import { ArrowLeft, MoreHorizontal, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useOrder, useOrderMutations } from "@/lib/hooks/useOrders";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { fmtDate, fmtDateTime, formatMoney, statusLabel } from "@/lib/format";
+import { fmtDateTime, formatMoney } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +23,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Table,
   TableBody,
   TableCell,
@@ -41,16 +41,11 @@ import {
   PaymentStatusBadge,
 } from "@/components/shared/status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { OrderDeliveryPanel } from "@/components/orders/order-delivery-panel";
-import { OrderFulfillmentStepper } from "@/components/orders/order-fulfillment-stepper";
+import { OrderFulfillmentFlow } from "@/components/orders/order-fulfillment-flow";
 import {
   OrderPrintSheet,
   printOrderDocument,
 } from "@/components/orders/order-print-sheet";
-import {
-  adminFulfillmentActions,
-  isAccraInhouse,
-} from "@/lib/delivery";
 import { DetailPageSkeleton } from "@/components/shared/page-skeletons";
 
 export default function OrderDetailPage() {
@@ -59,8 +54,7 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const { can } = useAuth();
   const { data: order, isLoading, isError, error } = useOrder(orderId);
-  const { updateStatus, updateNotes, refund, verifyReturn } =
-    useOrderMutations();
+  const { updateStatus, updateNotes, refund } = useOrderMutations();
 
   const [cancelOpen, setCancelOpen] = React.useState(false);
   const [refundOpen, setRefundOpen] = React.useState(false);
@@ -96,34 +90,6 @@ export default function OrderDetailPage() {
 
   const isTerminal =
     order.status === "cancelled" || order.status === "refunded";
-  const inhouse = isAccraInhouse(order);
-  const { canMarkReady, canConfirmReturn } = adminFulfillmentActions(order);
-
-  const handleMarkReady = async () => {
-    try {
-      await updateStatus.mutateAsync({
-        id: order.id,
-        status: "ready_for_pickup",
-        note: "Ready for rider pickup",
-      });
-      toast.success("Order marked ready for pickup.");
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to update order.",
-      );
-    }
-  };
-
-  const handleConfirmReturn = async () => {
-    try {
-      await verifyReturn.mutateAsync(order.id);
-      toast.success("Return verified.");
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to verify return.",
-      );
-    }
-  };
 
   const handleCancel = async () => {
     try {
@@ -202,66 +168,29 @@ export default function OrderDetailPage() {
               Print invoice
             </Button>
             {!isTerminal && can("edit") && (
-              <>
-                {canMarkReady && (
-                  <Button onClick={handleMarkReady}>
-                    <Package className="h-4 w-4" />
-                    Ready for pickup
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" aria-label="More actions">
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
-                )}
-                {canConfirmReturn && (
-                  <Button onClick={handleConfirmReturn}>
-                    <RotateCcw className="h-4 w-4" />
-                    Confirm return verified
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => setCancelOpen(true)}
-                  className="text-rose-600 hover:text-rose-700"
-                >
-                  Cancel order
-                </Button>
-                <Button variant="outline" onClick={() => setRefundOpen(true)}>
-                  Refund
-                </Button>
-              </>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setRefundOpen(true)}>
+                    Issue refund
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    destructive
+                    onSelect={() => setCancelOpen(true)}
+                  >
+                    Cancel order
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
 
-        {inhouse && !isTerminal && (
-          <OrderDeliveryPanel order={order} canEdit={can("edit")} />
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold text-zinc-900">
-              Fulfillment progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isTerminal ? (
-              <div className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-4">
-                <XCircle className="h-5 w-5 text-rose-500" />
-                <div>
-                  <div className="text-sm font-medium text-zinc-900">
-                    Order {statusLabel(order.status)}
-                  </div>
-                  <div className="text-xs text-zinc-500">
-                    Last updated {fmtDateTime(order.updatedAt)}
-                  </div>
-                </div>
-              </div>
-            ) : inhouse ? (
-              <OrderFulfillmentStepper order={order} />
-            ) : (
-              <p className="text-sm text-zinc-600">
-                Outside Accra fulfillment is not available yet.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <OrderFulfillmentFlow order={order} canEdit={can("edit")} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="lg:col-span-2">
