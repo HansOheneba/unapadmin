@@ -4,9 +4,9 @@ export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 /**
- * Client-side max for image picks. Uploads go straight to the API origin
- * (`/workflow/execute/media.upload`), not through the Vercel BFF, so they are
- * not bound by the ~4.5MB function payload limit.
+ * Client-side max for image picks. Uploads go to same-origin `/media-upload/...`
+ * which Next rewrites to the API (see next.config.ts) — avoids CORS and the
+ * Vercel `/api/backend` function 4.5MB body limit.
  */
 export const MAX_UPLOAD_LABEL = "10MB";
 
@@ -14,6 +14,26 @@ const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
 
 const MEDIA_UPLOAD_PATH = "/workflow/execute/media.upload";
+
+/**
+ * Same-origin path rewritten to the API (see next.config.ts). Keeps the
+ * browser on this origin (no CORS) while the file never enters /api/backend.
+ */
+const MEDIA_UPLOAD_ENDPOINT = `/media-upload${MEDIA_UPLOAD_PATH}`;
+
+function logMediaError(stage: string, err: unknown, extra?: Record<string, unknown>) {
+  const base =
+    err instanceof Error
+      ? {
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+          ...(err instanceof ApiError ? { status: err.status } : {}),
+        }
+      : { raw: String(err) };
+
+  console.error(`[media] ERROR @ ${stage}`, { ...base, ...extra });
+}
 
 /** Client-side gate — call before any network upload. */
 export function validateImageFile(file: File): string | null {
@@ -97,30 +117,68 @@ function assertUsableMediaUrl(url: string, endpoint: string) {
   }
 }
 
+function tokenDebug(token: string) {
+  return {
+    present: true,
+    length: token.length,
+    prefix: token.slice(0, 12),
+    suffix: token.slice(-6),
+  };
+}
+
 async function fetchMediaToken(): Promise<string> {
-  const res = await fetch("/api/auth/media-token", {
-    method: "GET",
-    credentials: "same-origin",
-  });
-  const json = (await res.json().catch(() => ({}))) as {
+  console.log("[media] → fetch media-token");
+  let res: Response;
+  try {
+    res = await fetch("/api/auth/media-token", {
+      method: "GET",
+      credentials: "same-origin",
+    });
+  } catch (err) {
+    logMediaError("media-token network", err, {
+      endpoint: "/api/auth/media-token",
+    });
+    throw new ApiError(
+      err instanceof Error
+        ? `Could not reach upload credentials endpoint: ${err.message}`
+        : "Could not reach upload credentials endpoint.",
+      0,
+    );
+  }
+
+  const json = (await res.json().catch((parseErr) => {
+    logMediaError("media-token JSON parse", parseErr, { status: res.status });
+    return {};
+  })) as {
     success?: boolean;
     message?: string;
     data?: { token?: string };
   };
 
+  console.log("[media] ← media-token", {
+    httpStatus: res.status,
+    ok: res.ok,
+    success: json.success,
+    hasToken: !!json.data?.token,
+    token: json.data?.token ? tokenDebug(json.data.token) : null,
+    message: json.message ?? null,
+  });
+
   if (!res.ok || !json.data?.token) {
-    throw new ApiError(
+    const err = new ApiError(
       json.message ?? "Could not get upload credentials. Sign in again.",
       res.status || 401,
     );
+    logMediaError("media-token rejected", err, { response: json });
+    throw err;
   }
 
   return json.data.token;
 }
 
 /**
- * Multipart upload straight to the API origin — bypasses `/api/backend` so
- * Vercel’s ~4.5MB function body limit does not apply.
+ * Multipart upload via same-origin rewrite → API media.upload.
+ * Auth: Bearer from /api/auth/media-token. No cross-origin, no /api/backend body limit.
  */
 async function postMultipartDirect(
   file: File,
@@ -129,35 +187,64 @@ async function postMultipartDirect(
   const form = new FormData();
   form.append("file", file, file.name);
 
-  const endpoint = `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`;
-  console.log("[media] → direct multipart upload", {
+  const endpoint = MEDIA_UPLOAD_ENDPOINT;
+  const authHeader = `Bearer ${token}`;
+
+  console.log("[media] → same-origin rewrite upload", {
     endpoint,
+    rewrittenTo: `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`,
     field: "file",
     name: file.name,
     size: file.size,
     type: file.type || "(empty)",
+    hasAuthorization: true,
+    authorizationScheme: "Bearer",
+    token: tokenDebug(token),
+    authHeaderLength: authHeader.length,
   });
 
-  // Do not set Content-Type manually — the browser must add the multipart boundary.
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: form,
-  });
+  let res: Response;
+  try {
+    // Do not set Content-Type manually — the browser must add the multipart boundary.
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+      },
+      body: form,
+    });
+  } catch (err) {
+    logMediaError("rewrite upload network", err, {
+      endpoint,
+      rewrittenTo: `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`,
+      hasAuthorization: true,
+      token: tokenDebug(token),
+      file: { name: file.name, size: file.size, type: file.type || "(empty)" },
+    });
+    throw new ApiError(
+      err instanceof Error
+        ? `Upload network error: ${err.message}`
+        : "Upload network error.",
+      0,
+    );
+  }
 
   const text = await res.text();
   let json: unknown = null;
   if (text.trim()) {
     try {
       json = JSON.parse(text);
-    } catch {
+    } catch (parseErr) {
+      logMediaError("direct upload response parse", parseErr, {
+        endpoint,
+        httpStatus: res.status,
+        bodyPreview: text.slice(0, 500),
+      });
       json = text.slice(0, 500);
     }
   }
 
-  console.log("[media] ← direct multipart upload", {
+  console.log("[media] ← same-origin rewrite upload", {
     endpoint,
     httpStatus: res.status,
     ok: res.ok,
@@ -170,16 +257,38 @@ async function postMultipartDirect(
         ? ((json as { message?: string; error?: string }).message ??
           (json as { error?: string }).error)
         : undefined;
-    throw new ApiError(
+    const err = new ApiError(
       message ?? `Upload failed (HTTP ${res.status})`,
       res.status,
     );
+    logMediaError("rewrite upload HTTP error", err, {
+      endpoint,
+      rewrittenTo: `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`,
+      httpStatus: res.status,
+      response: json,
+      hasAuthorization: true,
+      token: tokenDebug(token),
+    });
+    throw err;
   }
 
-  const unwrapped = unwrapJson(json);
-  const result = extractUploadResult(unwrapped);
-  assertUsableMediaUrl(result.url, endpoint);
-  return result;
+  try {
+    const unwrapped = unwrapJson(json);
+    const result = extractUploadResult(unwrapped);
+    assertUsableMediaUrl(result.url, endpoint);
+    console.log("[media] rewrite upload ok", {
+      endpoint,
+      url: result.url,
+      key: result.key ?? null,
+    });
+    return result;
+  } catch (err) {
+    logMediaError("rewrite upload result extract", err, {
+      endpoint,
+      response: json,
+    });
+    throw err;
+  }
 }
 
 export async function uploadImage(file: File): Promise<{ url: string; key?: string }> {
@@ -190,10 +299,16 @@ export async function uploadImage(file: File): Promise<{ url: string; key?: stri
     sizeMb: Number(sizeMb.toFixed(2)),
     type: file.type || "(empty)",
     mock: useMockApi(),
+    apiOrigin: API_ORIGIN,
+    uploadPath: MEDIA_UPLOAD_ENDPOINT,
   });
 
   const validationError = validateImageFile(file);
   if (validationError) {
+    logMediaError("validation", new Error(validationError), {
+      name: file.name,
+      size: file.size,
+    });
     throw new Error(validationError);
   }
 
@@ -203,6 +318,16 @@ export async function uploadImage(file: File): Promise<{ url: string; key?: stri
     return { url };
   }
 
-  const token = await fetchMediaToken();
-  return postMultipartDirect(file, token);
+  try {
+    const token = await fetchMediaToken();
+    console.log("[media] auth ready for rewrite upload", tokenDebug(token));
+    return await postMultipartDirect(file, token);
+  } catch (err) {
+    logMediaError("uploadImage", err, {
+      name: file.name,
+      size: file.size,
+      apiOrigin: API_ORIGIN,
+    });
+    throw err;
+  }
 }

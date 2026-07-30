@@ -204,6 +204,7 @@ export default function CollectionsPage() {
               });
               toast.success("Collection saved.");
               setEditing(null);
+              window.location.reload();
             } catch (e) {
               toast.error(
                 e instanceof Error ? e.message : "Failed to save collection.",

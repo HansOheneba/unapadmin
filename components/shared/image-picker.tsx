@@ -91,6 +91,14 @@ export function ImagePicker({
       console.log("[image-picker] media.upload → url", { url: uploadedUrl });
       pickUrl(uploadedUrl);
     } catch (e) {
+      console.error("[image-picker] upload failed", {
+        name: file.name,
+        size: file.size,
+        error:
+          e instanceof Error
+            ? { name: e.name, message: e.message, stack: e.stack }
+            : e,
+      });
       const message = e instanceof Error ? e.message : "Upload failed.";
       setFileError(message);
       toast.error(message);
