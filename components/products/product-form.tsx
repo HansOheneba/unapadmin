@@ -691,6 +691,15 @@ function DynamicList({
   onChange: (items: string[]) => void;
   placeholder: string;
 }) {
+  const applyPasteLines = (index: number, text: string) => {
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^[-*•]\s+/, "").trim())
+      .filter(Boolean);
+    if (lines.length === 0) return;
+    onChange([...items.slice(0, index), ...lines, ...items.slice(index + 1)]);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
@@ -712,6 +721,12 @@ function DynamicList({
               onChange={(e) =>
                 onChange(items.map((x, k) => (k === i ? e.target.value : x)))
               }
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text/plain");
+                if (!/\r?\n/.test(text)) return;
+                e.preventDefault();
+                applyPasteLines(i, text);
+              }}
             />
             <Button
               variant="ghost"
