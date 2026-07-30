@@ -1,14 +1,19 @@
-import { ApiError, apiBase, unwrapJson, useMockApi } from "./client";
+import { ApiError, unwrapJson, useMockApi } from "./client";
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 /**
- * Client-side max for image picks. Note: uploads still go through the Vercel
- * BFF (`/api/backend`), which hard-caps bodies around 4.5MB — larger files may
- * still fail with FUNCTION_PAYLOAD_TOO_LARGE until uploads bypass that proxy.
+ * Client-side max for image picks. Uploads go straight to the API origin
+ * (`/workflow/execute/media.upload`), not through the Vercel BFF, so they are
+ * not bound by the ~4.5MB function payload limit.
  */
 export const MAX_UPLOAD_LABEL = "10MB";
+
+const API_ORIGIN =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
+
+const MEDIA_UPLOAD_PATH = "/workflow/execute/media.upload";
 
 /** Client-side gate — call before any network upload. */
 export function validateImageFile(file: File): string | null {
@@ -47,7 +52,13 @@ function extractUploadResult(raw: unknown): { url: string; key?: string } {
       ? (obj.data as Record<string, unknown>)
       : obj;
 
-  const urlCandidates = [nested.url, nested.fileUrl, nested.src, nested.location];
+  const urlCandidates = [
+    nested.url,
+    nested.fileUrl,
+    nested.src,
+    nested.location,
+    nested.uploadUrl,
+  ];
   const url = urlCandidates.find(
     (v): v is string => typeof v === "string" && v.trim().length > 0,
   );
@@ -68,15 +79,58 @@ function extractUploadResult(raw: unknown): { url: string; key?: string } {
   return { url, key };
 }
 
-async function postMultipart(
-  path: string,
+function assertUsableMediaUrl(url: string, endpoint: string) {
+  if (
+    url.startsWith("data:") ||
+    url.startsWith("blob:") ||
+    (url.length > 2048 && !/^https?:\/\//i.test(url))
+  ) {
+    console.error("[media] upload returned non-URL payload", {
+      endpoint,
+      urlLength: url.length,
+      urlPrefix: url.slice(0, 64),
+    });
+    throw new ApiError(
+      "Upload did not return a usable image URL. Got embedded file data instead.",
+      502,
+    );
+  }
+}
+
+async function fetchMediaToken(): Promise<string> {
+  const res = await fetch("/api/auth/media-token", {
+    method: "GET",
+    credentials: "same-origin",
+  });
+  const json = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    message?: string;
+    data?: { token?: string };
+  };
+
+  if (!res.ok || !json.data?.token) {
+    throw new ApiError(
+      json.message ?? "Could not get upload credentials. Sign in again.",
+      res.status || 401,
+    );
+  }
+
+  return json.data.token;
+}
+
+/**
+ * Multipart upload straight to the API origin — bypasses `/api/backend` so
+ * Vercel’s ~4.5MB function body limit does not apply.
+ */
+async function postMultipartDirect(
   file: File,
+  token: string,
 ): Promise<{ url: string; key?: string }> {
   const form = new FormData();
   form.append("file", file, file.name);
 
-  const endpoint = `${apiBase()}${path}`;
-  console.log("[media] → multipart upload", {
+  const endpoint = `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`;
+  console.log("[media] → direct multipart upload", {
     endpoint,
     field: "file",
     name: file.name,
@@ -87,8 +141,10 @@ async function postMultipart(
   // Do not set Content-Type manually — the browser must add the multipart boundary.
   const res = await fetch(endpoint, {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
     body: form,
-    credentials: "same-origin",
   });
 
   const text = await res.text();
@@ -101,7 +157,7 @@ async function postMultipart(
     }
   }
 
-  console.log("[media] ← multipart upload", {
+  console.log("[media] ← direct multipart upload", {
     endpoint,
     httpStatus: res.status,
     ok: res.ok,
@@ -122,23 +178,7 @@ async function postMultipart(
 
   const unwrapped = unwrapJson(json);
   const result = extractUploadResult(unwrapped);
-
-  if (
-    result.url.startsWith("data:") ||
-    result.url.startsWith("blob:") ||
-    (result.url.length > 2048 && !/^https?:\/\//i.test(result.url))
-  ) {
-    console.error("[media] upload returned non-URL payload", {
-      endpoint,
-      urlLength: result.url.length,
-      urlPrefix: result.url.slice(0, 64),
-    });
-    throw new ApiError(
-      "Upload did not return a usable image URL. Got embedded file data instead.",
-      502,
-    );
-  }
-
+  assertUsableMediaUrl(result.url, endpoint);
   return result;
 }
 
@@ -163,25 +203,6 @@ export async function uploadImage(file: File): Promise<{ url: string; key?: stri
     return { url };
   }
 
-  try {
-    return await postMultipart("/media/upload", file);
-  } catch (restErr) {
-    console.warn("[media] REST /media/upload failed, trying workflow", {
-      message: restErr instanceof Error ? restErr.message : String(restErr),
-      status: restErr instanceof ApiError ? restErr.status : undefined,
-    });
-    try {
-      return await postMultipart("/workflow/execute/media.upload", file);
-    } catch (workflowErr) {
-      console.warn("[media] workflow media.upload also failed", {
-        message:
-          workflowErr instanceof Error
-            ? workflowErr.message
-            : String(workflowErr),
-        status:
-          workflowErr instanceof ApiError ? workflowErr.status : undefined,
-      });
-      throw workflowErr;
-    }
-  }
+  const token = await fetchMediaToken();
+  return postMultipartDirect(file, token);
 }
