@@ -17,14 +17,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { PUBLIC_IMAGES } from "@/lib/data/public-images";
-import { uploadImage, validateImageFile } from "@/lib/api/media";
+import { uploadImage, validateImageFile, MAX_UPLOAD_LABEL } from "@/lib/api/media";
 
 /**
  * Shared image chooser for products, collections, etc.
  *
  * Upload tab validates size/type on the client first. Oversized files never
  * call `/media/upload`. Valid files are uploaded, and only the returned URL
- * is passed to `onSelect`.
+ * is passed to `onSelect`. Embedded data:/blob: URLs are rejected — product
+ * create must only carry short media URLs or Vercel returns 413.
  */
 export function ImagePicker({
   onSelect,
@@ -40,8 +41,19 @@ export function ImagePicker({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const pickUrl = (u: string) => {
-    if (!u) return;
-    onSelect(u);
+    const trimmed = u.trim();
+    if (!trimmed) return;
+    if (
+      trimmed.startsWith("data:") ||
+      trimmed.startsWith("blob:")
+    ) {
+      const message =
+        "Use Upload or a https image URL. Embedded image data cannot be saved.";
+      setFileError(message);
+      toast.error(message);
+      return;
+    }
+    onSelect(trimmed);
     setOpen(false);
     setUrl("");
     setFileError(null);
@@ -175,10 +187,10 @@ export function ImagePicker({
                 <>
                   <Upload className="h-6 w-6" />
                   <span className="text-sm text-center px-4">
-                    Click to upload (JPEG, PNG, or WebP · max 10MB)
+                    Click to upload (JPEG, PNG, or WebP · max {MAX_UPLOAD_LABEL})
                   </span>
                   <span className="text-xs text-zinc-400 px-4 text-center">
-                    All file uploads must be less than 10MB.
+                    All file uploads must be less than {MAX_UPLOAD_LABEL}.
                   </span>
                 </>
               )}

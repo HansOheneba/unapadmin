@@ -905,8 +905,16 @@ export function mockGetAnalytics(from: string, to: string): AnalyticsReport {
   paid.forEach((o) => {
     o.items.forEach((item) => {
       const coll = collections.find((c) => c.id === item.collectionId);
+      const collectionName =
+        coll?.subtitle ||
+        coll?.title ||
+        item.collectionId
+          .split(/[-_]/)
+          .filter(Boolean)
+          .map((w) => w[0].toUpperCase() + w.slice(1))
+          .join(" ");
       const cur = collMap.get(item.collectionId) ?? {
-        collection: coll?.subtitle ?? item.collectionId,
+        collection: collectionName,
         revenueGhs: 0,
         revenueNgn: 0,
       };

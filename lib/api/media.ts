@@ -3,12 +3,19 @@ import { ApiError, apiBase, unwrapJson, useMockApi } from "./client";
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+/**
+ * Client-side max for image picks. Note: uploads still go through the Vercel
+ * BFF (`/api/backend`), which hard-caps bodies around 4.5MB — larger files may
+ * still fail with FUNCTION_PAYLOAD_TOO_LARGE until uploads bypass that proxy.
+ */
+export const MAX_UPLOAD_LABEL = "10MB";
+
 /** Client-side gate — call before any network upload. */
 export function validateImageFile(file: File): string | null {
   const sizeMb = file.size / (1024 * 1024);
   if (!file.size) return "Selected file is empty.";
   if (file.size > MAX_UPLOAD_BYTES) {
-    return `"${file.name}" is ${sizeMb.toFixed(1)}MB. Images must be 10MB or smaller.`;
+    return `"${file.name}" is ${sizeMb.toFixed(1)}MB. Images must be ${MAX_UPLOAD_LABEL} or smaller.`;
   }
   if (file.type && !ALLOWED_TYPES.has(file.type)) {
     return "Use a JPEG, PNG, or WebP image.";
@@ -114,7 +121,25 @@ async function postMultipart(
   }
 
   const unwrapped = unwrapJson(json);
-  return extractUploadResult(unwrapped);
+  const result = extractUploadResult(unwrapped);
+
+  if (
+    result.url.startsWith("data:") ||
+    result.url.startsWith("blob:") ||
+    (result.url.length > 2048 && !/^https?:\/\//i.test(result.url))
+  ) {
+    console.error("[media] upload returned non-URL payload", {
+      endpoint,
+      urlLength: result.url.length,
+      urlPrefix: result.url.slice(0, 64),
+    });
+    throw new ApiError(
+      "Upload did not return a usable image URL. Got embedded file data instead.",
+      502,
+    );
+  }
+
+  return result;
 }
 
 export async function uploadImage(file: File): Promise<{ url: string; key?: string }> {

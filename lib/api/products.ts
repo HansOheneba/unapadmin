@@ -154,9 +154,44 @@ function toCreatePayload(product: Product): Record<string, unknown> {
 
 function isWireImageUrl(src: string): boolean {
   if (!src) return false;
-  // blob:/data: must never reach create/update — ImagePicker uploads first.
+  // Embedded payloads must never reach create/update — only real media URLs.
   if (src.startsWith("blob:") || src.startsWith("data:")) return false;
-  return true;
+  // Reject raw base64 (no scheme) — some upload APIs return the file body as "url".
+  if (src.length > 2048 && !/^https?:\/\//i.test(src) && !src.startsWith("/")) {
+    return false;
+  }
+  return /^https?:\/\//i.test(src) || src.startsWith("/");
+}
+
+/** Vercel Functions hard-cap request bodies at ~4.5MB. */
+const MAX_PRODUCT_JSON_BYTES = 4 * 1024 * 1024;
+
+function assertProductImagesReady(product: Product | Partial<Product>) {
+  const variants = product.variants ?? [];
+  for (const variant of variants) {
+    if (variant.images.length === 0) {
+      throw new Error(
+        `"${variant.colorName || "Variant"}" needs at least one uploaded image.`,
+      );
+    }
+    for (const src of variant.images) {
+      if (!isWireImageUrl(src)) {
+        throw new Error(
+          `Image on "${variant.colorName || "variant"}" is not a media URL. Upload the image first, then save.`,
+        );
+      }
+    }
+  }
+}
+
+function assertPayloadWithinLimit(body: Record<string, unknown>, action: string) {
+  const bytes = new TextEncoder().encode(JSON.stringify(body)).length;
+  if (bytes > MAX_PRODUCT_JSON_BYTES) {
+    throw new Error(
+      `Product ${action} payload is ${(bytes / (1024 * 1024)).toFixed(1)}MB. ` +
+        "Images must be uploaded separately; only media URLs can be saved with the product.",
+    );
+  }
 }
 
 function toCreateVariant(v: ColorVariant): Record<string, unknown> {
@@ -243,7 +278,9 @@ export async function getProduct(id: string): Promise<Product> {
 
 export async function createProduct(product: Product): Promise<Product> {
   // ImagePicker already uploaded files → media endpoint → URL on variants[].images.
+  assertProductImagesReady(product);
   const body = toCreatePayload(product);
+  assertPayloadWithinLimit(body, "create");
 
   logProductRequest(
     "create → full request",
@@ -285,7 +322,9 @@ export async function updateProduct(
   id: string,
   product: Partial<Product>,
 ): Promise<Product> {
+  if (product.variants) assertProductImagesReady(product);
   const body = toUpdatePayload(id, product);
+  assertPayloadWithinLimit(body, "update");
 
   logProductRequest(
     "update → full request",
