@@ -9,13 +9,6 @@ import {
   mockUpsertProduct,
 } from "@/lib/mock/data-store";
 
-/** Local file held until Save — inlined into create/update JSON at save time. */
-export type ProductImageUpload = {
-  variantIndex: number;
-  imageIndex: number;
-  file: File;
-};
-
 export type ProductListParams = {
   collectionId?: string;
   q?: string;
@@ -97,6 +90,36 @@ function fromApi(p: ApiProduct, fallbackGender: Product["gender"]): Product {
   };
 }
 
+/**
+ * Full request dump for the console. Keeps every variant field (id, color,
+ * sizes, stock, etc.). Only collapses `data:` image URLs so a single log
+ * line does not dump megabytes of base64.
+ */
+function logProductRequest(
+  label: string,
+  meta: Record<string, unknown>,
+  body: Record<string, unknown>,
+) {
+  const forLog = JSON.parse(
+    JSON.stringify(body, (_key, value) => {
+      if (typeof value === "string" && value.startsWith("data:")) {
+        return `[data-url ${value.length} chars]`;
+      }
+      return value;
+    }),
+  ) as Record<string, unknown>;
+
+  const variants = Array.isArray(forLog.variants) ? forLog.variants : [];
+  console.log(`[products] ${label}`, {
+    ...meta,
+    body: forLog,
+    variantCount: variants.length,
+    variants,
+  });
+  // Pretty JSON so DevTools does not collapse nested sizes/images arrays.
+  console.log(`[products] ${label} JSON\n${JSON.stringify(forLog, null, 2)}`);
+}
+
 function cleanStrings(items: string[]): string[] {
   return items.map((s) => s.trim()).filter(Boolean);
 }
@@ -131,9 +154,8 @@ function toCreatePayload(product: Product): Record<string, unknown> {
 
 function isWireImageUrl(src: string): boolean {
   if (!src) return false;
-  // blob: is browser-local preview only — never send it.
-  // data: is inlined at Save from a picked file (Postman create is JSON).
-  if (src.startsWith("blob:")) return false;
+  // blob:/data: must never reach create/update — ImagePicker uploads first.
+  if (src.startsWith("blob:") || src.startsWith("data:")) return false;
   return true;
 }
 
@@ -149,33 +171,6 @@ function toCreateVariant(v: ColorVariant): Record<string, unknown> {
     payload.id = v.id;
   }
   return payload;
-}
-
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Could not read image file."));
-    reader.readAsDataURL(file);
-  });
-}
-
-/** Replace blob: slots with data URLs so images ship inside the JSON create body. */
-async function withLocalImagesAsDataUrls(
-  product: Product,
-  uploads: ProductImageUpload[],
-): Promise<Product> {
-  if (uploads.length === 0) return product;
-  const variants = product.variants.map((v) => ({
-    ...v,
-    images: [...v.images],
-  }));
-  for (const u of uploads) {
-    const variant = variants[u.variantIndex];
-    if (!variant) continue;
-    variant.images[u.imageIndex] = await readAsDataUrl(u.file);
-  }
-  return { ...product, variants };
 }
 
 function toUpdatePayload(
@@ -237,39 +232,33 @@ export async function getProduct(id: string): Promise<Product> {
     },
     { method: "GET", query: { id } },
   );
+  console.log("[products] get ← response (full, incl. variants)", p);
+  if (p && typeof p === "object") {
+    const raw = p as Record<string, unknown>;
+    const variants = raw.variants ?? (raw.product as { variants?: unknown } | undefined)?.variants;
+    console.log("[products] get ← variants", variants);
+  }
   return fromApi(p as unknown as ApiProduct, "male");
 }
 
-export async function createProduct(
-  product: Product,
-  uploads: ProductImageUpload[] = [],
-): Promise<Product> {
-  // Match Postman: application/json + Bearer. Local files are inlined into
-  // variants[].images at Save (not uploaded on pick, not multipart create).
-  const withImages = await withLocalImagesAsDataUrls(product, uploads);
-  const body = toCreatePayload(withImages);
+export async function createProduct(product: Product): Promise<Product> {
+  // ImagePicker already uploaded files → media endpoint → URL on variants[].images.
+  const body = toCreatePayload(product);
 
-  console.log("[products] create → Postman JSON", {
-    usecase: "product.create",
-    contentType: "application/json",
-    localFileCount: uploads.length,
-    body: {
-      ...body,
-      variants: (body.variants as { images?: string[] }[]).map((v) => ({
-        ...v,
-        images: (v.images ?? []).map((src) =>
-          src.startsWith("data:")
-            ? `[data-url ${src.length} chars]`
-            : src,
-        ),
-      })),
+  logProductRequest(
+    "create → full request",
+    {
+      usecase: "product.create",
+      contentType: "application/json",
+      flow: "media.upload (on pick) → product.create",
     },
-  });
+    body,
+  );
 
   if (useMockApi()) {
     const p = mockUpsertProduct({
-      ...withImages,
-      id: withImages.slug,
+      ...product,
+      id: product.slug,
       totalStock: 0,
       totalSold: 0,
       averageRating: 0,
@@ -288,35 +277,31 @@ export async function createProduct(
     { method: "POST", body },
   );
 
-  console.log("[products] create ← response", p);
+  console.log("[products] create ← response (full, incl. variants)", p);
   return fromApi(p as unknown as ApiProduct, product.gender);
 }
 
 export async function updateProduct(
   id: string,
   product: Partial<Product>,
-  uploads: ProductImageUpload[] = [],
 ): Promise<Product> {
-  const base =
-    uploads.length > 0 && product.variants
-      ? await withLocalImagesAsDataUrls(
-          { ...(product as Product), id, variants: product.variants },
-          uploads,
-        )
-      : product;
-  const body = toUpdatePayload(id, base);
+  const body = toUpdatePayload(id, product);
 
-  console.log("[products] update → Postman JSON", {
-    usecase: "product.update",
-    contentType: "application/json",
-    localFileCount: uploads.length,
+  logProductRequest(
+    "update → full request",
+    {
+      usecase: "product.update",
+      contentType: "application/json",
+      productId: id,
+      flow: "media.upload (on pick) → product.update",
+    },
     body,
-  });
+  );
 
   if (useMockApi()) {
     const existing = mockGetProduct(id);
     if (!existing) throw new Error("Product not found");
-    const merged = { ...existing, ...base } as Product;
+    const merged = { ...existing, ...product } as Product;
     return fromApi(
       mockUpsertProduct(merged) as unknown as ApiProduct,
       product.gender ?? "male",
@@ -331,7 +316,7 @@ export async function updateProduct(
     { method: "PATCH", body },
   );
 
-  console.log("[products] update ← response", p);
+  console.log("[products] update ← response (full, incl. variants)", p);
   return fromApi(p as unknown as ApiProduct, product.gender ?? "male");
 }
 

@@ -19,10 +19,22 @@ function fromApi(c: ApiCollection): CollectionWithCount {
   return { ...rest, isActive: isVisible, productCount: productCount ?? 0 };
 }
 
+function isWireImageUrl(src: string | undefined): boolean {
+  if (!src) return false;
+  if (src.startsWith("blob:") || src.startsWith("data:")) return false;
+  return true;
+}
+
 function toApi(c: Partial<Collection>): Partial<ApiCollection> {
-  const { isActive, ...rest } = c;
+  const { isActive, featured, ...rest } = c;
+  if (featured !== undefined && !isWireImageUrl(featured)) {
+    throw new Error(
+      "Cover image must be a media URL. Upload the image first, then save.",
+    );
+  }
   return {
     ...rest,
+    ...(featured !== undefined ? { featured } : {}),
     ...(isActive !== undefined ? { isVisible: isActive } : {}),
   };
 }

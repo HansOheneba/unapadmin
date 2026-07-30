@@ -85,8 +85,10 @@ export function ProductForm({ initial }: { initial?: Product }) {
   );
   const [slugManuallyEdited, setSlugManuallyEdited] = React.useState(!!initial);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
-  // blob: preview URL → File. Uploaded only when the product is saved.
-  const localFilesRef = React.useRef(new Map<string, File>());
+  // Only one color's sizes & stock panel open at a time.
+  const [openSizeIdx, setOpenSizeIdx] = React.useState(
+    draft.variants.length > 0 ? 0 : -1,
+  );
 
   // Once collections load, default a new product to the first real collection id
   // (UUID from API) — Postman create requires collectionId, not a slug like "underwear".
@@ -96,16 +98,6 @@ export function ProductForm({ initial }: { initial?: Product }) {
     if (collections.length === 0) return;
     setDraft((d) => ({ ...d, collectionId: collections[0].id }));
   }, [initial, draft.collectionId, collections]);
-
-  React.useEffect(() => {
-    const files = localFilesRef.current;
-    return () => {
-      for (const url of files.keys()) {
-        URL.revokeObjectURL(url);
-      }
-      files.clear();
-    };
-  }, []);
 
   // Reset draft when editing a different product (e.g. navigating between edit pages).
   const [prevId, setPrevId] = React.useState(initial?.id);
@@ -152,7 +144,9 @@ export function ProductForm({ initial }: { initial?: Product }) {
       images: [],
       sizes: [],
     };
+    const nextIdx = draft.variants.length;
     update("variants", [...draft.variants, v]);
+    setOpenSizeIdx(nextIdx);
   };
 
   const updateVariant = (idx: number, patch: Partial<ColorVariant>) => {
@@ -162,11 +156,17 @@ export function ProductForm({ initial }: { initial?: Product }) {
     );
   };
 
-  const removeVariant = (idx: number) =>
+  const removeVariant = (idx: number) => {
     update(
       "variants",
       draft.variants.filter((_, i) => i !== idx),
     );
+    setOpenSizeIdx((current) => {
+      if (current === idx) return Math.max(0, idx - 1);
+      if (current > idx) return current - 1;
+      return current;
+    });
+  };
 
   const normalizeVariants = (variants: ColorVariant[]): ColorVariant[] =>
     variants.map((v) => {
@@ -235,19 +235,9 @@ export function ProductForm({ initial }: { initial?: Product }) {
     if (!variants) return;
 
     const product = { ...draft, variants };
-    const uploads = variants.flatMap((v, variantIndex) =>
-      v.images.flatMap((src, imageIndex) => {
-        const file = localFilesRef.current.get(src);
-        return file ? [{ variantIndex, imageIndex, file }] : [];
-      }),
-    );
-
+    // Images are already media-upload URLs (ImagePicker uploads on pick).
     try {
-      const saved = await upsert.mutateAsync({ product, uploads });
-      for (const url of localFilesRef.current.keys()) {
-        URL.revokeObjectURL(url);
-      }
-      localFilesRef.current.clear();
+      const saved = await upsert.mutateAsync({ product });
       setConfirmOpen(false);
       toast.success(initial ? "Product updated." : "Product created.");
       router.push(`/admin/products/${saved.id}`);
@@ -477,34 +467,20 @@ export function ProductForm({ initial }: { initial?: Product }) {
                               key={img}
                               className="relative h-16 w-16 rounded overflow-hidden bg-white border border-zinc-200 group"
                             >
-                              {img.startsWith("blob:") ? (
-                                // Local preview until Save — next/image rejects blob: URLs.
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={img}
-                                  alt=""
-                                  className="absolute inset-0 h-full w-full object-cover"
-                                />
-                              ) : (
-                                <Image
-                                  src={img}
-                                  alt=""
-                                  fill
-                                  sizes="64px"
-                                  className="object-cover"
-                                />
-                              )}
+                              <Image
+                                src={img}
+                                alt=""
+                                fill
+                                sizes="64px"
+                                className="object-cover"
+                              />
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (img.startsWith("blob:")) {
-                                    URL.revokeObjectURL(img);
-                                    localFilesRef.current.delete(img);
-                                  }
+                                onClick={() =>
                                   updateVariant(idx, {
                                     images: v.images.filter((_, k) => k !== i),
-                                  });
-                                }}
+                                  })
+                                }
                                 className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100"
                               >
                                 <X className="h-3 w-3" />
@@ -512,17 +488,9 @@ export function ProductForm({ initial }: { initial?: Product }) {
                             </div>
                           ))}
                           <ImagePicker
-                            deferUpload
                             onSelect={(url) =>
                               updateVariant(idx, { images: [...v.images, url] })
                             }
-                            onSelectFile={(file) => {
-                              const previewUrl = URL.createObjectURL(file);
-                              localFilesRef.current.set(previewUrl, file);
-                              updateVariant(idx, {
-                                images: [...v.images, previewUrl],
-                              });
-                            }}
                           />
                         </div>
                       </div>
@@ -531,6 +499,10 @@ export function ProductForm({ initial }: { initial?: Product }) {
                         guide={sizeGuide}
                         sizes={v.sizes}
                         onChange={(sizes) => updateVariant(idx, { sizes })}
+                        open={openSizeIdx === idx}
+                        onOpenChange={(next) =>
+                          setOpenSizeIdx(next ? idx : -1)
+                        }
                       />
                     </CardContent>
                   </Card>

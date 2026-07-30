@@ -1,7 +1,23 @@
 import { ApiError, apiBase, unwrapJson, useMockApi } from "./client";
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+/** Client-side gate — call before any network upload. */
+export function validateImageFile(file: File): string | null {
+  const sizeMb = file.size / (1024 * 1024);
+  if (!file.size) return "Selected file is empty.";
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return `"${file.name}" is ${sizeMb.toFixed(1)}MB. Images must be 10MB or smaller.`;
+  }
+  if (file.type && !ALLOWED_TYPES.has(file.type)) {
+    return "Use a JPEG, PNG, or WebP image.";
+  }
+  if (!file.type && !/\.(jpe?g|png|webp)$/i.test(file.name)) {
+    return "Use a JPEG, PNG, or WebP image.";
+  }
+  return null;
+}
 
 /** Reads a file as a base64 data URL, used as the mock-mode "upload". */
 function readAsDataUrl(file: File): Promise<string> {
@@ -102,21 +118,18 @@ async function postMultipart(
 }
 
 export async function uploadImage(file: File): Promise<{ url: string; key?: string }> {
+  const sizeMb = file.size / (1024 * 1024);
   console.log("[media] uploadImage called", {
     name: file.name,
     size: file.size,
+    sizeMb: Number(sizeMb.toFixed(2)),
     type: file.type || "(empty)",
     mock: useMockApi(),
   });
 
-  if (!file.size) {
-    throw new Error("Selected file is empty.");
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error("Image must be 10MB or smaller.");
-  }
-  if (file.type && !ALLOWED_TYPES.has(file.type)) {
-    throw new Error("Use a JPEG, PNG, or WebP image.");
+  const validationError = validateImageFile(file);
+  if (validationError) {
+    throw new Error(validationError);
   }
 
   if (useMockApi()) {

@@ -29,6 +29,7 @@ type PaymentVariant = "emerald" | "amber" | "rose" | "red" | "zinc";
 const paymentConfig: Record<PaymentStatus, PaymentVariant> = {
   paid: "emerald",
   unpaid: "amber",
+  pending_collection: "amber",
   partially_refunded: "rose",
   refunded: "rose",
   failed: "red",

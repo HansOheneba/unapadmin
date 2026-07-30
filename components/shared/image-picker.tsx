@@ -15,71 +15,87 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { PUBLIC_IMAGES } from "@/lib/data/public-images";
+import { uploadImage, validateImageFile } from "@/lib/api/media";
 
+/**
+ * Shared image chooser for products, collections, etc.
+ *
+ * Upload tab validates size/type on the client first. Oversized files never
+ * call `/media/upload`. Valid files are uploaded, and only the returned URL
+ * is passed to `onSelect`.
+ */
 export function ImagePicker({
   onSelect,
-  onSelectFile,
-  /**
-   * When true (product form), picking a file only returns the File to the
-   * parent — it is inlined into product.create JSON on Save. When false
-   * (e.g. collections), callers handle upload/URL themselves.
-   */
-  deferUpload = false,
   trigger,
 }: {
   onSelect: (url: string) => void;
-  onSelectFile?: (file: File) => void;
-  deferUpload?: boolean;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState("");
+  const [uploading, setUploading] = React.useState(false);
+  const [fileError, setFileError] = React.useState<string | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const pickUrl = (u: string) => {
     if (!u) return;
     onSelect(u);
     setOpen(false);
     setUrl("");
+    setFileError(null);
   };
 
-  const handleFile = (file: File | undefined) => {
+  const handleFile = async (file: File | undefined) => {
+    // Always clear the input so the same file can be re-picked after a reject.
+    if (inputRef.current) inputRef.current.value = "";
+    setFileError(null);
     if (!file) return;
-    console.log("[image-picker] file selected (local only)", {
+
+    const sizeMb = file.size / (1024 * 1024);
+    console.log("[image-picker] file selected (pre-upload check)", {
       name: file.name,
       size: file.size,
+      sizeMb: Number(sizeMb.toFixed(2)),
       type: file.type || "(empty)",
-      deferUpload,
     });
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Choose an image file.");
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      console.warn("[image-picker] blocked before upload", {
+        name: file.name,
+        sizeMb: Number(sizeMb.toFixed(2)),
+        reason: validationError,
+      });
+      setFileError(validationError);
+      toast.error(validationError);
       return;
     }
 
-    if (deferUpload) {
-      if (!onSelectFile) {
-        toast.error("File selection is not wired for this form.");
-        return;
-      }
-      onSelectFile(file);
-      setOpen(false);
-      return;
+    setUploading(true);
+    try {
+      const { url: uploadedUrl } = await uploadImage(file);
+      console.log("[image-picker] media.upload → url", { url: uploadedUrl });
+      pickUrl(uploadedUrl);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Upload failed.";
+      setFileError(message);
+      toast.error(message);
+    } finally {
+      setUploading(false);
     }
-
-    // Non-deferred callers: expose a local object URL (they own upload timing).
-    if (onSelectFile) {
-      onSelectFile(file);
-      setOpen(false);
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    pickUrl(objectUrl);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (uploading) return;
+        setOpen(next);
+        if (!next) setFileError(null);
+      }}
+    >
       <DialogTrigger asChild>
         {trigger ?? (
           <button
@@ -99,9 +115,15 @@ export function ImagePicker({
           className="flex-1 overflow-hidden flex flex-col"
         >
           <TabsList className="self-start">
-            <TabsTrigger value="library">From library</TabsTrigger>
-            <TabsTrigger value="upload">Upload</TabsTrigger>
-            <TabsTrigger value="url">Paste URL</TabsTrigger>
+            <TabsTrigger value="library" disabled={uploading}>
+              From library
+            </TabsTrigger>
+            <TabsTrigger value="upload" disabled={uploading}>
+              Upload
+            </TabsTrigger>
+            <TabsTrigger value="url" disabled={uploading}>
+              Paste URL
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent
@@ -136,23 +158,46 @@ export function ImagePicker({
           </TabsContent>
 
           <TabsContent value="upload" className="mt-4 space-y-3">
-            <label className="flex flex-col items-center justify-center gap-2 h-40 rounded border border-dashed border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-500 cursor-pointer">
-              <Upload className="h-6 w-6" />
-              <span className="text-sm text-center px-4">
-                {deferUpload
-                  ? "Select an image — it is sent when you save the product"
-                  : "Click to select an image"}
-              </span>
+            <label
+              className={`flex flex-col items-center justify-center gap-2 h-40 rounded border border-dashed text-zinc-500 ${
+                fileError
+                  ? "border-rose-300 bg-rose-50/40"
+                  : "border-zinc-300"
+              } ${
+                uploading
+                  ? "opacity-60 cursor-not-allowed"
+                  : "hover:text-zinc-900 hover:border-zinc-500 cursor-pointer"
+              }`}
+            >
+              {uploading ? (
+                <Spinner className="h-6 w-6" />
+              ) : (
+                <>
+                  <Upload className="h-6 w-6" />
+                  <span className="text-sm text-center px-4">
+                    Click to upload (JPEG, PNG, or WebP · max 10MB)
+                  </span>
+                  <span className="text-xs text-zinc-400 px-4 text-center">
+                    All file uploads must be less than 10MB.
+                  </span>
+                </>
+              )}
               <input
+                ref={inputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 className="hidden"
+                disabled={uploading}
                 onChange={(e) => {
-                  handleFile(e.target.files?.[0]);
-                  e.target.value = "";
+                  void handleFile(e.target.files?.[0]);
                 }}
               />
             </label>
+            {fileError && (
+              <p className="text-sm text-rose-600 text-center px-2" role="alert">
+                {fileError}
+              </p>
+            )}
           </TabsContent>
 
           <TabsContent value="url" className="mt-4 space-y-3">

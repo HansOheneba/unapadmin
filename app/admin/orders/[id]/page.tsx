@@ -8,7 +8,7 @@ import { ArrowLeft, MoreHorizontal, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useOrder, useOrderMutations } from "@/lib/hooks/useOrders";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { fmtDateTime, formatMoney } from "@/lib/format";
+import { fmtDateTime, formatMoney, paymentMethodLabel } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -277,7 +277,7 @@ export default function OrderDetailPage() {
               <div className="h-px bg-zinc-200 my-2" />
               <Row
                 label="Payment method"
-                value={(order.paymentMethod ?? "card").toUpperCase()}
+                value={paymentMethodLabel(order.paymentMethod)}
               />
               {order.paymentReference && (
                 <Row label="Reference" value={order.paymentReference} mono />

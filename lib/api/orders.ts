@@ -179,16 +179,30 @@ function asItems(raw: unknown): OrderItem[] {
 }
 
 function asPaymentMethod(raw: unknown): Order["paymentMethod"] {
-  if (raw === "momo" || raw === "card" || raw === "cash" || raw === "paystack") {
+  if (
+    raw === "momo" ||
+    raw === "card" ||
+    raw === "cash" ||
+    raw === "paystack" ||
+    raw === "pay_on_delivery"
+  ) {
     return raw;
   }
   if (typeof raw === "string") {
     const lower = raw.toLowerCase();
     if (lower.includes("momo") || lower.includes("mobile")) return "momo";
+    if (
+      lower.includes("delivery") ||
+      lower.includes("pod") ||
+      lower === "cod"
+    ) {
+      return "pay_on_delivery";
+    }
     if (lower.includes("cash")) return "cash";
-    if (lower.includes("paystack")) return "paystack";
+    if (lower.includes("paystack") || lower.includes("pay_now")) return "paystack";
+    if (lower.includes("card")) return "card";
   }
-  return "card";
+  return "paystack";
 }
 
 function asDeliveryType(raw: unknown): DeliveryType {

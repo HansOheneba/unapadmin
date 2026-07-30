@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { fmtDate, fmtDateTime, formatMoney, statusLabel } from "@/lib/format";
+import { fmtDate, fmtDateTime, formatMoney, paymentMethodLabel, statusLabel } from "@/lib/format";
 import type { Order } from "@/types";
 
 export function OrderPrintSheet({ order }: { order: Order }) {
@@ -144,7 +144,7 @@ export function OrderPrintSheet({ order }: { order: Order }) {
               </div>
               <div>
                 <p className="text-zinc-500 text-xs uppercase mb-1">Method</p>
-                <p className="font-medium uppercase">{order.paymentMethod}</p>
+                <p className="font-medium">{paymentMethodLabel(order.paymentMethod)}</p>
               </div>
               {order.paymentReference && (
                 <div className="col-span-2">

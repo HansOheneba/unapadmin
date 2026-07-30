@@ -9,7 +9,6 @@ import {
   getProducts,
   toggleProductVisibility,
   updateProduct,
-  type ProductImageUpload,
   type ProductListParams,
 } from "@/lib/api/products";
 import type { Product } from "@/types";
@@ -17,7 +16,6 @@ import { queryKeys } from "./query-keys";
 
 export type ProductUpsertInput = {
   product: Product;
-  uploads?: ProductImageUpload[];
 };
 
 export function useProducts(params: ProductListParams = {}) {
@@ -43,12 +41,12 @@ export function useProductMutations() {
   };
 
   const upsert = useMutation({
-    mutationFn: async ({ product, uploads = [] }: ProductUpsertInput) => {
+    mutationFn: async ({ product }: ProductUpsertInput) => {
       // New products have an empty id. Never send client temp ids like prod_*.
       if (!product.id?.trim()) {
-        return createProduct(product, uploads);
+        return createProduct(product);
       }
-      return updateProduct(product.id, product, uploads);
+      return updateProduct(product.id, product);
     },
     onSuccess: invalidate,
   });

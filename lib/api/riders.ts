@@ -273,39 +273,18 @@ export async function getRiders(
   });
 
   const rows = extractRiderRows(raw);
-  console.log("[riders] GET /riders raw", {
+  console.log("[riders] GET /riders entire response", {
     params,
     raw,
     rowCount: rows.length,
-    rawStatuses: rows.map((row) => {
-      if (!row || typeof row !== "object") return { row };
-      const r = row as Record<string, unknown>;
-      const nested =
-        r.rider && typeof r.rider === "object"
-          ? (r.rider as Record<string, unknown>)
-          : r;
-      return {
-        id: field(nested, "id", "_id", "riderId", "uuid"),
-        firstName: field(nested, "firstName", "first_name"),
-        lastName: field(nested, "lastName", "last_name"),
-        status: field(nested, "status", "riderStatus", "rider_status"),
-        isActive: field(nested, "isActive", "is_active", "active"),
-        keys: Object.keys(nested),
-      };
-    }),
+    rows,
   });
+  console.log(
+    `[riders] GET /riders JSON\n${JSON.stringify({ params, raw }, null, 2)}`,
+  );
 
   const normalized = normalizeRiderList(raw);
-  console.log("[riders] GET /riders normalized", {
-    count: normalized.data.length,
-    riders: normalized.data.map((r) => ({
-      id: r.id,
-      name: `${r.firstName} ${r.lastName}`,
-      status: r.status,
-      activeDeliveries: r.activeDeliveries,
-      totalDeliveries: r.totalDeliveries,
-    })),
-  });
+  console.log("[riders] GET /riders normalized (full)", normalized);
   return normalized;
 }
 

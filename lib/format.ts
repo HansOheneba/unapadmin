@@ -1,5 +1,5 @@
 import { format, formatDistanceToNow } from "date-fns";
-import type { OrderStatus, PaymentStatus } from "@/types";
+import type { OrderStatus, PaymentMethod, PaymentStatus } from "@/types";
 
 /** All order amounts are stored and displayed in Ghana cedis (Paystack handles FX). */
 export function formatMoney(amount: number | null | undefined) {
@@ -39,11 +39,28 @@ export const ORDER_STATUSES: OrderStatus[] = [
 
 export const PAYMENT_STATUSES: PaymentStatus[] = [
   "unpaid",
+  "pending_collection",
   "paid",
   "partially_refunded",
   "refunded",
   "failed",
 ];
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  momo: "Mobile Money",
+  card: "Card",
+  cash: "Cash",
+  paystack: "Paystack",
+  pay_on_delivery: "Pay on delivery",
+};
+
+export function paymentMethodLabel(method: PaymentMethod | string | null | undefined) {
+  if (!method) return "—";
+  if (method in PAYMENT_METHOD_LABELS) {
+    return PAYMENT_METHOD_LABELS[method as PaymentMethod];
+  }
+  return statusLabel(method);
+}
 
 /** Sequential fulfillment flow for Accra in-house orders. */
 export const FULFILLMENT_STEPS: OrderStatus[] = [

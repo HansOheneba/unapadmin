@@ -66,10 +66,18 @@ export type OrderStatus =
 
 export type PaymentStatus =
   | "unpaid"
+  | "pending_collection"
   | "paid"
   | "partially_refunded"
   | "refunded"
   | "failed";
+
+export type PaymentMethod =
+  | "momo"
+  | "card"
+  | "cash"
+  | "paystack"
+  | "pay_on_delivery";
 
 export type OrderItem = {
   productId: string;
@@ -129,7 +137,7 @@ export type Order = {
   items: OrderItem[];
   status: OrderStatus;
   paymentStatus: PaymentStatus;
-  paymentMethod: "momo" | "card" | "cash" | "paystack";
+  paymentMethod: PaymentMethod;
   paymentReference: string | null;
   subtotal: number;
   shippingFee: number;
