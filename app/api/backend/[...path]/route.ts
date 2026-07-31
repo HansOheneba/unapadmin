@@ -64,12 +64,25 @@ async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
     }
   }
 
-  console.log("[bff] ←", {
-    method: req.method,
-    url,
-    status: upstream.status,
-    response: responsePayload,
-  });
+  // Node truncates nested arrays as [Array]; expand customer.list so we can
+  // see whether the API actually sends totalOrders / totalSpend / etc.
+  if (url.includes("customer.list") || url.includes("customer.get")) {
+    console.log(
+      "[bff] ← customer payload (full)",
+      JSON.stringify(
+        { method: req.method, url, status: upstream.status, response: responsePayload },
+        null,
+        2,
+      ),
+    );
+  } else {
+    console.log("[bff] ←", {
+      method: req.method,
+      url,
+      status: upstream.status,
+      response: responsePayload,
+    });
+  }
 
   const res = new NextResponse(responseBody, {
     status: upstream.status,

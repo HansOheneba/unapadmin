@@ -47,6 +47,19 @@ import {
 } from "@/lib/format";
 import { DashboardSkeleton } from "@/components/shared/page-skeletons";
 
+const CHART_PALETTE = [
+  "#3b82f6",
+  "#10b981",
+  "#f59e0b",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#f97316",
+  "#6366f1",
+  "#84cc16",
+  "#14b8a6",
+];
+
 const STATUS_COLORS: Record<string, string> = {
   processing: "#3b82f6",
   ready_for_pickup: "#f59e0b",
@@ -54,9 +67,17 @@ const STATUS_COLORS: Record<string, string> = {
   in_transit: "#8b5cf6",
   delivered: "#10b981",
   returned: "#dc2626",
-  cancelled: "#71717a",
+  cancelled: "#64748b",
   refunded: "#f43f5e",
 };
+
+function chartColor(index: number) {
+  return CHART_PALETTE[index % CHART_PALETTE.length];
+}
+
+function shortDate(value: string) {
+  return fmtDate(value).replace(/,\s*\d{4}$/, "");
+}
 
 export default function DashboardPage() {
   const {
@@ -122,7 +143,6 @@ export default function DashboardPage() {
 
   const {
     revenueThisMonthGhs,
-    revenueThisMonthNgn,
     ordersToday,
     activeCustomers,
     pendingAndProcessingOrders,
@@ -134,6 +154,15 @@ export default function DashboardPage() {
     recentOrders,
     salesByCountry,
   } = stats;
+
+  const statusChart = ordersByStatus
+    .map((s) => ({
+      status: s.status,
+      label: statusLabel(s.status),
+      count: s.count,
+      fill: STATUS_COLORS[s.status] ?? "#71717a",
+    }))
+    .sort((a, b) => b.count - a.count);
 
   return (
     <div className="space-y-6">
@@ -177,37 +206,29 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-zinc-900 text-base font-semibold">
+            <CardTitle className="text-base font-semibold">
               Revenue (last 30 days)
             </CardTitle>
-            <p className="text-xs text-zinc-500 mt-1">
-              Paid orders in cedis (GHS).
-            </p>
           </CardHeader>
           <CardContent>
             <ChartContainer
               config={{
-                ghs: { label: "Ghana (GHS)", color: "#0a0a0a" },
-                ngn: { label: "Nigeria (NGN)", color: "#a1a1aa" },
+                ghs: { label: "Ghana", color: "#10b981" },
+                ngn: { label: "Nigeria", color: "#3b82f6" },
               }}
               className="h-72"
             >
-              <LineChart
-                data={revenueChart}
-                margin={{ left: 8, right: 16, top: 8 }}
-              >
+              <LineChart data={revenueChart} margin={{ left: 8, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickLine={false}
                   axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(v) => fmtDate(v).replace(", 2026", "")}
+                  tickFormatter={shortDate}
                   minTickGap={32}
                 />
                 <YAxis hide />
                 <ChartTooltip
-                  cursor={{ stroke: "#e4e4e7" }}
                   content={
                     <ChartTooltipContent
                       labelFormatter={(l) => fmtDate(String(l))}
@@ -217,19 +238,16 @@ export default function DashboardPage() {
                 />
                 <ChartLegend content={<ChartLegendContent />} />
                 <Line
-                  type="monotone"
                   dataKey="ghs"
                   stroke="var(--color-ghs)"
                   strokeWidth={2}
                   dot={false}
                 />
                 <Line
-                  type="monotone"
                   dataKey="ngn"
                   stroke="var(--color-ngn)"
                   strokeWidth={2}
                   dot={false}
-                  strokeDasharray="4 4"
                 />
               </LineChart>
             </ChartContainer>
@@ -238,40 +256,57 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-zinc-900 text-base font-semibold">
+            <CardTitle className="text-base font-semibold">
               Orders by status
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
               config={Object.fromEntries(
-                ordersByStatus.map((s) => [
+                statusChart.map((s) => [
                   s.status,
-                  {
-                    label: statusLabel(s.status),
-                    color: STATUS_COLORS[s.status],
-                  },
+                  { label: s.label, color: s.fill },
                 ]),
               )}
-              className="h-72"
+              className="h-56"
             >
               <PieChart>
-                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      hideLabel
+                      formatter={(v) => formatNumber(Number(v))}
+                    />
+                  }
+                />
                 <Pie
-                  data={ordersByStatus}
+                  data={statusChart}
                   dataKey="count"
-                  nameKey="status"
-                  innerRadius={50}
-                  outerRadius={90}
-                  paddingAngle={2}
+                  nameKey="label"
+                  innerRadius={40}
+                  outerRadius={72}
+                  paddingAngle={3}
                 >
-                  {ordersByStatus.map((s) => (
-                    <Cell key={s.status} fill={STATUS_COLORS[s.status]} />
+                  {statusChart.map((s) => (
+                    <Cell key={s.status} fill={s.fill} />
                   ))}
                 </Pie>
-                <ChartLegend content={<ChartLegendContent />} />
               </PieChart>
             </ChartContainer>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+              {statusChart.map((s) => (
+                <div key={s.status} className="flex items-center gap-1.5 text-xs">
+                  <span
+                    className="h-2 w-2 rounded-sm"
+                    style={{ background: s.fill }}
+                  />
+                  <span className="text-zinc-600">{s.label}</span>
+                  <span className="font-medium text-zinc-900">
+                    {formatNumber(s.count)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -279,7 +314,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-zinc-900 text-base font-semibold">
+            <CardTitle className="text-base font-semibold">
               Top products this month
             </CardTitle>
           </CardHeader>
@@ -288,20 +323,20 @@ export default function DashboardPage() {
               <EmptyHint text="No paid orders yet this month." />
             ) : (
               <ChartContainer
-                config={{ revenue: { label: "Revenue", color: "#0a0a0a" } }}
+                config={{ revenue: { label: "Revenue", color: "#3b82f6" } }}
                 className="h-64"
               >
                 <BarChart
                   data={topProducts}
                   layout="vertical"
-                  margin={{ left: 24, right: 16 }}
+                  margin={{ left: 16 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={120}
+                    width={140}
                     tickLine={false}
                     axisLine={false}
                     tick={{ fontSize: 12 }}
@@ -313,11 +348,14 @@ export default function DashboardPage() {
                       />
                     }
                   />
-                  <Bar
-                    dataKey="revenue"
-                    fill="var(--color-revenue)"
-                    radius={[0, 4, 4, 0]}
-                  />
+                  <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
+                    {topProducts.map((product, index) => (
+                      <Cell
+                        key={product.productId}
+                        fill={chartColor(index)}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ChartContainer>
             )}
@@ -326,38 +364,34 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-zinc-900 text-base font-semibold">
+            <CardTitle className="text-base font-semibold">
               Sales by country
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
               config={{
-                revenue: { label: "Revenue", color: "#0a0a0a" },
-                orders: { label: "Orders", color: "#a1a1aa" },
+                revenue: { label: "Revenue", color: "#10b981" },
+                orders: { label: "Orders", color: "#3b82f6" },
               }}
               className="h-64"
             >
               <BarChart data={salesByCountry}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="country"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                />
+                <XAxis dataKey="country" tickLine={false} axisLine={false} />
                 <YAxis hide />
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
                       formatter={(v, name) =>
-                        name === "Revenue"
-                          ? `${formatNumber(Number(v))}`
-                          : formatNumber(Number(v))
+                        name === "Orders"
+                          ? formatNumber(Number(v))
+                          : formatMoney(Number(v))
                       }
                     />
                   }
                 />
+                <ChartLegend content={<ChartLegendContent />} />
                 <Bar
                   dataKey="revenue"
                   fill="var(--color-revenue)"

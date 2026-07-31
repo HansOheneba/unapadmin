@@ -8,6 +8,7 @@ import { ArrowLeft, MoreHorizontal, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useOrder, useOrderMutations } from "@/lib/hooks/useOrders";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { needsPaymentCollection } from "@/lib/api/orders";
 import { fmtDateTime, formatMoney, paymentMethodLabel } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,8 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const { can } = useAuth();
   const { data: order, isLoading, isError, error } = useOrder(orderId);
-  const { updateStatus, updateNotes, refund } = useOrderMutations();
+  const { updateStatus, updatePayment, updateNotes, refund } =
+    useOrderMutations();
 
   const [cancelOpen, setCancelOpen] = React.useState(false);
   const [refundOpen, setRefundOpen] = React.useState(false);
@@ -279,8 +281,40 @@ export default function OrderDetailPage() {
                 label="Payment method"
                 value={paymentMethodLabel(order.paymentMethod)}
               />
+              <Row
+                label="Payment status"
+                value={<PaymentStatusBadge status={order.paymentStatus} />}
+              />
               {order.paymentReference && (
                 <Row label="Reference" value={order.paymentReference} mono />
+              )}
+              {can("edit") && needsPaymentCollection(order) && (
+                <div className="pt-3">
+                  <Button
+                    className="w-full"
+                    loading={updatePayment.isPending}
+                    onClick={async () => {
+                      try {
+                        await updatePayment.mutateAsync({
+                          id: order.id,
+                          paymentStatus: "paid",
+                          note: "Payment collected on delivery",
+                        });
+                        toast.success(
+                          "Payment recorded. Customer totals updated.",
+                        );
+                      } catch (e) {
+                        toast.error(
+                          e instanceof Error
+                            ? e.message
+                            : "Failed to record payment.",
+                        );
+                      }
+                    }}
+                  >
+                    Mark payment collected
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

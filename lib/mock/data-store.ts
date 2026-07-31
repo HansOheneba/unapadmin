@@ -12,6 +12,7 @@ import type {
   Order,
   OrderStatus,
   Paginated,
+  PaymentStatus,
   Product,
   Review,
   Rider,
@@ -306,6 +307,41 @@ export function mockGetOrder(id: string): Order | null {
   return getStore().orders.find((o) => o.id === id) ?? null;
 }
 
+function recomputeCustomerStats(customerId: string) {
+  const paid = getStore().orders.filter(
+    (o) =>
+      o.customerId === customerId &&
+      o.paymentStatus === "paid" &&
+      o.status !== "cancelled",
+  );
+  const totalOrders = paid.length;
+  const totalSpend = paid.reduce((sum, o) => sum + o.total, 0);
+  const lastOrderDate =
+    paid.length === 0
+      ? null
+      : paid.reduce(
+          (latest, o) =>
+            !latest || new Date(o.createdAt) > new Date(latest)
+              ? o.createdAt
+              : latest,
+          null as string | null,
+        );
+
+  patchStore({
+    customers: getStore().customers.map((c) =>
+      c.id === customerId
+        ? {
+            ...c,
+            totalOrders,
+            totalSpend,
+            lastOrderDate,
+            updatedAt: now(),
+          }
+        : c,
+    ),
+  });
+}
+
 export function mockUpdateOrderStatus(
   id: string,
   status: OrderStatus,
@@ -319,13 +355,47 @@ export function mockUpdateOrderStatus(
   if (status === "picked_up" && !o.pickedUpAt) updates.pickedUpAt = now();
   if (status === "in_transit" && !o.outForDeliveryAt)
     updates.outForDeliveryAt = now();
-  if (status === "delivered") updates.deliveredAt = now();
+  if (status === "delivered") {
+    updates.deliveredAt = now();
+    // Cash / pay-on-delivery: delivery implies money collected.
+    if (
+      o.paymentStatus === "unpaid" ||
+      o.paymentStatus === "pending_collection"
+    ) {
+      updates.paymentStatus = "paid";
+    }
+  }
   if (extras?.note)
     updates.notes = o.notes
       ? `${o.notes}\n[${new Date().toLocaleString()}] ${extras.note}`
       : extras.note;
   const updated = { ...o, ...updates };
   patchStore({ orders: getStore().orders.map((x) => (x.id === id ? updated : x)) });
+  if (updated.paymentStatus === "paid") {
+    recomputeCustomerStats(updated.customerId);
+  }
+  return updated;
+}
+
+export function mockUpdateOrderPayment(
+  id: string,
+  paymentStatus: PaymentStatus,
+  note?: string,
+): Order | null {
+  const o = getStore().orders.find((x) => x.id === id);
+  if (!o) return null;
+  const updates: Partial<Order> = {
+    paymentStatus,
+    updatedAt: now(),
+  };
+  if (note) {
+    updates.notes = o.notes
+      ? `${o.notes}\n[${new Date().toLocaleString()}] ${note}`
+      : note;
+  }
+  const updated = { ...o, ...updates };
+  patchStore({ orders: getStore().orders.map((x) => (x.id === id ? updated : x)) });
+  recomputeCustomerStats(updated.customerId);
   return updated;
 }
 

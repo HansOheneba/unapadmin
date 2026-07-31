@@ -2,11 +2,20 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Bike, Check, CircleDashed, Package, RotateCcw, XCircle } from "lucide-react";
+import {
+  Banknote,
+  Bike,
+  Check,
+  CircleDashed,
+  Package,
+  RotateCcw,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useRiders } from "@/lib/hooks/useRiders";
 import { useDeliveryEvents, useOrderMutations } from "@/lib/hooks/useOrders";
 import { isRiderAssignable } from "@/lib/api/riders";
+import { needsPaymentCollection } from "@/lib/api/orders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -24,7 +33,7 @@ import {
   fulfillmentStepIndex,
   isAccraInhouse,
 } from "@/lib/delivery";
-import { FULFILLMENT_STEPS, fmtDateTime, statusLabel } from "@/lib/format";
+import { FULFILLMENT_STEPS, fmtDateTime, formatMoney, statusLabel } from "@/lib/format";
 import type { Order, Rider } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -66,7 +75,8 @@ export function OrderFulfillmentFlow({
     );
   }, [ridersPage, order.riderId]);
   const { data: events = [] } = useDeliveryEvents(order.id);
-  const { updateStatus, assign, verifyReturn } = useOrderMutations();
+  const { updateStatus, updatePayment, assign, verifyReturn } =
+    useOrderMutations();
 
   const handleMarkReady = async () => {
     try {
@@ -92,6 +102,21 @@ export function OrderFulfillmentFlow({
     }
   };
 
+  const handleConfirmPayment = async () => {
+    try {
+      await updatePayment.mutateAsync({
+        id: order.id,
+        paymentStatus: "paid",
+        note: "Payment collected on delivery",
+      });
+      toast.success("Payment recorded. Customer totals updated.");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to record payment.",
+      );
+    }
+  };
+
   const handleAssign = async (value: string) => {
     const riderId = value === "none" ? null : value;
     if (riderId === order.riderId) return;
@@ -107,6 +132,12 @@ export function OrderFulfillmentFlow({
     }
   };
 
+  const showCollectPayment =
+    canEdit &&
+    !isTerminal &&
+    needsPaymentCollection(order) &&
+    (order.status === "delivered" || order.status === "in_transit");
+
   return (
     <Card>
       <CardHeader>
@@ -115,6 +146,25 @@ export function OrderFulfillmentFlow({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {showCollectPayment && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <ActionRow
+              icon={<Banknote className="h-4 w-4 text-amber-700" />}
+              title="Confirm payment collected"
+              description={`Record ${formatMoney(order.total)} as paid so this customer's order count and spend update.`}
+            >
+              <Button
+                onClick={handleConfirmPayment}
+                loading={updatePayment.isPending}
+                className="shrink-0"
+              >
+                <Banknote className="h-4 w-4" />
+                Mark payment collected
+              </Button>
+            </ActionRow>
+          </div>
+        )}
+
         {isTerminal ? (
           <TerminalState order={order} />
         ) : !inhouse ? (
@@ -349,14 +399,17 @@ function ContextualAction({
   onAssign: (value: string) => void;
   assigning: boolean;
 }) {
-  if (order.status === "delivered") return null;
-
   const { canMarkReady, canConfirmReturn } = adminFulfillmentActions(order);
   const showMarkReady = canMarkReady && canEdit;
   const showConfirmReturn = canConfirmReturn && canEdit;
   const showAssign = canAssignRider(order);
 
-  if (!showMarkReady && !showConfirmReturn && !showAssign) return null;
+  if (
+    order.status === "delivered" ||
+    (!showMarkReady && !showConfirmReturn && !showAssign)
+  ) {
+    return null;
+  }
 
   const currentRider = order.riderId ?? "none";
   const selectedRider = riders.find((r) => r.id === order.riderId) ?? null;

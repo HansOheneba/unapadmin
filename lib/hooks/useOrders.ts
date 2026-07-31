@@ -8,12 +8,13 @@ import {
   getOrders,
   refundOrder,
   updateOrderNotes,
+  updateOrderPayment,
   updateOrderStatus,
   updateRiderNote,
   confirmReturnVerified,
   type OrderListParams,
 } from "@/lib/api/orders";
-import type { Order, OrderStatus } from "@/types";
+import type { Order, OrderStatus, PaymentStatus } from "@/types";
 import { queryKeys } from "./query-keys";
 
 const ORDER_QUERY_OPTS = {
@@ -70,6 +71,14 @@ export function useOrderMutations() {
     qc.invalidateQueries({ queryKey: queryKeys.dashboard });
   };
 
+  const invalidateCustomers = (customerId?: string | null) => {
+    qc.invalidateQueries({ queryKey: ["customers"] });
+    if (customerId) {
+      qc.invalidateQueries({ queryKey: queryKeys.customer(customerId) });
+      qc.invalidateQueries({ queryKey: queryKeys.customerOrders(customerId) });
+    }
+  };
+
   const updateStatus = useMutation({
     mutationFn: ({
       id,
@@ -90,6 +99,27 @@ export function useOrderMutations() {
       // just wrote (avoids an immediate order.get after a mutation).
       invalidateLists();
       qc.invalidateQueries({ queryKey: queryKeys.deliveryEvents(vars.id) });
+      // Delivered + paid updates customer lifetime totals.
+      if (vars.status === "delivered" || order.paymentStatus === "paid") {
+        invalidateCustomers(order.customerId);
+      }
+    },
+  });
+
+  const updatePayment = useMutation({
+    mutationFn: ({
+      id,
+      paymentStatus,
+      note,
+    }: {
+      id: string;
+      paymentStatus: PaymentStatus;
+      note?: string;
+    }) => updateOrderPayment(id, { paymentStatus, note }),
+    onSuccess: (order, vars) => {
+      mergeOrderCache(qc, vars.id, order);
+      invalidateLists();
+      invalidateCustomers(order.customerId);
     },
   });
 
@@ -152,5 +182,13 @@ export function useOrderMutations() {
     },
   });
 
-  return { updateStatus, updateNotes, assign, saveRiderNote, refund, verifyReturn };
+  return {
+    updateStatus,
+    updatePayment,
+    updateNotes,
+    assign,
+    saveRiderNote,
+    refund,
+    verifyReturn,
+  };
 }

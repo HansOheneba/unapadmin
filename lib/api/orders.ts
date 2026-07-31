@@ -28,6 +28,7 @@ import {
   mockGetOrders,
   mockRefundOrder,
   mockUpdateOrderNotes,
+  mockUpdateOrderPayment,
   mockUpdateOrderStatus,
   mockUpdateRiderNote,
 } from "@/lib/mock/data-store";
@@ -411,6 +412,82 @@ export async function cancelOrder(id: string, note?: string): Promise<Order> {
     },
     { method: "POST", body: { id, note } },
   );
+}
+
+/** True when cash/POD still needs to be recorded as collected. */
+export function needsPaymentCollection(
+  order: Pick<Order, "paymentStatus">,
+): boolean {
+  return (
+    order.paymentStatus === "unpaid" ||
+    order.paymentStatus === "pending_collection"
+  );
+}
+
+/**
+ * Record that payment was collected (cash / pay on delivery).
+ * Tries workflow `order.update-payment`, then REST confirm/payment paths.
+ * Backend should recompute customer totalOrders / totalSpend from paid orders.
+ */
+export async function updateOrderPayment(
+  id: string,
+  body: { paymentStatus: PaymentStatus; note?: string },
+): Promise<Order> {
+  if (isMockApi()) {
+    const o = mockUpdateOrderPayment(id, body.paymentStatus, body.note);
+    if (!o) throw new Error("Order not found");
+    return o;
+  }
+
+  const payload = {
+    id,
+    paymentStatus: body.paymentStatus,
+    ...(body.note !== undefined ? { note: body.note } : {}),
+  };
+
+  const tryParse = (raw: unknown): Order | null => asOrder(raw, id);
+
+  try {
+    const raw = await execute<unknown>("order.update-payment", {
+      method: "PATCH",
+      body: payload,
+    });
+    const updated = tryParse(raw);
+    if (updated) return updated;
+    return { id, paymentStatus: body.paymentStatus } as Order;
+  } catch (workflowErr) {
+    if (!(workflowErr instanceof ApiError) || workflowErr.status !== 404) {
+      throw workflowErr;
+    }
+  }
+
+  try {
+    const raw = await rest<unknown>(`/orders/${id}/confirm-payment`, {
+      method: "POST",
+      body: {
+        paymentStatus: body.paymentStatus,
+        ...(body.note !== undefined ? { note: body.note } : {}),
+      },
+    });
+    const updated = tryParse(raw);
+    if (updated) return updated;
+    return { id, paymentStatus: body.paymentStatus } as Order;
+  } catch (confirmErr) {
+    if (!(confirmErr instanceof ApiError) || confirmErr.status !== 404) {
+      throw confirmErr;
+    }
+  }
+
+  const raw = await rest<unknown>(`/orders/${id}/payment`, {
+    method: "PATCH",
+    body: {
+      paymentStatus: body.paymentStatus,
+      ...(body.note !== undefined ? { note: body.note } : {}),
+    },
+  });
+  const updated = tryParse(raw);
+  if (updated) return updated;
+  return { id, paymentStatus: body.paymentStatus } as Order;
 }
 
 // Delivery / rider assignment live as REST paths under Admin v2 additions
