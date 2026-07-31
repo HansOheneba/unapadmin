@@ -121,12 +121,15 @@ function asCustomer(raw: unknown, fallbackId?: string): Customer | null {
   );
   const totalSpend = asNumber(
     firstDefined(
+      obj.totalExpenditure,
+      obj.total_expenditure,
       obj.totalSpend,
       obj.lifetimeSpend,
       obj.totalSpent,
       obj.lifetime_spend,
       obj.total_spend,
       obj.total_spent,
+      stats.totalExpenditure,
       stats.totalSpend,
       stats.lifetimeSpend,
       stats.totalSpent,
@@ -137,8 +140,23 @@ function asCustomer(raw: unknown, fallbackId?: string): Customer | null {
     obj.last_order_date,
     obj.lastOrderAt,
     obj.last_order_at,
+    obj.lastOrderedAt,
+    obj.last_ordered_at,
     stats.lastOrderDate,
+    stats.lastOrderAt,
   );
+  const lastOrderNested =
+    obj.lastOrder && typeof obj.lastOrder === "object"
+      ? (obj.lastOrder as Record<string, unknown>)
+      : null;
+  const lastOrderDate =
+    typeof lastOrderRaw === "string"
+      ? lastOrderRaw
+      : typeof lastOrderNested?.createdAt === "string"
+        ? lastOrderNested.createdAt
+        : typeof lastOrderNested?.date === "string"
+          ? lastOrderNested.date
+          : null;
 
   return {
     id,
@@ -168,7 +186,7 @@ function asCustomer(raw: unknown, fallbackId?: string): Customer | null {
       obj.joinedDate ?? obj.createdAt,
       new Date(0).toISOString(),
     ),
-    lastOrderDate: typeof lastOrderRaw === "string" ? lastOrderRaw : null,
+    lastOrderDate,
     totalOrders,
     totalSpend,
     currency: obj.currency === "NGN" ? "NGN" : "GHS",
@@ -182,43 +200,15 @@ function asCustomer(raw: unknown, fallbackId?: string): Customer | null {
 export async function getCustomers(
   params: CustomerListParams = {},
 ): Promise<Paginated<Customer>> {
-  console.log("[customer.list] → request", {
-    usecase: "customer.list",
-    query: params,
-  });
-
   const result = await executePaginatedOrMock(
     "customer.list",
     () => mockGetCustomers(params),
     { method: "GET", query: params },
   );
 
-  // Full raw first row so we can see exact API field names for spend/orders.
-  console.log("[customer.list] ← raw page", {
-    page: result.page,
-    pageSize: result.pageSize,
-    total: result.total,
-    count: result.data.length,
-    firstRaw: result.data[0] ?? null,
-    allRaw: result.data,
-  });
-
   const mapped = result.data
     .map((c) => asCustomer(c))
     .filter((c): c is Customer => c !== null);
-
-  console.log("[customer.list] ← mapped", {
-    mappedCount: mapped.length,
-    rows: mapped.map((c) => ({
-      id: c.id,
-      name: `${c.firstName} ${c.lastName}`.trim(),
-      email: c.email,
-      totalOrders: c.totalOrders,
-      totalSpend: c.totalSpend,
-      lastOrderDate: c.lastOrderDate,
-      status: c.status,
-    })),
-  });
 
   return {
     ...result,
@@ -233,22 +223,12 @@ export async function getCustomer(id: string): Promise<Customer> {
     return c;
   }
 
-  console.log("[customer.get] → request", { id });
   const raw = await execute<unknown>("customer.get", {
     method: "GET",
     query: { id },
   });
-  console.log("[customer.get] ← raw", { id, raw });
   const direct = asCustomer(raw, id);
-  if (direct) {
-    console.log("[customer.get] ← mapped", {
-      id: direct.id,
-      totalOrders: direct.totalOrders,
-      totalSpend: direct.totalSpend,
-      lastOrderDate: direct.lastOrderDate,
-    });
-    return direct;
-  }
+  if (direct) return direct;
 
   const listed = await executePaginated<Customer>("customer.list", {
     method: "GET",
@@ -265,13 +245,11 @@ export async function getCustomer(id: string): Promise<Customer> {
 }
 
 export async function getCustomerOrders(id: string): Promise<Order[]> {
-  console.log("[customer.orders] → request", { id });
   const raw = await executeOrMock(
     "customer.orders",
     () => mockGetCustomerOrders(id),
     { method: "GET", query: { id } },
   );
-  console.log("[customer.orders] ← raw", { id, raw });
   if (Array.isArray(raw)) return raw as Order[];
   if (raw && typeof raw === "object") {
     const obj = raw as { data?: Order[]; orders?: Order[] };
