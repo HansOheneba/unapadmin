@@ -20,6 +20,7 @@ import {
   useMockApi as isMockApi,
 } from "./client";
 import { downloadCsv } from "@/lib/format";
+import { inferDeliveryType } from "@/lib/delivery";
 import {
   mockAssignRider,
   mockConfirmReturnVerified,
@@ -206,8 +207,18 @@ function asPaymentMethod(raw: unknown): Order["paymentMethod"] {
   return "paystack";
 }
 
-function asDeliveryType(raw: unknown): DeliveryType {
-  return raw === "outside_accra" ? "outside_accra" : "accra_inhouse";
+function asDeliveryType(
+  raw: unknown,
+  shippingAddress: CustomerAddress,
+): DeliveryType {
+  // Address is ground truth for Accra vs outside. Backends that only
+  // match city === "Accra" mis-tag suburbs (Madina, Tema, …) as outside.
+  if (inferDeliveryType({ shippingAddress }) === "accra_inhouse") {
+    return "accra_inhouse";
+  }
+  const normalized =
+    typeof raw === "string" ? raw.trim().toLowerCase().replace(/-/g, "_") : "";
+  return normalized === "outside_accra" ? "outside_accra" : "accra_inhouse";
 }
 
 function asOrder(raw: unknown, fallbackId: string): Order | null {
@@ -238,6 +249,7 @@ function asOrder(raw: unknown, fallbackId: string): Order | null {
 
   const { id, orderNumber } = resolveOrderApiId(obj, fallbackId);
   const base = obj as unknown as Order;
+  const shippingAddress = asAddress(obj.shippingAddress);
 
   return {
     ...base,
@@ -248,7 +260,7 @@ function asOrder(raw: unknown, fallbackId: string): Order | null {
     customerName: base.customerName ?? "",
     customerEmail: base.customerEmail ?? "",
     customerPhone: base.customerPhone ?? "",
-    shippingAddress: asAddress(obj.shippingAddress),
+    shippingAddress,
     billingAddress:
       obj.billingAddress == null ? null : asAddress(obj.billingAddress),
     items: asItems(obj.items),
@@ -264,7 +276,10 @@ function asOrder(raw: unknown, fallbackId: string): Order | null {
     currency: base.currency === "NGN" ? "NGN" : "GHS",
     notes: base.notes ?? "",
     customerNote: base.customerNote ?? "",
-    deliveryType: asDeliveryType(obj.deliveryType),
+    deliveryType: asDeliveryType(
+      obj.deliveryType ?? obj.delivery_type,
+      shippingAddress,
+    ),
     riderId: base.riderId ?? null,
     riderNote: base.riderNote ?? "",
     carrier: base.carrier ?? null,

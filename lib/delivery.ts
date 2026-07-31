@@ -11,16 +11,27 @@ import { FULFILLMENT_STEPS } from "@/lib/format";
 export function inferDeliveryType(
   order: Pick<Order, "shippingAddress">,
 ): DeliveryType {
-  const city = order.shippingAddress.city?.toLowerCase() ?? "";
-  const region = order.shippingAddress.region?.toLowerCase() ?? "";
-  if (city === "accra" || region.includes("greater accra")) {
+  const a = order.shippingAddress;
+  const haystack = [a.city, a.region, a.district, a.address, a.address2]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  // Suburbs (Madina, East Legon, Tema, …) often have city !== "Accra".
+  // Match the region / any Accra mention across address fields.
+  if (haystack.includes("greater accra") || /\baccra\b/.test(haystack)) {
     return "accra_inhouse";
   }
   return "outside_accra";
 }
 
-export function isAccraInhouse(order: Pick<Order, "deliveryType">): boolean {
-  return order.deliveryType === "accra_inhouse";
+export function isAccraInhouse(
+  order: Pick<Order, "deliveryType" | "shippingAddress">,
+): boolean {
+  if (order.deliveryType === "accra_inhouse") return true;
+  // Some APIs only treat city === "Accra" as in-house and mis-tag
+  // Greater Accra suburbs (e.g. Madina) as outside_accra.
+  return inferDeliveryType(order) === "accra_inhouse";
 }
 
 export const DELIVERY_EVENT_LABELS: Record<DeliveryEventType, string> = {
