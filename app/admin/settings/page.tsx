@@ -321,7 +321,6 @@ export default function SettingsPage() {
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="viewer">Viewer</SelectItem>
-                  <SelectItem value="super_admin">Super admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
