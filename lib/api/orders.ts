@@ -446,22 +446,56 @@ export async function updateOrderPayment(
   };
 
   const tryParse = (raw: unknown): Order | null => asOrder(raw, id);
+  const attempts: { step: string; result: string }[] = [];
+
+  const isMissing = (err: unknown): boolean =>
+    err instanceof ApiError &&
+    (err.status === 404 ||
+      /does not exist|cannot (get|post|patch|put|delete)/i.test(err.message));
+
+  console.log("[orders] updatePayment start", { orderId: id, payload });
 
   try {
+    console.log("[orders] updatePayment try 1/3", {
+      path: "PATCH /workflow/execute/order.update-payment",
+      body: payload,
+    });
     const raw = await execute<unknown>("order.update-payment", {
       method: "PATCH",
       body: payload,
     });
     const updated = tryParse(raw);
+    console.log("[orders] updatePayment try 1/3 ok", {
+      parsed: !!updated,
+      raw,
+    });
+    attempts.push({ step: "order.update-payment", result: "ok" });
     if (updated) return updated;
     return { id, paymentStatus: body.paymentStatus } as Order;
   } catch (workflowErr) {
-    if (!(workflowErr instanceof ApiError) || workflowErr.status !== 404) {
-      throw workflowErr;
-    }
+    const message =
+      workflowErr instanceof Error ? workflowErr.message : String(workflowErr);
+    const status =
+      workflowErr instanceof ApiError ? workflowErr.status : undefined;
+    attempts.push({
+      step: "order.update-payment",
+      result: `fail ${status ?? "?"} ${message}`,
+    });
+    console.warn("[orders] updatePayment try 1/3 failed → fallback", {
+      status,
+      message,
+    });
+    if (!isMissing(workflowErr)) throw workflowErr;
   }
 
   try {
+    console.log("[orders] updatePayment try 2/3", {
+      path: `POST /orders/${id}/confirm-payment`,
+      body: {
+        paymentStatus: body.paymentStatus,
+        ...(body.note !== undefined ? { note: body.note } : {}),
+      },
+    });
     const raw = await rest<unknown>(`/orders/${id}/confirm-payment`, {
       method: "POST",
       body: {
@@ -470,24 +504,71 @@ export async function updateOrderPayment(
       },
     });
     const updated = tryParse(raw);
+    console.log("[orders] updatePayment try 2/3 ok", {
+      parsed: !!updated,
+      raw,
+    });
+    attempts.push({ step: "POST confirm-payment", result: "ok" });
     if (updated) return updated;
     return { id, paymentStatus: body.paymentStatus } as Order;
   } catch (confirmErr) {
-    if (!(confirmErr instanceof ApiError) || confirmErr.status !== 404) {
-      throw confirmErr;
-    }
+    const message =
+      confirmErr instanceof Error ? confirmErr.message : String(confirmErr);
+    const status =
+      confirmErr instanceof ApiError ? confirmErr.status : undefined;
+    attempts.push({
+      step: "POST confirm-payment",
+      result: `fail ${status ?? "?"} ${message}`,
+    });
+    console.warn("[orders] updatePayment try 2/3 failed → fallback", {
+      status,
+      message,
+    });
+    if (!isMissing(confirmErr)) throw confirmErr;
   }
 
-  const raw = await rest<unknown>(`/orders/${id}/payment`, {
-    method: "PATCH",
-    body: {
-      paymentStatus: body.paymentStatus,
-      ...(body.note !== undefined ? { note: body.note } : {}),
-    },
-  });
-  const updated = tryParse(raw);
-  if (updated) return updated;
-  return { id, paymentStatus: body.paymentStatus } as Order;
+  try {
+    console.log("[orders] updatePayment try 3/3", {
+      path: `PATCH /orders/${id}/payment`,
+      body: {
+        paymentStatus: body.paymentStatus,
+        ...(body.note !== undefined ? { note: body.note } : {}),
+      },
+    });
+    const raw = await rest<unknown>(`/orders/${id}/payment`, {
+      method: "PATCH",
+      body: {
+        paymentStatus: body.paymentStatus,
+        ...(body.note !== undefined ? { note: body.note } : {}),
+      },
+    });
+    const updated = tryParse(raw);
+    console.log("[orders] updatePayment try 3/3 ok", {
+      parsed: !!updated,
+      raw,
+    });
+    attempts.push({ step: "PATCH /payment", result: "ok" });
+    if (updated) return updated;
+    return { id, paymentStatus: body.paymentStatus } as Order;
+  } catch (paymentErr) {
+    const message =
+      paymentErr instanceof Error ? paymentErr.message : String(paymentErr);
+    const status =
+      paymentErr instanceof ApiError ? paymentErr.status : undefined;
+    attempts.push({
+      step: "PATCH /payment",
+      result: `fail ${status ?? "?"} ${message}`,
+    });
+    console.error("[orders] updatePayment all attempts failed", {
+      orderId: id,
+      payload,
+      attempts,
+    });
+    throw new ApiError(
+      `No payment endpoint on API for order ${id}. Tried order.update-payment, POST /orders/:id/confirm-payment, and PATCH /orders/:id/payment — all missing. Backend needs one of these. Last error: ${message}`,
+      status ?? 404,
+    );
+  }
 }
 
 // Delivery / rider assignment live as REST paths under Admin v2 additions
