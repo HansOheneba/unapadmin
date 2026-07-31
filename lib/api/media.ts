@@ -176,13 +176,20 @@ async function fetchMediaToken(): Promise<string> {
   return json.data.token;
 }
 
+export type UploadProgress = {
+  percent: number;
+  loaded: number;
+  total: number;
+};
+
 /**
  * Multipart upload via same-origin rewrite → API media.upload.
- * Auth: Bearer from /api/auth/media-token. No cross-origin, no /api/backend body limit.
+ * Uses XHR so upload progress can drive the UI progress bar.
  */
-async function postMultipartDirect(
+function postMultipartDirect(
   file: File,
   token: string,
+  onProgress?: (progress: UploadProgress) => void,
 ): Promise<{ url: string; key?: string }> {
   const form = new FormData();
   form.append("file", file, file.name);
@@ -203,96 +210,116 @@ async function postMultipartDirect(
     authHeaderLength: authHeader.length,
   });
 
-  let res: Response;
-  try {
-    // Do not set Content-Type manually — the browser must add the multipart boundary.
-    res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: authHeader,
-      },
-      body: form,
-    });
-  } catch (err) {
-    logMediaError("rewrite upload network", err, {
-      endpoint,
-      rewrittenTo: `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`,
-      hasAuthorization: true,
-      token: tokenDebug(token),
-      file: { name: file.name, size: file.size, type: file.type || "(empty)" },
-    });
-    throw new ApiError(
-      err instanceof Error
-        ? `Upload network error: ${err.message}`
-        : "Upload network error.",
-      0,
-    );
-  }
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
 
-  const text = await res.text();
-  let json: unknown = null;
-  if (text.trim()) {
-    try {
-      json = JSON.parse(text);
-    } catch (parseErr) {
-      logMediaError("direct upload response parse", parseErr, {
-        endpoint,
-        httpStatus: res.status,
-        bodyPreview: text.slice(0, 500),
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      const percent = Math.min(
+        100,
+        Math.round((event.loaded / event.total) * 100),
+      );
+      onProgress?.({
+        percent,
+        loaded: event.loaded,
+        total: event.total,
       });
-      json = text.slice(0, 500);
-    }
-  }
+    };
 
-  console.log("[media] ← same-origin rewrite upload", {
-    endpoint,
-    httpStatus: res.status,
-    ok: res.ok,
-    response: json,
+    xhr.onload = () => {
+      const text = xhr.responseText ?? "";
+      let json: unknown = null;
+      if (text.trim()) {
+        try {
+          json = JSON.parse(text);
+        } catch (parseErr) {
+          logMediaError("direct upload response parse", parseErr, {
+            endpoint,
+            httpStatus: xhr.status,
+            bodyPreview: text.slice(0, 500),
+          });
+          json = text.slice(0, 500);
+        }
+      }
+
+      console.log("[media] ← same-origin rewrite upload", {
+        endpoint,
+        httpStatus: xhr.status,
+        ok: xhr.status >= 200 && xhr.status < 300,
+        response: json,
+      });
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        const message =
+          json && typeof json === "object"
+            ? ((json as { message?: string; error?: string }).message ??
+              (json as { error?: string }).error)
+            : undefined;
+        const err = new ApiError(
+          message ?? `Upload failed (HTTP ${xhr.status})`,
+          xhr.status,
+        );
+        logMediaError("rewrite upload HTTP error", err, {
+          endpoint,
+          rewrittenTo: `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`,
+          httpStatus: xhr.status,
+          response: json,
+          hasAuthorization: true,
+          token: tokenDebug(token),
+        });
+        reject(err);
+        return;
+      }
+
+      try {
+        const unwrapped = unwrapJson(json);
+        const result = extractUploadResult(unwrapped);
+        assertUsableMediaUrl(result.url, endpoint);
+        onProgress?.({ percent: 100, loaded: file.size, total: file.size });
+        console.log("[media] rewrite upload ok", {
+          endpoint,
+          url: result.url,
+          key: result.key ?? null,
+        });
+        resolve(result);
+      } catch (err) {
+        logMediaError("rewrite upload result extract", err, {
+          endpoint,
+          response: json,
+        });
+        reject(err);
+      }
+    };
+
+    xhr.onerror = () => {
+      const err = new ApiError("Upload network error.", 0);
+      logMediaError("rewrite upload network", err, {
+        endpoint,
+        rewrittenTo: `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`,
+        hasAuthorization: true,
+        token: tokenDebug(token),
+        file: { name: file.name, size: file.size, type: file.type || "(empty)" },
+      });
+      reject(err);
+    };
+
+    xhr.onabort = () => {
+      reject(new ApiError("Upload cancelled.", 0));
+    };
+
+    xhr.open("POST", endpoint);
+    xhr.setRequestHeader("Authorization", authHeader);
+    xhr.send(form);
   });
-
-  if (!res.ok) {
-    const message =
-      json && typeof json === "object"
-        ? ((json as { message?: string; error?: string }).message ??
-          (json as { error?: string }).error)
-        : undefined;
-    const err = new ApiError(
-      message ?? `Upload failed (HTTP ${res.status})`,
-      res.status,
-    );
-    logMediaError("rewrite upload HTTP error", err, {
-      endpoint,
-      rewrittenTo: `${API_ORIGIN}${MEDIA_UPLOAD_PATH}`,
-      httpStatus: res.status,
-      response: json,
-      hasAuthorization: true,
-      token: tokenDebug(token),
-    });
-    throw err;
-  }
-
-  try {
-    const unwrapped = unwrapJson(json);
-    const result = extractUploadResult(unwrapped);
-    assertUsableMediaUrl(result.url, endpoint);
-    console.log("[media] rewrite upload ok", {
-      endpoint,
-      url: result.url,
-      key: result.key ?? null,
-    });
-    return result;
-  } catch (err) {
-    logMediaError("rewrite upload result extract", err, {
-      endpoint,
-      response: json,
-    });
-    throw err;
-  }
 }
 
-export async function uploadImage(file: File): Promise<{ url: string; key?: string }> {
+export async function uploadImage(
+  file: File,
+  options?: { onProgress?: (progress: UploadProgress) => void },
+): Promise<{ url: string; key?: string }> {
   const sizeMb = file.size / (1024 * 1024);
+  const onProgress = options?.onProgress;
+
   console.log("[media] uploadImage called", {
     name: file.name,
     size: file.size,
@@ -313,15 +340,18 @@ export async function uploadImage(file: File): Promise<{ url: string; key?: stri
   }
 
   if (useMockApi()) {
+    onProgress?.({ percent: 30, loaded: 0, total: file.size });
     const url = await readAsDataUrl(file);
+    onProgress?.({ percent: 100, loaded: file.size, total: file.size });
     console.log("[media] mock upload ok", { dataUrlLength: url.length });
     return { url };
   }
 
   try {
+    onProgress?.({ percent: 0, loaded: 0, total: file.size });
     const token = await fetchMediaToken();
     console.log("[media] auth ready for rewrite upload", tokenDebug(token));
-    return await postMultipartDirect(file, token);
+    return await postMultipartDirect(file, token, onProgress);
   } catch (err) {
     logMediaError("uploadImage", err, {
       name: file.name,

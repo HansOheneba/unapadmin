@@ -15,7 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Progress } from "@/components/ui/progress";
 import { PUBLIC_IMAGES } from "@/lib/data/public-images";
 import { uploadImage, validateImageFile, MAX_UPLOAD_LABEL } from "@/lib/api/media";
 
@@ -37,6 +37,10 @@ export function ImagePicker({
   const [open, setOpen] = React.useState(false);
   const [url, setUrl] = React.useState("");
   const [uploading, setUploading] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [activeFileName, setActiveFileName] = React.useState<string | null>(
+    null,
+  );
   const [fileError, setFileError] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -86,9 +90,14 @@ export function ImagePicker({
     }
 
     setUploading(true);
+    setProgress(0);
+    setActiveFileName(file.name);
     try {
-      const { url: uploadedUrl } = await uploadImage(file);
+      const { url: uploadedUrl } = await uploadImage(file, {
+        onProgress: ({ percent }) => setProgress(percent),
+      });
       console.log("[image-picker] media.upload → url", { url: uploadedUrl });
+      setProgress(100);
       pickUrl(uploadedUrl);
     } catch (e) {
       console.error("[image-picker] upload failed", {
@@ -104,6 +113,8 @@ export function ImagePicker({
       toast.error(message);
     } finally {
       setUploading(false);
+      setProgress(0);
+      setActiveFileName(null);
     }
   };
 
@@ -185,12 +196,18 @@ export function ImagePicker({
                   : "border-zinc-300"
               } ${
                 uploading
-                  ? "opacity-60 cursor-not-allowed"
+                  ? "opacity-100 cursor-not-allowed"
                   : "hover:text-zinc-900 hover:border-zinc-500 cursor-pointer"
               }`}
             >
               {uploading ? (
-                <Spinner className="h-6 w-6" />
+                <div className="w-full max-w-xs px-6 space-y-2">
+                  <Progress value={progress} />
+                  <p className="text-xs text-zinc-600 text-center tabular-nums truncate">
+                    {progress}%
+                    {activeFileName ? ` · ${activeFileName}` : null}
+                  </p>
+                </div>
               ) : (
                 <>
                   <Upload className="h-6 w-6" />
