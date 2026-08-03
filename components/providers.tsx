@@ -1,10 +1,19 @@
 "use client";
 
 import * as React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { MockStoreHydrator } from "@/components/layout/mock-store-hydrator";
 import { ApiError } from "@/lib/api/client";
+import {
+  handleUnauthorized,
+  isUnauthorizedStatus,
+} from "@/lib/api/handle-unauthorized";
 
 function errorStatus(error: unknown): number | undefined {
   if (error instanceof ApiError) return error.status;
@@ -23,8 +32,21 @@ function shouldRetry(failureCount: number, error: unknown): boolean {
   return failureCount < 1;
 }
 
+function redirectOnUnauthorized(error: unknown): void {
+  const status = errorStatus(error);
+  if (status !== undefined && isUnauthorizedStatus(status)) {
+    handleUnauthorized();
+  }
+}
+
 function makeQueryClient() {
   return new QueryClient({
+    queryCache: new QueryCache({
+      onError: redirectOnUnauthorized,
+    }),
+    mutationCache: new MutationCache({
+      onError: redirectOnUnauthorized,
+    }),
     defaultOptions: {
       queries: {
         staleTime: 60_000,

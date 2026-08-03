@@ -1,8 +1,19 @@
 import type { Paginated } from "@/types";
+import {
+  handleUnauthorized,
+  isUnauthorizedStatus,
+} from "./handle-unauthorized";
 
 const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
 const WORKFLOW_PREFIX = "/workflow/execute";
+
+function throwApiError(message: string, status: number): never {
+  if (isUnauthorizedStatus(status)) {
+    handleUnauthorized();
+  }
+  throw new ApiError(message, status);
+}
 
 /**
  * Browser traffic goes through the same-origin BFF proxy (`/api/backend/*`,
@@ -82,7 +93,7 @@ function unwrap(payload: unknown): unknown {
       typeof (payload as { status?: unknown }).status === "number"
         ? ((payload as { status: number }).status)
         : 400;
-    throw new ApiError(
+    throwApiError(
       payload.message ?? payload.error ?? "Request failed",
       status,
     );
@@ -150,7 +161,7 @@ async function request(
       payload: body ?? null,
       response: err,
     });
-    throw new ApiError(errorMessage(err, res.status), res.status);
+    throwApiError(errorMessage(err, res.status), res.status);
   }
 
   if (res.status === 204) {
@@ -175,7 +186,7 @@ async function request(
       status: res.status,
       response: text.slice(0, 200),
     });
-    throw new ApiError("Invalid JSON response from API", res.status);
+    throwApiError("Invalid JSON response from API", res.status);
   }
 
   console.log("[api] response", {
@@ -365,7 +376,7 @@ export async function downloadApiFile(
       status: res.status,
       response: err,
     });
-    throw new ApiError(errorMessage(err, res.status), res.status);
+    throwApiError(errorMessage(err, res.status), res.status);
   }
 
   const blob = await res.blob();
@@ -424,7 +435,7 @@ export async function executeMultipart<T>(
   });
 
   if (!res.ok) {
-    throw new ApiError(errorMessage(json, res.status), res.status);
+    throwApiError(errorMessage(json, res.status), res.status);
   }
 
   return unwrap(json) as T;

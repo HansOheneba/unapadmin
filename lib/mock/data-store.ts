@@ -236,9 +236,7 @@ export function mockToggleProductVisibility(
   return { id, isActive };
 }
 
-export function mockDuplicateProduct(
-  id: string,
-): { id: string; product: Product } | null {
+export function mockDuplicateProduct(id: string): Product | null {
   const original = getStore().products.find((p) => p.id === id);
   if (!original) return null;
   const newId = `${original.id}-copy-${Date.now().toString(36)}`;
@@ -253,7 +251,7 @@ export function mockDuplicateProduct(
     updatedAt: now(),
   };
   patchStore({ products: [...getStore().products, copy] });
-  return { id: newId, product: copy };
+  return copy;
 }
 
 // ─── Orders ─────────────────────────────────────────────────────────────────

@@ -392,20 +392,27 @@ export async function toggleProductVisibility(
   return { id: r.id, isActive: isVisible ?? isActive ?? false };
 }
 
-export async function duplicateProduct(
-  id: string,
-): Promise<{ id: string; product: Product }> {
+/**
+ * Postman Duplicate Product: POST /workflow/execute/product.duplicate
+ * body `{ id: PRODUCT_UUID }`. Response is the new product (same shape as
+ * create/get); older/mock payloads may wrap as `{ id, product }`.
+ */
+export async function duplicateProduct(id: string): Promise<Product> {
+  const productId = id?.trim();
+  if (!productId) {
+    throw new Error("Product id is missing — cannot duplicate.");
+  }
+
   const r = await executeOrMock(
     "product.duplicate",
     () => {
-      const result = mockDuplicateProduct(id);
+      const result = mockDuplicateProduct(productId);
       if (!result) throw new Error("Product not found");
       return result;
     },
-    { method: "POST", body: { id } },
+    { method: "POST", body: { id: productId } },
   );
-  return {
-    id: r.id,
-    product: fromApi(r.product as unknown as ApiProduct, "male"),
-  };
+
+  console.log("[products] duplicate ← response", r);
+  return fromApi(r as unknown as ApiProduct, "male");
 }

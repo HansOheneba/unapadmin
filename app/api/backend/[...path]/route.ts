@@ -64,22 +64,40 @@ async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
     }
   }
 
+  // Some workflow handlers return HTTP 200 with
+  // `{ success: false, status: 401, message: "Access denied..." }`.
+  // Treat that as a real auth failure so the session cookie is cleared
+  // and the client can redirect to login instead of surfacing the error.
+  const envelopeStatus =
+    responsePayload &&
+    typeof responsePayload === "object" &&
+    !Array.isArray(responsePayload) &&
+    (responsePayload as { success?: unknown }).success === false &&
+    typeof (responsePayload as { status?: unknown }).status === "number"
+      ? (responsePayload as { status: number }).status
+      : undefined;
+  const effectiveStatus =
+    upstream.status === 200 && envelopeStatus === 401
+      ? 401
+      : upstream.status;
+
   console.log("[bff] ←", {
     method: req.method,
     url,
-    status: upstream.status,
+    status: effectiveStatus,
+    upstreamStatus: upstream.status,
     response: responsePayload,
   });
 
   const res = new NextResponse(responseBody, {
-    status: upstream.status,
+    status: effectiveStatus,
     headers: {
       "content-type":
         upstream.headers.get("content-type") ?? "application/json",
     },
   });
 
-  if (upstream.status === 401) {
+  if (effectiveStatus === 401) {
     res.cookies.delete(SESSION_COOKIE);
   }
 

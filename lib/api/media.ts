@@ -1,4 +1,8 @@
 import { ApiError, unwrapJson, useMockApi } from "./client";
+import {
+  handleUnauthorized,
+  isUnauthorizedStatus,
+} from "./handle-unauthorized";
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -165,11 +169,15 @@ async function fetchMediaToken(): Promise<string> {
   });
 
   if (!res.ok || !json.data?.token) {
+    const status = res.status || 401;
     const err = new ApiError(
       json.message ?? "Could not get upload credentials. Sign in again.",
-      res.status || 401,
+      status,
     );
     logMediaError("media-token rejected", err, { response: json });
+    if (isUnauthorizedStatus(status)) {
+      handleUnauthorized();
+    }
     throw err;
   }
 
