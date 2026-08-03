@@ -6,7 +6,14 @@ const API_ORIGIN =
 const nextConfig: NextConfig = {
   // Admin surfaces product/media URLs from the API, uploads, and CDNs —
   // hostnames aren't known at build time, so allow any http(s) remote.
+  //
+  // unoptimized: true — skip Vercel Image Optimization entirely.
+  // This is an internal admin tool (thumbnails, pickers, logos). Routing
+  // every unique remote URL through /_next/image burns Image Cache Writes
+  // on the Hobby plan. Storefront (unapologetic) should keep optimization;
+  // admin should not.
   images: {
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "**" },
       { protocol: "http", hostname: "**" },
