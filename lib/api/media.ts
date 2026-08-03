@@ -5,7 +5,7 @@ import {
 } from "./handle-unauthorized";
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/webp"]);
 
 /**
  * Client-side max for image picks. Uploads go to same-origin `/media-upload/...`
@@ -13,6 +13,8 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
  * Vercel `/api/backend` function 4.5MB body limit.
  */
 export const MAX_UPLOAD_LABEL = "10MB";
+
+const ALLOWED_FORMATS_LABEL = "JPEG or WebP";
 
 const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
@@ -46,11 +48,16 @@ export function validateImageFile(file: File): string | null {
   if (file.size > MAX_UPLOAD_BYTES) {
     return `"${file.name}" is ${sizeMb.toFixed(1)}MB. Images must be ${MAX_UPLOAD_LABEL} or smaller.`;
   }
-  if (file.type && !ALLOWED_TYPES.has(file.type)) {
-    return "Use a JPEG, PNG, or WebP image.";
+  const isPng =
+    file.type === "image/png" || /\.png$/i.test(file.name);
+  if (isPng) {
+    return "PNG is not supported. Convert to JPEG or WebP and try again.";
   }
-  if (!file.type && !/\.(jpe?g|png|webp)$/i.test(file.name)) {
-    return "Use a JPEG, PNG, or WebP image.";
+  if (file.type && !ALLOWED_TYPES.has(file.type)) {
+    return `Use a ${ALLOWED_FORMATS_LABEL} image.`;
+  }
+  if (!file.type && !/\.(jpe?g|webp)$/i.test(file.name)) {
+    return `Use a ${ALLOWED_FORMATS_LABEL} image.`;
   }
   return null;
 }

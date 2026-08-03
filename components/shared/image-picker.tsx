@@ -212,17 +212,17 @@ export function ImagePicker({
                 <>
                   <Upload className="h-6 w-6" />
                   <span className="text-sm text-center px-4">
-                    Click to upload (JPEG, PNG, or WebP · max {MAX_UPLOAD_LABEL})
+                    Click to upload (JPEG or WebP · max {MAX_UPLOAD_LABEL})
                   </span>
                   <span className="text-xs text-zinc-400 px-4 text-center">
-                    All file uploads must be less than {MAX_UPLOAD_LABEL}.
+                    All file uploads must be less than {MAX_UPLOAD_LABEL}. PNG is not supported.
                   </span>
                 </>
               )}
               <input
                 ref={inputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/webp,.jpg,.jpeg,.webp"
                 className="hidden"
                 disabled={uploading}
                 onChange={(e) => {
