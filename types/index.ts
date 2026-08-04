@@ -194,12 +194,25 @@ export type Product = {
   details: string[];
   careInstructions: string[];
   isActive: boolean;
+  /** When true, storefront sells as pre-order; requires availableDate. */
+  isPreorder: boolean;
+  /** Expected ready/ship date (ISO date YYYY-MM-DD). Null when not pre-order. */
+  availableDate: string | null;
   totalStock: number;
   totalSold: number;
   averageRating: number;
   reviewCount: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type NewsletterSubscriber = {
+  id: string;
+  email: string;
+  firstName: string | null;
+  source: string;
+  isActive: boolean;
+  createdAt: string;
 };
 
 export type Collection = {

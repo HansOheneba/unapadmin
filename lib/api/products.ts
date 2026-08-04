@@ -61,6 +61,8 @@ function fromApi(p: ApiProduct, fallbackGender: Product["gender"]): Product {
     product: _product,
     priceNgn,
     isFeatured: _isFeatured,
+    isPreorder,
+    availableDate,
     ...rest
   } = nested;
   void _productId;
@@ -70,10 +72,21 @@ function fromApi(p: ApiProduct, fallbackGender: Product["gender"]): Product {
 
   const id = resolveProductId(nested) || resolveProductId(raw);
 
+  const preorderOn = typeof isPreorder === "boolean" ? isPreorder : false;
+  const readyDate =
+    typeof availableDate === "string" && availableDate.trim()
+      ? availableDate.trim().slice(0, 10)
+      : null;
+
   return {
     ...(rest as unknown as Omit<
       Product,
-      "id" | "isActive" | "gender" | "priceNgn"
+      | "id"
+      | "isActive"
+      | "gender"
+      | "priceNgn"
+      | "isPreorder"
+      | "availableDate"
     >),
     id,
     priceNgn:
@@ -87,6 +100,8 @@ function fromApi(p: ApiProduct, fallbackGender: Product["gender"]): Product {
           ? isVisible
           : true,
     gender: gender ?? fallbackGender,
+    isPreorder: preorderOn,
+    availableDate: preorderOn ? readyDate : null,
   };
 }
 
@@ -134,9 +149,11 @@ function toApiSizes(sizes: SizeStock[]): SizeStock[] {
 /**
  * Postman Create Product body shape:
  * { slug, name, description, price, priceNgn?, collectionId, isVisible,
- *   isFeatured?, details[], careInstructions[], variants[{ colorName, colorHex, images[], sizes[] }] }
+ *   isFeatured?, isPreorder?, availableDate?, details[], careInstructions[],
+ *   variants[{ colorName, colorHex, images[], sizes[] }] }
  */
 function toCreatePayload(product: Product): Record<string, unknown> {
+  const isPreorder = Boolean(product.isPreorder);
   return {
     slug: product.slug.trim(),
     name: product.name.trim(),
@@ -146,6 +163,8 @@ function toCreatePayload(product: Product): Record<string, unknown> {
     collectionId: product.collectionId,
     isVisible: product.isActive,
     isFeatured: false,
+    isPreorder,
+    availableDate: isPreorder ? product.availableDate : null,
     details: cleanStrings(product.details),
     careInstructions: cleanStrings(product.careInstructions),
     variants: product.variants.map((v) => toCreateVariant(v)),
@@ -225,6 +244,14 @@ function toUpdatePayload(
     payload.collectionId = product.collectionId;
   }
   if (product.isActive !== undefined) payload.isVisible = product.isActive;
+  if (product.isPreorder !== undefined) {
+    payload.isPreorder = product.isPreorder;
+    payload.availableDate = product.isPreorder
+      ? (product.availableDate ?? null)
+      : null;
+  } else if (product.availableDate !== undefined) {
+    payload.availableDate = product.availableDate;
+  }
   if (product.details !== undefined) {
     payload.details = cleanStrings(product.details);
   }

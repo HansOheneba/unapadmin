@@ -8,6 +8,7 @@ import type {
   DeliveryEvent,
   DeliveryType,
   InnerCircleMember,
+  NewsletterSubscriber,
   Rider,
   Order,
   OrderItem,
@@ -919,6 +920,34 @@ export const seedBannerMessages: BannerMessage[] = [
     sortOrder: 3,
     createdAt: days(10),
     updatedAt: days(1),
+  },
+];
+
+// ───────────────────────────── Newsletter ─────────────────────────────
+export const seedNewsletter: NewsletterSubscriber[] = [
+  {
+    id: "nl_001",
+    email: "ama@example.com",
+    firstName: "Ama",
+    source: "footer",
+    isActive: true,
+    createdAt: days(3),
+  },
+  {
+    id: "nl_002",
+    email: "kofi@example.com",
+    firstName: null,
+    source: "inner_circle",
+    isActive: true,
+    createdAt: days(5),
+  },
+  {
+    id: "nl_003",
+    email: "yaw.boateng@example.com",
+    firstName: "Yaw",
+    source: "footer",
+    isActive: true,
+    createdAt: days(12),
   },
 ];
 

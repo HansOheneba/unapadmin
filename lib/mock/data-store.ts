@@ -9,6 +9,7 @@ import type {
   DashboardStats,
   DeliveryEvent,
   InnerCircleMember,
+  NewsletterSubscriber,
   Order,
   OrderStatus,
   Paginated,
@@ -672,6 +673,17 @@ export function mockGetInnerCircle(params: {
   );
   if (params.status && params.status !== "all")
     items = items.filter((m) => m.status === params.status);
+  return paginate(items, params.page, params.pageSize);
+}
+
+export function mockGetNewsletterSubscribers(params: {
+  page?: number;
+  pageSize?: number;
+}): Paginated<NewsletterSubscriber> {
+  const items = [...(getStore().newsletter ?? [])].sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
   return paginate(items, params.page, params.pageSize);
 }
 

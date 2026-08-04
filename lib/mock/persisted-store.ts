@@ -8,6 +8,7 @@ import type {
   Customer,
   DeliveryEvent,
   InnerCircleMember,
+  NewsletterSubscriber,
   Order,
   Product,
   Review,
@@ -22,6 +23,7 @@ import {
   seedCustomers,
   seedDeliveryEvents,
   seedInnerCircle,
+  seedNewsletter,
   seedOrders,
   seedProducts,
   seedReviews,
@@ -39,13 +41,14 @@ export type MockStoreData = {
   bannerConfig: BannerConfig;
   bannerMessages: BannerMessage[];
   innerCircle: InnerCircleMember[];
+  newsletter: NewsletterSubscriber[];
   riders: Rider[];
   settings: StoreSettings;
   admins: AdminUser[];
 };
 
 /** Bump when seed shape changes to reset stale localStorage demos. */
-export const MOCK_STORE_VERSION = 3;
+export const MOCK_STORE_VERSION = 4;
 
 export function createSeedStore(): MockStoreData {
   return {
@@ -58,6 +61,7 @@ export function createSeedStore(): MockStoreData {
     bannerConfig: { ...seedBannerConfig },
     bannerMessages: [...seedBannerMessages],
     innerCircle: [...seedInnerCircle],
+    newsletter: [...seedNewsletter],
     riders: [...seedRiders],
     settings: { ...seedSettings },
     admins: [...seedAdmins],

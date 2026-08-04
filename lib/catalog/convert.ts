@@ -91,6 +91,8 @@ export function catalogProductToAdmin(
     details: catalog.details,
     careInstructions: catalog.careInstructions,
     isActive: true,
+    isPreorder: false,
+    availableDate: null,
     totalStock: computeTotalStock(variants),
     totalSold: 0,
     averageRating: 0,

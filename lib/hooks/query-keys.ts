@@ -16,6 +16,7 @@ export const queryKeys = {
   bannerConfig: ["announcements", "config"] as const,
   bannerMessages: ["announcements", "messages"] as const,
   innerCircle: (params?: object) => ["inner-circle", params] as const,
+  newsletter: (params?: object) => ["newsletter", params] as const,
   settings: ["settings"] as const,
   adminUsers: ["admin-users"] as const,
   search: (q: string) => ["search", q] as const,

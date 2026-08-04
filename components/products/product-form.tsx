@@ -34,7 +34,21 @@ import {
   getSizeGuide,
   sizeGuideSizeLabels,
 } from "@/lib/catalog/size-guides";
+import { fmtDate } from "@/lib/format";
 import type { ColorVariant, Product, SizeStock } from "@/types";
+
+function fmtAvailableDate(isoDate: string): string {
+  return fmtDate(isoDate.includes("T") ? isoDate : `${isoDate}T12:00:00`);
+}
+
+function withProductDefaults(product: Product): Product {
+  return {
+    ...product,
+    priceNgn: product.priceNgn ?? null,
+    isPreorder: product.isPreorder ?? false,
+    availableDate: product.availableDate ?? null,
+  };
+}
 
 const filterSizesForGuide = (
   sizes: SizeStock[],
@@ -63,6 +77,8 @@ const emptyProduct = (collectionId = ""): Product => ({
   details: [""],
   careInstructions: [""],
   isActive: true,
+  isPreorder: false,
+  availableDate: null,
   totalStock: 0,
   totalSold: 0,
   averageRating: 0,
@@ -79,9 +95,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
   const products = productsPage?.data ?? [];
 
   const [draft, setDraft] = React.useState<Product>(
-    initial
-      ? { ...initial, priceNgn: initial.priceNgn ?? null }
-      : emptyProduct(),
+    initial ? withProductDefaults(initial) : emptyProduct(),
   );
   const [slugManuallyEdited, setSlugManuallyEdited] = React.useState(!!initial);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -103,7 +117,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
   const [prevId, setPrevId] = React.useState(initial?.id);
   if (initial && prevId !== initial.id) {
     setPrevId(initial.id);
-    setDraft(initial);
+    setDraft(withProductDefaults(initial));
     setSlugManuallyEdited(true);
   }
 
@@ -209,6 +223,10 @@ export function ProductForm({ initial }: { initial?: Product }) {
     }
     if (draft.variants.length === 0) {
       toast.error("Add at least one color variant.");
+      return null;
+    }
+    if (draft.isPreorder && !draft.availableDate) {
+      toast.error("Set an available date for pre-order products.");
       return null;
     }
     const variants = normalizeVariants(draft.variants);
@@ -550,6 +568,36 @@ export function ProductForm({ initial }: { initial?: Product }) {
                   onCheckedChange={(v) => update("isActive", v)}
                 />
               </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="preorder">Pre-order</Label>
+                <Switch
+                  id="preorder"
+                  checked={draft.isPreorder}
+                  onCheckedChange={(v) =>
+                    setDraft((d) => ({
+                      ...d,
+                      isPreorder: v,
+                      availableDate: v ? d.availableDate : null,
+                    }))
+                  }
+                />
+              </div>
+              {draft.isPreorder && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="availableDate">Available date</Label>
+                  <Input
+                    id="availableDate"
+                    type="date"
+                    value={draft.availableDate ?? ""}
+                    onChange={(e) =>
+                      update("availableDate", e.target.value || null)
+                    }
+                  />
+                  <p className="text-xs text-zinc-500">
+                    Expected ready or ship date for this product.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -624,6 +672,16 @@ export function ProductForm({ initial }: { initial?: Product }) {
             <SummaryRow
               label="Status"
               value={draft.isActive ? "Active" : "Inactive"}
+            />
+            <SummaryRow
+              label="Pre-order"
+              value={
+                draft.isPreorder
+                  ? draft.availableDate
+                    ? `Pre-order · Ready ${fmtAvailableDate(draft.availableDate)}`
+                    : "Pre-order"
+                  : "No"
+              }
             />
             <SummaryRow
               label="Stock"

@@ -11,6 +11,7 @@ import {
   Layers,
   Megaphone,
   Crown,
+  Mail,
   Star,
   LineChart,
   Settings,
@@ -68,6 +69,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         icon: Crown,
         badgeKey: "innerCirclePending",
       },
+      { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
     ],
   },
   {

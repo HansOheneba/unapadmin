@@ -31,7 +31,8 @@ import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PAGE_SIZE } from "@/lib/constants/pagination";
-import { formatMoney } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { formatMoney, fmtDate } from "@/lib/format";
 import { TableBodySkeleton } from "@/components/shared/page-skeletons";
 
 export default function ProductsPage() {
@@ -196,11 +197,25 @@ export default function ProductsPage() {
                             )}
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-zinc-900 line-clamp-1">
-                              {p.name}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-sm font-medium text-zinc-900 line-clamp-1">
+                                {p.name}
+                              </span>
+                              {p.isPreorder && (
+                                <Badge variant="outline" className="shrink-0">
+                                  Pre-order
+                                </Badge>
+                              )}
                             </div>
                             <div className="text-xs text-zinc-500">
                               {p.slug}
+                              {p.isPreorder && p.availableDate
+                                ? ` · Ready ${fmtDate(
+                                    p.availableDate.includes("T")
+                                      ? p.availableDate
+                                      : `${p.availableDate}T12:00:00`,
+                                  )}`
+                                : null}
                             </div>
                           </div>
                         </Link>
