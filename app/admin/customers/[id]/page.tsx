@@ -198,7 +198,7 @@ export default function CustomerDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-right">
+            <div className="grid grid-cols-2 gap-6 text-right sm:grid-cols-3 max-lg:w-full max-lg:grid-cols-3 max-lg:gap-3 max-lg:text-left">
               <Stat label="Orders" value={customer.totalOrders.toString()} />
               <Stat
                 label="Lifetime spend"

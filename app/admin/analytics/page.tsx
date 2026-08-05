@@ -218,13 +218,13 @@ export default function AnalyticsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">Analytics</h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="mt-1 text-sm text-zinc-500">
             {fmtDate(from)} → {fmtDate(to)} · {formatNumber(summary.totalOrders)}{" "}
             orders
           </p>
         </div>
-        <div className="flex items-end gap-2">
-          <div>
+        <div className="flex items-end gap-2 max-lg:grid max-lg:w-full max-lg:grid-cols-2">
+          <div className="min-w-0">
             <Label className="text-xs">From</Label>
             <Input
               type="date"
@@ -233,7 +233,7 @@ export default function AnalyticsPage() {
               className="text-xs"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <Label className="text-xs">To</Label>
             <Input
               type="date"
@@ -242,7 +242,11 @@ export default function AnalyticsPage() {
               className="text-xs"
             />
           </div>
-          <Button variant="outline" onClick={exportReport}>
+          <Button
+            variant="outline"
+            onClick={exportReport}
+            className="max-lg:col-span-2"
+          >
             <Download className="h-4 w-4" />
             Export
           </Button>

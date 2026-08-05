@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Search, LogOut, ShoppingBag, User, Package } from "lucide-react";
+import { Menu, Search, LogOut, ShoppingBag, User, Package } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -16,7 +16,11 @@ type SearchResult =
   | { type: "customer"; id: string; label: string; sub: string }
   | { type: "product"; id: string; label: string; sub: string };
 
-export function Topbar() {
+type TopbarProps = {
+  onMenuClick?: () => void;
+};
+
+export function Topbar({ onMenuClick }: TopbarProps) {
   const router = useRouter();
   const qc = useQueryClient();
   const currentUser = useAuthStore((s) => s.currentUser);
@@ -122,12 +126,19 @@ export function Topbar() {
 
   return (
     <>
-      <header className="bg-white border-b border-zinc-100 h-14 flex items-center px-6 gap-4 sticky top-0 z-30">
-       
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-zinc-100 bg-white px-6 max-lg:gap-2 max-lg:px-3">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 max-lg:flex"
+          aria-label="Open navigation"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
 
-        <div className="flex-1 max-w-md" ref={containerRef}>
+        <div className="min-w-0 max-w-md flex-1" ref={containerRef}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               ref={inputRef}
               value={q}
@@ -144,7 +155,7 @@ export function Topbar() {
                 }
               }}
               placeholder="Search orders, customers, products..."
-              className="w-full h-9 pl-9 pr-3 rounded-md border border-zinc-200 bg-zinc-50 text-sm placeholder:text-zinc-400 focus:bg-white focus:border-zinc-400 focus:outline-none"
+              className="h-9 w-full rounded-md border border-zinc-200 bg-zinc-50 pl-9 pr-3 text-sm placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white focus:outline-none"
             />
             {open && q.trim().length >= 2 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-50 overflow-hidden">

@@ -123,12 +123,12 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex items-end justify-between gap-4 max-lg:flex-col max-lg:items-stretch">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">
             Announcements
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="mt-1 text-sm text-zinc-500">
             Promo bar shown at the top of every storefront page.
           </p>
         </div>

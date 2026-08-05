@@ -138,16 +138,17 @@ export default function OrderDetailPage() {
 
       <div className="space-y-6 print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push("/admin/orders")}
+              className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-semibold text-zinc-900">
                   {order.orderNumber ?? order.id}
@@ -155,7 +156,7 @@ export default function OrderDetailPage() {
                 <OrderStatusBadge status={order.status} />
                 <PaymentStatusBadge status={order.paymentStatus} />
               </div>
-              <p className="text-xs text-zinc-500 mt-0.5">
+              <p className="mt-0.5 break-words text-xs text-zinc-500">
                 Placed {fmtDateTime(order.createdAt)} · Tracking{" "}
                 {order.trackingNumber}
                 {order.deliveryAttempts > 0 && (

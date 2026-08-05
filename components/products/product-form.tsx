@@ -310,7 +310,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 max-lg:grid-cols-1">
                 <div>
                   <Label>Name</Label>
                   <Input

@@ -46,42 +46,54 @@ export function ListPagination({
   const pages = pageRange(page, totalPages);
 
   return (
-    <div className="flex flex-col gap-3 px-4 py-3 border-t border-zinc-100">
-      <p className="text-sm text-zinc-500 text-center sm:text-left">
+    <div className="flex flex-col gap-3 border-t border-zinc-100 px-4 py-3">
+      <p className="text-center text-sm text-zinc-500 sm:text-left">
         Showing {start}–{end} of {total}
       </p>
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              disabled={page <= 1}
-              onClick={() => page > 1 && onPageChange(page - 1)}
-            />
-          </PaginationItem>
-          {pages.map((p, i) =>
-            p === "ellipsis" ? (
-              <PaginationItem key={`ellipsis-${i}`}>
-                <PaginationEllipsis />
-              </PaginationItem>
-            ) : (
-              <PaginationItem key={p}>
-                <PaginationLink
-                  isActive={p === page}
-                  onClick={() => onPageChange(p)}
+      <div className="overflow-x-auto">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                disabled={page <= 1}
+                onClick={() => page > 1 && onPageChange(page - 1)}
+              />
+            </PaginationItem>
+            {pages.map((p, i) =>
+              p === "ellipsis" ? (
+                <PaginationItem
+                  key={`ellipsis-${i}`}
+                  className="max-lg:hidden"
                 >
-                  {p}
-                </PaginationLink>
-              </PaginationItem>
-            ),
-          )}
-          <PaginationItem>
-            <PaginationNext
-              disabled={page >= totalPages}
-              onClick={() => page < totalPages && onPageChange(page + 1)}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              ) : (
+                <PaginationItem
+                  key={p}
+                  className={
+                    p === page || p === 1 || p === totalPages
+                      ? undefined
+                      : "max-lg:hidden"
+                  }
+                >
+                  <PaginationLink
+                    isActive={p === page}
+                    onClick={() => onPageChange(p)}
+                  >
+                    {p}
+                  </PaginationLink>
+                </PaginationItem>
+              ),
+            )}
+            <PaginationItem>
+              <PaginationNext
+                disabled={page >= totalPages}
+                onClick={() => page < totalPages && onPageChange(page + 1)}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }

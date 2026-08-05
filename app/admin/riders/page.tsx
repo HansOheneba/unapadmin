@@ -186,13 +186,13 @@ export default function RidersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex items-end justify-between gap-4 max-lg:flex-col max-lg:items-stretch">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-zinc-900">
             <Bike className="h-5 w-5" />
             Riders
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="mt-1 text-sm text-zinc-500">
             Accra in-house delivery team. Only active riders appear in order
             assignment.
           </p>

@@ -128,10 +128,10 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex items-end justify-between gap-4 max-lg:flex-col max-lg:items-stretch">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">Orders</h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="mt-1 text-sm text-zinc-500">
             {total} order{total === 1 ? "" : "s"}
           </p>
         </div>
@@ -144,17 +144,17 @@ export default function OrdersPage() {
       <Card className="overflow-hidden">
         <CardContent className="p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full sm:w-52 md:w-60 shrink-0">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+            <div className="relative w-full shrink-0 sm:w-52 md:w-60">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search..."
-                className="pl-8 h-9 text-sm"
+                className="h-9 pl-8 text-sm"
               />
             </div>
             <Select value={status} onValueChange={(v) => setStatus(v as never)}>
-              <SelectTrigger className="h-9 w-[9.5rem] text-sm">
+              <SelectTrigger className="h-9 w-[9.5rem] text-sm max-lg:w-full">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -167,7 +167,7 @@ export default function OrdersPage() {
               </SelectContent>
             </Select>
             <Select value={payment} onValueChange={(v) => setPayment(v as never)}>
-              <SelectTrigger className="h-9 w-[8.5rem] text-sm">
+              <SelectTrigger className="h-9 w-[8.5rem] text-sm max-lg:w-full">
                 <SelectValue placeholder="Payment" />
               </SelectTrigger>
               <SelectContent>
@@ -180,7 +180,7 @@ export default function OrdersPage() {
               </SelectContent>
             </Select>
             <Select value={rider} onValueChange={setRider}>
-              <SelectTrigger className="h-9 w-[10rem] text-sm">
+              <SelectTrigger className="h-9 w-[10rem] text-sm max-lg:w-full">
                 <SelectValue placeholder="Rider" />
               </SelectTrigger>
               <SelectContent>
@@ -194,7 +194,7 @@ export default function OrdersPage() {
               </SelectContent>
             </Select>
             <Select value={country} onValueChange={(v) => setCountry(v as never)}>
-              <SelectTrigger className="h-9 w-[7.5rem] text-sm">
+              <SelectTrigger className="h-9 w-[7.5rem] text-sm max-lg:w-full">
                 <SelectValue placeholder="Country" />
               </SelectTrigger>
               <SelectContent>
@@ -207,15 +207,15 @@ export default function OrdersPage() {
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="h-9 w-[8.75rem] text-sm"
+              className="h-9 w-[8.75rem] text-sm max-lg:w-full"
               aria-label="From date"
             />
-            <span className="text-xs text-zinc-400">–</span>
+            <span className="text-xs text-zinc-400 max-lg:hidden">–</span>
             <Input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="h-9 w-[8.75rem] text-sm"
+              className="h-9 w-[8.75rem] text-sm max-lg:w-full"
               aria-label="To date"
             />
             {hasFilters && (

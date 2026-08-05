@@ -296,46 +296,48 @@ function Stepper({ order }: { order: Order }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        {FULFILLMENT_STEPS.map((step, i) => {
-          const done = isDelivered ? true : i <= currentIndex;
-          const current = !isDelivered && i === currentIndex;
-          return (
-            <div key={step} className="contents">
-              <div className="flex flex-col items-center flex-1 min-w-0">
-                <div
-                  className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${
-                    done
-                      ? "bg-zinc-900 border-zinc-900 text-white"
-                      : "bg-white border-zinc-300 text-zinc-400"
-                  } ${current ? "ring-4 ring-zinc-200" : ""}`}
-                >
-                  {done ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <CircleDashed className="h-4 w-4" />
-                  )}
+      <div className="max-lg:-mx-1 max-lg:overflow-x-auto max-lg:px-1">
+        <div className="flex items-center justify-between gap-2 max-lg:min-w-[28rem]">
+          {FULFILLMENT_STEPS.map((step, i) => {
+            const done = isDelivered ? true : i <= currentIndex;
+            const current = !isDelivered && i === currentIndex;
+            return (
+              <div key={step} className="contents">
+                <div className="flex min-w-0 flex-1 flex-col items-center">
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+                      done
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-300 bg-white text-zinc-400"
+                    } ${current ? "ring-4 ring-zinc-200" : ""}`}
+                  >
+                    {done ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <CircleDashed className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div
+                    className={`mt-2 text-center text-[11px] font-medium ${
+                      done ? "text-zinc-900" : "text-zinc-400"
+                    }`}
+                  >
+                    {statusLabel(step)}
+                  </div>
                 </div>
-                <div
-                  className={`mt-2 text-[11px] font-medium text-center ${
-                    done ? "text-zinc-900" : "text-zinc-400"
-                  }`}
-                >
-                  {statusLabel(step)}
-                </div>
+                {i < FULFILLMENT_STEPS.length - 1 && (
+                  <div
+                    className={`h-px min-w-2 flex-1 ${
+                      i < currentIndex || isDelivered
+                        ? "bg-zinc-900"
+                        : "bg-zinc-200"
+                    }`}
+                  />
+                )}
               </div>
-              {i < FULFILLMENT_STEPS.length - 1 && (
-                <div
-                  className={`h-px flex-1 min-w-2 ${
-                    i < currentIndex || isDelivered
-                      ? "bg-zinc-900"
-                      : "bg-zinc-200"
-                  }`}
-                />
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
       {order.deliveryAttempts > 1 && (
         <p className="text-xs text-zinc-500 flex items-center gap-1.5">

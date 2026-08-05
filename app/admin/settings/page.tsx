@@ -137,10 +137,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex items-end justify-between gap-3 max-lg:flex-col max-lg:items-stretch">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">Settings</h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="mt-1 text-sm text-zinc-500">
             Notification emails, low stock threshold, and admin access.
           </p>
         </div>

@@ -89,19 +89,30 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-export function Sidebar() {
+type SidebarNavProps = {
+  onNavigate?: () => void;
+  className?: string;
+};
+
+export function SidebarNav({ onNavigate, className }: SidebarNavProps) {
   const pathname = usePathname();
   const { isSuperAdmin, isViewer } = useAuth();
-  const { data: badges = {
-    pendingOrders: 0,
-    lowStock: 0,
-    pendingReviews: 0,
-  } } = useBadgeCounts();
+  const {
+    data: badges = {
+      pendingOrders: 0,
+      lowStock: 0,
+      pendingReviews: 0,
+    },
+  } = useBadgeCounts();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 w-60 bg-black text-white flex flex-col">
+    <div className={cn("flex h-full flex-col bg-black text-white", className)}>
       <div className="px-6 py-5 border-b border-white/10">
-        <Link href="/admin" className="flex items-center gap-2">
+        <Link
+          href="/admin"
+          onClick={onNavigate}
+          className="flex items-center gap-2"
+        >
           <Image
             src="/logos/unapologeticWhite.png"
             alt="Unapologetic"
@@ -111,7 +122,6 @@ export function Sidebar() {
             priority
           />
         </Link>
-       
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
@@ -137,6 +147,7 @@ export function Sidebar() {
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                        onClick={onNavigate}
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
                           isActive
@@ -167,6 +178,14 @@ export function Sidebar() {
           <span className="text-[11px] font-medium">Read-only access</span>
         </div>
       )}
+    </div>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 lg:flex">
+      <SidebarNav className="w-full" />
     </aside>
   );
 }
