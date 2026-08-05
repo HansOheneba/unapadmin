@@ -4,6 +4,9 @@ const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
 
 const nextConfig: NextConfig = {
+  // Lean production artifact for cPanel Node.js Selector / Passenger.
+  output: "standalone",
+  poweredByHeader: false,
   // Admin surfaces product/media URLs from the API, uploads, and CDNs —
   // hostnames aren't known at build time, so allow any http(s) remote.
   //

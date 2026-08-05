@@ -2,10 +2,14 @@
   "name": "unapadmin",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.js",
+    "prepare-cpanel": "bash scripts/prepare-cpanel.sh",
     "lint": "eslint",
     "sync-catalog": "npx tsx scripts/sync-catalog-seed.ts"
   },

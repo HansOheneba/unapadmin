@@ -55,3 +55,30 @@ Set `NEXT_PUBLIC_USE_MOCK_API=false` and point `NEXT_PUBLIC_API_URL` at the back
 ```bash
 npm run build
 ```
+
+## cPanel (Node.js Selector)
+
+Deploy on a **subdomain root** (e.g. `admin.example.com`). Requires Node.js Selector / Passenger — not plain PHP hosting.
+
+1. Create a Node.js app in Selector: **Node 20+**, Application startup file **`server.js`**, Application root = this project.
+2. Upload or clone the repo into the application root.
+3. Set Environment Variables in Selector (then rebuild so `NEXT_PUBLIC_*` are baked in):
+   - `NEXT_PUBLIC_API_URL` — backend origin
+   - `NEXT_PUBLIC_USE_MOCK_API=false` — required in production
+   - `NEXT_PUBLIC_RIDER_APP_URL` — rider app URL if used
+4. Install and build:
+
+```bash
+npm ci
+npm run build
+```
+
+5. Restart the Node app in Selector (`npm start` runs `node server.js`).
+
+Optional lean artifact after build:
+
+```bash
+npm run prepare-cpanel
+```
+
+That copies `.next/static`, `public`, and `server.js` into `.next/standalone`. The default Selector layout still uses the project-root `server.js`.
