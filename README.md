@@ -46,7 +46,6 @@ Set `NEXT_PUBLIC_USE_MOCK_API=false` and point `NEXT_PUBLIC_API_URL` at the back
 | `/admin/products` | Product catalog with variants |
 | `/admin/collections` | Collection management |
 | `/admin/announcements` | Storefront banner bar |
-| `/admin/inner-circle` | Membership applications |
 | `/admin/reviews` | Review moderation |
 | `/admin/analytics` | Sales analytics |
 | `/admin/settings` | Store settings and admin users |

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, X, Crown } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useCustomers } from "@/lib/hooks/useCustomers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,9 +35,6 @@ export default function CustomersPage() {
   const [country, setCountry] = React.useState<"all" | "Ghana" | "Nigeria">(
     "all",
   );
-  const [innerCircle, setInnerCircle] = React.useState<"all" | "yes" | "no">(
-    "all",
-  );
   const [q, setQ] = React.useState("");
   const [page, setPage] = React.useState(1);
 
@@ -45,18 +42,16 @@ export default function CustomersPage() {
     () => ({
       status: status === "all" ? undefined : status,
       country: country === "all" ? undefined : country,
-      innerCircle:
-        innerCircle === "all" ? undefined : innerCircle === "yes" ? "true" : "false",
       q: q || undefined,
       page,
       pageSize: PAGE_SIZE,
     }),
-    [status, country, innerCircle, q, page],
+    [status, country, q, page],
   );
 
   React.useEffect(() => {
     setPage(1);
-  }, [status, country, innerCircle, q]);
+  }, [status, country, q]);
 
   const { data, isLoading } = useCustomers(listParams);
   const customers = data?.data ?? [];
@@ -66,7 +61,6 @@ export default function CustomersPage() {
   const clear = () => {
     setStatus("all");
     setCountry("all");
-    setInnerCircle("all");
     setQ("");
     setPage(1);
   };
@@ -81,7 +75,7 @@ export default function CustomersPage() {
       </div>
 
       <Card>
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="md:col-span-2 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <Input
@@ -112,28 +106,12 @@ export default function CustomersPage() {
               <SelectItem value="Nigeria">🇳🇬 Nigeria</SelectItem>
             </SelectContent>
           </Select>
-          <Select
-            value={innerCircle}
-            onValueChange={(v) => setInnerCircle(v as never)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Inner Circle" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All customers</SelectItem>
-              <SelectItem value="yes">Inner Circle</SelectItem>
-              <SelectItem value="no">Standard</SelectItem>
-            </SelectContent>
-          </Select>
-          {(status !== "all" ||
-            country !== "all" ||
-            innerCircle !== "all" ||
-            q) && (
+          {(status !== "all" || country !== "all" || q) && (
             <Button
               variant="ghost"
               size="sm"
               onClick={clear}
-              className="md:col-span-5 justify-self-start text-xs"
+              className="md:col-span-4 justify-self-start text-xs"
             >
               <X className="h-3 w-3" /> Clear filters
             </Button>
@@ -175,13 +153,8 @@ export default function CustomersPage() {
                         href={`/admin/customers/${c.id}`}
                         className="block hover:underline"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-zinc-900">
-                            {c.firstName} {c.lastName}
-                          </span>
-                          {c.innerCircle && (
-                            <Crown className="h-3.5 w-3.5 text-amber-500" />
-                          )}
+                        <div className="font-medium text-zinc-900">
+                          {c.firstName} {c.lastName}
                         </div>
                         <div className="text-xs text-zinc-500">{c.email}</div>
                       </Link>

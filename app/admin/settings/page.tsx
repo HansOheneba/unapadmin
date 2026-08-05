@@ -234,36 +234,39 @@ export default function SettingsPage() {
                       {a.email}
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={a.role ?? "viewer"}
-                        disabled={isLastSuperAdmin || updateRole.isPending}
-                        onValueChange={async (v) => {
-                          try {
-                            await updateRole.mutateAsync({
-                              id: a.id,
-                              role: v as AdminRole,
-                            });
-                            toast.success("Role updated.");
-                          } catch (e) {
-                            toast.error(
-                              e instanceof Error
-                                ? e.message
-                                : "Failed to update role.",
-                            );
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-8 w-36">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="super_admin">
-                            Super admin
-                          </SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="viewer">Viewer</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {a.role === "super_admin" ? (
+                        <span className="text-sm text-zinc-700">
+                          Super admin
+                        </span>
+                      ) : (
+                        <Select
+                          value={a.role ?? "viewer"}
+                          disabled={updateRole.isPending}
+                          onValueChange={async (v) => {
+                            try {
+                              await updateRole.mutateAsync({
+                                id: a.id,
+                                role: v as AdminRole,
+                              });
+                              toast.success("Role updated.");
+                            } catch (e) {
+                              toast.error(
+                                e instanceof Error
+                                  ? e.message
+                                  : "Failed to update role.",
+                              );
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs text-zinc-500">
                       {fmtDate(a.createdAt)}

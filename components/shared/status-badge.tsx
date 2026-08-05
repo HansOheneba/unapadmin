@@ -62,20 +62,6 @@ export function CustomerStatusBadge({
   return <Badge variant={map[status]}>{statusLabel(status)}</Badge>;
 }
 
-export function InnerCircleStatusBadge({
-  status,
-}: {
-  status: "pending" | "approved" | "rejected" | "waitlisted";
-}) {
-  const map = {
-    pending: "amber",
-    approved: "emerald",
-    rejected: "red",
-    waitlisted: "violet",
-  } as const;
-  return <Badge variant={map[status]}>{statusLabel(status)}</Badge>;
-}
-
 export function RiderStatusBadge({
   status,
 }: {

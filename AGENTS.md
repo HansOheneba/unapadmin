@@ -56,7 +56,7 @@ npm run sync-catalog
 
 ## Pages (built)
 
-`/admin` dashboard · orders · customers · products · collections · riders · announcements · inner circle · reviews · analytics · settings
+`/admin` dashboard · orders · customers · products · collections · riders · announcements · reviews · analytics · settings
 
 ## Rider PWA — U Rider (separate project)
 

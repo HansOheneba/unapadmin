@@ -10,7 +10,6 @@ import {
   Package,
   Layers,
   Megaphone,
-  Crown,
   Mail,
   Star,
   LineChart,
@@ -26,11 +25,7 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  badgeKey?:
-    | "pendingOrders"
-    | "lowStock"
-    | "pendingReviews"
-    | "innerCirclePending";
+  badgeKey?: "pendingOrders" | "lowStock" | "pendingReviews";
   superAdminOnly?: boolean;
 };
 
@@ -63,12 +58,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Marketing",
     items: [
       { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
-      {
-        label: "Inner Circle",
-        href: "/admin/inner-circle",
-        icon: Crown,
-        badgeKey: "innerCirclePending",
-      },
       { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
     ],
   },
@@ -107,7 +96,6 @@ export function Sidebar() {
     pendingOrders: 0,
     lowStock: 0,
     pendingReviews: 0,
-    innerCirclePending: 0,
   } } = useBadgeCounts();
 
   return (

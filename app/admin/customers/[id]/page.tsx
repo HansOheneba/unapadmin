@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Crown, Mail, Phone, MapPin, X, Plus } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCustomer,
@@ -155,12 +155,6 @@ export default function CustomerDetailPage() {
                   <h1 className="text-xl font-semibold text-zinc-900">
                     {customer.firstName} {customer.lastName}
                   </h1>
-                  {customer.innerCircle && (
-                    <Badge variant="amber">
-                      <Crown className="h-3 w-3" />
-                      Inner Circle
-                    </Badge>
-                  )}
                   <CustomerStatusBadge status={customer.status} />
                 </div>
                 <div className="mt-2 text-sm text-zinc-600 space-y-0.5">
