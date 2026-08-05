@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ImagePicker } from "@/components/shared/image-picker";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { VariantSizePicker } from "@/components/products/variant-size-picker";
 import {
   getSizeGuide,
@@ -99,6 +100,10 @@ export function ProductForm({ initial }: { initial?: Product }) {
   );
   const [slugManuallyEdited, setSlugManuallyEdited] = React.useState(!!initial);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [imageToRemove, setImageToRemove] = React.useState<{
+    variantIdx: number;
+    imageIdx: number;
+  } | null>(null);
   // Only one color's sizes & stock panel open at a time.
   const [openSizeIdx, setOpenSizeIdx] = React.useState(
     draft.variants.length > 0 ? 0 : -1,
@@ -494,14 +499,16 @@ export function ProductForm({ initial }: { initial?: Product }) {
                               />
                               <button
                                 type="button"
+                                aria-label="Remove image"
                                 onClick={() =>
-                                  updateVariant(idx, {
-                                    images: v.images.filter((_, k) => k !== i),
+                                  setImageToRemove({
+                                    variantIdx: idx,
+                                    imageIdx: i,
                                   })
                                 }
-                                className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100"
+                                className="absolute top-0.5 right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white opacity-100 [@media(hover:hover)]:h-5 [@media(hover:hover)]:w-5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
                               >
-                                <X className="h-3 w-3" />
+                                <X className="h-3.5 w-3.5 [@media(hover:hover)]:h-3 [@media(hover:hover)]:w-3" />
                               </button>
                             </div>
                           ))}
@@ -646,6 +653,27 @@ export function ProductForm({ initial }: { initial?: Product }) {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!imageToRemove}
+        onOpenChange={(open) => {
+          if (!open) setImageToRemove(null);
+        }}
+        title="Remove this image?"
+        description="This is permanent and cannot be undone. The image will be lost forever from this product."
+        destructive
+        confirmText="Remove image"
+        onConfirm={() => {
+          if (!imageToRemove) return;
+          const { variantIdx, imageIdx } = imageToRemove;
+          const variant = draft.variants[variantIdx];
+          if (!variant) return;
+          updateVariant(variantIdx, {
+            images: variant.images.filter((_, k) => k !== imageIdx),
+          });
+          setImageToRemove(null);
+        }}
+      />
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-md">
