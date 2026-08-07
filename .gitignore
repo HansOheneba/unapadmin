@@ -40,6 +40,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# cPanel/standalone packaging artifacts (see scripts/prepare-cpanel.sh,
+# pack:standalone) — regenerated on demand, never committed
+*.tar.gz
+*.zip
+
 /docs
 /handoff
 /.cursor

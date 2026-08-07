@@ -6,6 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "pack:standalone": "cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public && tar -czf unapologetic-standalone.tar.gz -C .next/standalone .",
     "dev": "next dev",
     "build": "next build",
     "start": "node server.js",

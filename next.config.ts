@@ -1,11 +1,22 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8083";
 
+// Vercel sets VERCEL=1 at build time and uses its own runtime/adapter —
+// "standalone" output is only needed for self-hosted Node servers
+// (cPanel Node.js Selector / Passenger, Docker, etc). Skipping it on Vercel
+// avoids bundling a redundant Node runtime into the build.
+const isVercel = process.env.VERCEL === "1";
+
 const nextConfig: NextConfig = {
-  // Lean production artifact for cPanel Node.js Selector / Passenger.
-  output: "standalone",
+  ...(isVercel
+    ? {}
+    : {
+        output: "standalone" as const,
+        outputFileTracingRoot: path.join(__dirname),
+      }),
   poweredByHeader: false,
   // Admin surfaces product/media URLs from the API, uploads, and CDNs —
   // hostnames aren't known at build time, so allow any http(s) remote.
